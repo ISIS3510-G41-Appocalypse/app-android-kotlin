@@ -1,4 +1,4 @@
-package com.gn41.appandroidkotlin
+package com.gn41.appandroidkotlin.presentation.views
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -33,7 +33,7 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun Greeting(name: String, modifier: Modifier = Modifier) {
     Text(
-        text = "Hello Luis $name!",
+        text = "Hello Luis Papichulo $name!",
         modifier = modifier
     )
 }
