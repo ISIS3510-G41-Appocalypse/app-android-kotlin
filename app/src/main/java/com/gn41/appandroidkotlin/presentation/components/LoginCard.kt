@@ -25,6 +25,7 @@ import com.gn41.appandroidkotlin.ui.theme.CoolSteel
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import com.gn41.appandroidkotlin.presentation.viewmodels.WelcomeViewModel
+import com.gn41.appandroidkotlin.ui.theme.AutumnEmber
 
 
 @Composable
@@ -79,10 +80,25 @@ fun LoginCard(viewModel: WelcomeViewModel)
         Spacer(modifier = Modifier.height(24.dp))
 
         Button(
-            onClick = {viewModel.onLoginSubmit()},
+            onClick = { viewModel.onLoginSubmit() },
             modifier = Modifier.fillMaxWidth(),
-            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary, contentColor = MaterialTheme.colorScheme.onPrimary)
-        ) { Text(text = "Iniciar sesión") }
+            colors = ButtonDefaults.buttonColors(
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary
+            )
+        ) {
+            Text(text = "Iniciar sesión")
+        }
+
+        // Error message aquí
+        if (viewModel.loginError.isNotEmpty()) {
+            Spacer(modifier = Modifier.height(12.dp))
+            Text(
+                text = viewModel.loginError,
+                color = AutumnEmber,
+                style = MaterialTheme.typography.bodyMedium
+            )
+        }
 
         Spacer(modifier = Modifier.height(20.dp))
 

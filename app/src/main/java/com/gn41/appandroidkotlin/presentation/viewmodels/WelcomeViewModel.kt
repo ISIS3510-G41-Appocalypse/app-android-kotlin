@@ -16,6 +16,11 @@ class WelcomeViewModel( private val authRepository: AuthRepository) : ViewModel(
     var password by mutableStateOf(value = "")
         private set
 
+    var loginError by mutableStateOf(value = "")
+        private set
+    var isLoggedIn by mutableStateOf(value = false)
+        private set
+
 
     //Metodos
 
@@ -36,10 +41,19 @@ class WelcomeViewModel( private val authRepository: AuthRepository) : ViewModel(
     }
 
     //ESTA ES LA FUNCIÓN QUE EFECTIVAMENTE INTENTA HACER LOGIN (no abrir la tarjeta)
-    fun onLoginSubmit() {
-        val  loginResult = authRepository.login(email, password)
-        println("Login Result: $loginResult")
 
+    fun onLoginSubmit() {
+        val loginResult = authRepository.login(email, password)
+
+        if (loginResult) {
+            isLoggedIn = true
+            loginError = ""
+        } else {
+            isLoggedIn = false
+            loginError = "Correo o contraseña inválidos"
+        }
+
+        println("Login Result: $loginResult")
     }
 
 
