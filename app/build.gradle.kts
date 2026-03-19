@@ -17,6 +17,13 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        // lslslslsl drvtsdgdsgsd dhi
+        val supabaseUrl = project.findProperty("SUPABASE_URL")?.toString() ?: ""
+        val supabaseKey = project.findProperty("SUPABASE_KEY")?.toString() ?: ""
+
+        buildConfigField("String", "SUPABASE_URL", "\"$supabaseUrl\"")
+        buildConfigField("String", "SUPABASE_KEY", "\"$supabaseKey\"")
     }
 
     buildTypes {
@@ -28,12 +35,15 @@ android {
             )
         }
     }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
     }
+
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }
 
@@ -48,7 +58,7 @@ dependencies {
     implementation(libs.androidx.compose.material3)
 
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.10.0")
-    implementation(libs.androidx.activity.compose)
+
     implementation("com.squareup.retrofit2:retrofit:2.9.0")
     implementation("com.squareup.retrofit2:converter-gson:2.9.0")
 

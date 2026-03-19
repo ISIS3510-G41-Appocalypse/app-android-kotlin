@@ -10,6 +10,9 @@ class AuthService {
     suspend fun login(email: String, password: String): Boolean {
         val loginRequest = LoginRequestDto(email = email, password = password)
         val response = authApi.login(loginRequest)
+        println("Response code: ${response.code()}")
+        println("Response body: ${response.body()}")
+        println("Error body: ${response.errorBody()?.string()}")
         return response.isSuccessful && response.body() != null
     }
 

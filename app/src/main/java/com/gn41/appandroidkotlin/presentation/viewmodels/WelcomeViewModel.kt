@@ -45,19 +45,25 @@ class WelcomeViewModel( private val authRepository: AuthRepository) : ViewModel(
     //ESTA ES LA FUNCIÓN QUE EFECTIVAMENTE INTENTA HACER LOGIN (no abrir la tarjeta)
 
     fun onLoginSubmit() {
-
         viewModelScope.launch {
-            val loginResult = authRepository.login(email, password)
+            try {
+                val loginResult = authRepository.login(email, password)
 
-            if (loginResult) {
-                isLoggedIn = true
-                loginError = ""
-            } else {
+                if (loginResult) {
+                    isLoggedIn = true
+                    loginError = ""
+                } else {
+                    isLoggedIn = false
+                    loginError = "Correo o contraseña inválidos"
+                }
+
+                println("Login Result: $loginResult")
+            } catch (e: Exception) {
                 isLoggedIn = false
-                loginError = "Correo o contraseña inválidos"
+                loginError = "Error de conexión"
+                println("ERROR LOGIN: ${e.message}")
+                e.printStackTrace()
             }
-
-            println("Login Result: $loginResult")
         }
     }
 
