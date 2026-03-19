@@ -17,11 +17,12 @@ private val DarkColorScheme = darkColorScheme(
     tertiary = CoolSteel,
     background = PrussianBlue,
     surface = PrussianBlue,
+
     onPrimary = BrightSnow,
     onSecondary = BrightSnow,
     onTertiary = BrightSnow,
     onBackground = BrightSnow,
-    onSurface = BrightSnow
+    onSurface = CoolSteel
 )
 private val LightColorScheme = lightColorScheme(
     primary = AutumnEmber,
@@ -64,7 +65,7 @@ fun AppAndroidKotlinTheme(
     }
 
     MaterialTheme(
-        colorScheme = colorScheme,
+        colorScheme = DarkColorScheme,
         typography = Typography,
         content = content
     )

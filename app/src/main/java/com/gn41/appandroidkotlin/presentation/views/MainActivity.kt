@@ -11,7 +11,12 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
+import com.gn41.appandroidkotlin.presentation.viewmodels.WelcomeViewModel
 import com.gn41.appandroidkotlin.ui.theme.AppAndroidKotlinTheme
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.gn41.appandroidkotlin.data.repositories.AuthRepositoryImpl
+import com.gn41.appandroidkotlin.data.services.AuthService
+import com.gn41.appandroidkotlin.presentation.viewmodels.WelcomeViewModelFactory
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -19,13 +24,17 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             AppAndroidKotlinTheme {
-
-                  WelcomeScreen(onLoginClick = {println("Presionaste Login")}, onRegisterClick = {println("Presionaste Register")} )
+                val authService = AuthService()
+                val authRepository = AuthRepositoryImpl(authService)
+                val factory = WelcomeViewModelFactory(authRepository)
+                val welcomeViewModel: WelcomeViewModel = viewModel(factory = factory)
+                WelcomeScreen(welcomeViewModel)
 
             }
         }
     }
 }
+
 
 
 
