@@ -1,3 +1,4 @@
+import com.android.build.gradle.internal.cxx.configure.gradleLocalProperties
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
@@ -19,8 +20,9 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         // lslslslsl drvtsdgdsgsd dhi
-        val supabaseUrl = project.findProperty("SUPABASE_URL")?.toString() ?: ""
-        val supabaseKey = project.findProperty("SUPABASE_KEY")?.toString() ?: ""
+        val localProperties = gradleLocalProperties(rootDir, providers)
+        val supabaseUrl = localProperties.getProperty("SUPABASE_URL", "")
+        val supabaseKey = localProperties.getProperty("SUPABASE_KEY", "")
 
         buildConfigField("String", "SUPABASE_URL", "\"$supabaseUrl\"")
         buildConfigField("String", "SUPABASE_KEY", "\"$supabaseKey\"")
