@@ -11,12 +11,15 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.gn41.appandroidkotlin.ui.theme.BrightSnow
+import com.gn41.appandroidkotlin.ui.theme.CoolSteel
 
 @Composable
 fun WelcomeScreen(onLoginClick: () -> Unit, onRegisterClick: () -> Unit){
@@ -81,6 +84,7 @@ fun WelcomeMessage(){
 fun WelcomeButtons(onLoginClick: () -> Unit, onRegisterClick: () -> Unit){
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
     Button(onClick = onRegisterClick){ Text(text = "Registrarse")}
-    Button(onClick = onLoginClick) {Text(text = "¿Ya tienes una cuenta? Inicia Sesión")}
+    Button(onClick = onLoginClick,   colors = ButtonDefaults.buttonColors( containerColor = CoolSteel,contentColor = BrightSnow
+    )) {Text(text = "¿Ya tienes una cuenta? Inicia Sesión")}
     }
 }
