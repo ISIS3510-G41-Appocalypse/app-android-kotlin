@@ -21,9 +21,10 @@ import androidx.compose.ui.unit.dp
 import com.gn41.appandroidkotlin.presentation.components.LoginCard
 import com.gn41.appandroidkotlin.ui.theme.BrightSnow
 import com.gn41.appandroidkotlin.ui.theme.CoolSteel
+import com.gn41.appandroidkotlin.presentation.viewmodels.WelcomeViewModel
 
 @Composable
-fun WelcomeScreen(showLoginCard: Boolean,onLoginClick: () -> Unit, onRegisterClick: () -> Unit){
+fun WelcomeScreen(viewModel: WelcomeViewModel){
     Column(modifier = Modifier
         .fillMaxSize()
         .background(MaterialTheme.colorScheme.background)
@@ -38,13 +39,13 @@ fun WelcomeScreen(showLoginCard: Boolean,onLoginClick: () -> Unit, onRegisterCli
             horizontalAlignment = Alignment.CenterHorizontally){
 
             WelcomeHeader()
-            if (showLoginCard) {
-                LoginCard()
+            if (viewModel.showLoginCard) {
+                LoginCard(viewModel = viewModel)
             }
             else {
 
                 WelcomeMessage()
-                WelcomeButtons(onLoginClick = onLoginClick, onRegisterClick = onRegisterClick)
+                WelcomeButtons(onLoginClick = {viewModel.onLoginClicked()}, onRegisterClick = {viewModel.onRegisterClicked()})
             }
 
         }

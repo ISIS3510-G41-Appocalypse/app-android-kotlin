@@ -21,23 +21,15 @@ import androidx.compose.ui.unit.dp
 import com.gn41.appandroidkotlin.ui.theme.BrightSnow
 import com.gn41.appandroidkotlin.ui.theme.CoolSteel
 // imports para poder escribir teclado y contraseñas
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.ui.text.input.PasswordVisualTransformation
-
-
-
+import com.gn41.appandroidkotlin.presentation.viewmodels.WelcomeViewModel
 
 
 @Composable
-fun LoginCard() {
-    var email by remember { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
-
+fun LoginCard(viewModel: WelcomeViewModel)
+{
     Column(
         modifier = Modifier.fillMaxWidth()
             .background(color = BrightSnow, shape = RoundedCornerShape(24.dp)).padding(16.dp),
@@ -55,8 +47,8 @@ fun LoginCard() {
 
            //aqui va el textfield del correo
             OutlinedTextField(
-                value = email,
-                onValueChange = { email = it },
+                value = viewModel.email,
+                onValueChange = {viewModel.onEmailInput(it)},
                 modifier = Modifier.fillMaxWidth(),
                 placeholder = { Text("ejemplo@uniandes.edu.co") },
                 shape = RoundedCornerShape(16.dp)
@@ -74,8 +66,8 @@ fun LoginCard() {
 
             //aqui va el textfield de la contraseña
             OutlinedTextField(
-                value = password,
-                onValueChange = { password = it },
+                value = viewModel.password,
+                onValueChange = { viewModel.onPasswordInput(it) },
                 modifier = Modifier.fillMaxWidth(),
                 placeholder = { Text("••••••••", color = CoolSteel) },
                 visualTransformation = PasswordVisualTransformation(),
@@ -87,7 +79,7 @@ fun LoginCard() {
         Spacer(modifier = Modifier.height(24.dp))
 
         Button(
-            onClick = {},
+            onClick = {viewModel.onLoginSubmit()},
             modifier = Modifier.fillMaxWidth(),
             colors = ButtonDefaults.buttonColors(
                 containerColor = MaterialTheme.colorScheme.primary,
@@ -100,15 +92,8 @@ fun LoginCard() {
         Spacer(modifier = Modifier.height(20.dp))
 
         Row {
-            Text(
-                text = "¿No tienes cuenta? ",
-                color = MaterialTheme.colorScheme.background
-            )
-            Text(
-                text = "Regístrate",
-                color = MaterialTheme.colorScheme.secondary,
-                fontWeight = FontWeight.Bold
-            )
+            Text(text = "¿No tienes cuenta? ", color = MaterialTheme.colorScheme.background)
+            Text(text = "Regístrate", color = MaterialTheme.colorScheme.secondary, fontWeight = FontWeight.Bold)
         }
     }
 }
