@@ -1,4 +1,4 @@
-package com.gn41.appandroidkotlin
+package com.gn41.appandroidkotlin.presentation.views
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -19,29 +19,27 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             AppAndroidKotlinTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    Greeting(
-                        name = "Android",
-                        modifier = Modifier.padding(innerPadding)
-                    )
-                }
+
+                  WelcomeScreen(onLoginClick = {println("Presionaste Login")}, onRegisterClick = {println("Presionaste Register")} )
+
             }
         }
     }
 }
 
-@Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "Hello alejandro $name!",
-        modifier = modifier
-    )
-}
 
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    AppAndroidKotlinTheme {
-        Greeting("Android")
-    }
-}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
