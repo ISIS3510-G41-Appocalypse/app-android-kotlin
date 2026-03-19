@@ -1,12 +1,16 @@
 package com.gn41.appandroidkotlin.data.services.auth
 
+import com.gn41.appandroidkotlin.data.dto.auth.LoginRequestDto
+import com.gn41.appandroidkotlin.data.services.SupabaseClient
+
 class AuthService {
 
-    fun login(email: String, password: String): Boolean {
-        println("TODO: llamada real al backend")
-        println("Email service: $email")
-        println("Password service: $password")
-        return true
+    private val authApi = SupabaseClient.authApi
+
+    suspend fun login(email: String, password: String): Boolean {
+        val loginRequest = LoginRequestDto(email = email, password = password)
+        val response = authApi.login(loginRequest)
+        return response.isSuccessful && response.body() != null
     }
 
 }

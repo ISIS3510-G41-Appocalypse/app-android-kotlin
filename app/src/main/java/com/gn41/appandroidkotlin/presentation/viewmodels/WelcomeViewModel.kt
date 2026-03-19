@@ -5,6 +5,8 @@ import androidx.lifecycle.ViewModel
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import com.gn41.appandroidkotlin.data.repositories.AuthRepository
+import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.launch
 
 class WelcomeViewModel( private val authRepository: AuthRepository) : ViewModel() {
 
@@ -43,19 +45,21 @@ class WelcomeViewModel( private val authRepository: AuthRepository) : ViewModel(
     //ESTA ES LA FUNCIÓN QUE EFECTIVAMENTE INTENTA HACER LOGIN (no abrir la tarjeta)
 
     fun onLoginSubmit() {
-        val loginResult = authRepository.login(email, password)
 
-        if (loginResult) {
-            isLoggedIn = true
-            loginError = ""
-        } else {
-            isLoggedIn = false
-            loginError = "Correo o contraseña inválidos"
+        viewModelScope.launch {
+            val loginResult = authRepository.login(email, password)
+
+            if (loginResult) {
+                isLoggedIn = true
+                loginError = ""
+            } else {
+                isLoggedIn = false
+                loginError = "Correo o contraseña inválidos"
+            }
+
+            println("Login Result: $loginResult")
         }
-
-        println("Login Result: $loginResult")
     }
-
 
 
 }
