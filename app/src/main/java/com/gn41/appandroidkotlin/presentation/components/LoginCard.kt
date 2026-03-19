@@ -81,13 +81,8 @@ fun LoginCard(viewModel: WelcomeViewModel)
         Button(
             onClick = {viewModel.onLoginSubmit()},
             modifier = Modifier.fillMaxWidth(),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary
-            )
-        ) {
-            Text(text = "Iniciar sesión")
-        }
+            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary, contentColor = MaterialTheme.colorScheme.onPrimary)
+        ) { Text(text = "Iniciar sesión") }
 
         Spacer(modifier = Modifier.height(20.dp))
 

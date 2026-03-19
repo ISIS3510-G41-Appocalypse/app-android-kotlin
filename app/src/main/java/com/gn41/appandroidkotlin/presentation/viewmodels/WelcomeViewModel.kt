@@ -4,8 +4,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
+import com.gn41.appandroidkotlin.data.repositories.AuthRepository
 
-class WelcomeViewModel : ViewModel() {
+class WelcomeViewModel( private val authRepository: AuthRepository) : ViewModel() {
 
     //Para ayudarnnos a decidi si mostramos o on el card de login.
     var showLoginCard by mutableStateOf(value = false)
@@ -36,9 +37,8 @@ class WelcomeViewModel : ViewModel() {
 
     //ESTA ES LA FUNCIÓN QUE EFECTIVAMENTE INTENTA HACER LOGIN (no abrir la tarjeta)
     fun onLoginSubmit() {
-        println("TODO: Login desde WelcomeViewModel")
-        println("Email: $email")
-        println("Password: $password")
+        val  loginResult = authRepository.login(email, password)
+        println("Login Result: $loginResult")
 
     }
 
