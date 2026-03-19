@@ -1,4 +1,4 @@
-package com.gn41.appandroidkotlin.data.services
+package com.gn41.appandroidkotlin.data.services.auth
 
 class AuthService {
 

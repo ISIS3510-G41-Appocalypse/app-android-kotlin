@@ -15,7 +15,7 @@ import com.gn41.appandroidkotlin.presentation.viewmodels.WelcomeViewModel
 import com.gn41.appandroidkotlin.ui.theme.AppAndroidKotlinTheme
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.gn41.appandroidkotlin.data.repositories.AuthRepositoryImpl
-import com.gn41.appandroidkotlin.data.services.AuthService
+import com.gn41.appandroidkotlin.data.services.auth.AuthService
 import com.gn41.appandroidkotlin.presentation.viewmodels.WelcomeViewModelFactory
 
 class MainActivity : ComponentActivity() {
