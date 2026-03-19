@@ -22,7 +22,10 @@ class MainActivity : ComponentActivity() {
         setContent {
             AppAndroidKotlinTheme {
                 val welcomeViewModel: WelcomeViewModel = viewModel()
-                WelcomeScreen(onLoginClick = {println("Presionaste Login")}, onRegisterClick = {println("Presionaste Register")} )
+                WelcomeScreen(
+                    showLoginCard = welcomeViewModel.showLoginCard,
+                    onLoginClick = { welcomeViewModel.onLoginClicked();println("Presionaste Login")},
+                    onRegisterClick = { welcomeViewModel.onRegisterClicked();println("Presionaste Register")} )
 
             }
         }

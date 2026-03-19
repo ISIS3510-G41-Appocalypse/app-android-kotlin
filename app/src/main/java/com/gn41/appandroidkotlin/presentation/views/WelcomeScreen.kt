@@ -18,11 +18,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.gn41.appandroidkotlin.presentation.components.LoginCard
 import com.gn41.appandroidkotlin.ui.theme.BrightSnow
 import com.gn41.appandroidkotlin.ui.theme.CoolSteel
 
 @Composable
-fun WelcomeScreen(onLoginClick: () -> Unit, onRegisterClick: () -> Unit){
+fun WelcomeScreen(showLoginCard: Boolean,onLoginClick: () -> Unit, onRegisterClick: () -> Unit){
     Column(modifier = Modifier
         .fillMaxSize()
         .background(MaterialTheme.colorScheme.background)
@@ -37,15 +38,21 @@ fun WelcomeScreen(onLoginClick: () -> Unit, onRegisterClick: () -> Unit){
             horizontalAlignment = Alignment.CenterHorizontally){
 
             WelcomeHeader()
-            WelcomeMessage()
-            WelcomeButtons(onLoginClick = onLoginClick, onRegisterClick = onRegisterClick)
+            if (showLoginCard) {
+                LoginCard()
+            }
+            else {
 
+                WelcomeMessage()
+                WelcomeButtons(onLoginClick = onLoginClick, onRegisterClick = onRegisterClick)
+            }
 
         }
     }
 }
 
 
+//Logo, titulo
 @Composable
 fun WelcomeHeader(){
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -57,7 +64,7 @@ fun WelcomeHeader(){
 
     }
 }
-
+// slogan simple
 @Composable
 fun WelcomeMessage(){
 
@@ -79,7 +86,7 @@ fun WelcomeMessage(){
 
 }
 
-
+// esto es el boton de registro y de login
 @Composable
 fun WelcomeButtons(onLoginClick: () -> Unit, onRegisterClick: () -> Unit){
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
