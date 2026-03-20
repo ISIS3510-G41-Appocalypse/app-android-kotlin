@@ -16,17 +16,23 @@ import java.util.Locale
 
 data class HomeUiState(
     val isLoading: Boolean = false,
-    val rides: List<RideDto> = emptyList(),
+    val rides: List<RideItemUiModel> = emptyList(),
     val errorMessage: String = "",
-    val selectedTripType: String = "All",
-    val selectedDay: String = "All",
-    val selectedDepartureTime: String = "All",
-    val departureTimeOptions: List<String> = buildDepartureTimeOptions()
+    val selectedZone: String = "Todos",
+    val zoneOptions: List<String> = listOf("Todos"),
+    val selectedTripType: String = "Todos",
+    val selectedDay: String = "Todos",
+    val selectedDepartureTime: String = "Todas",
+    val departureTimeOptions: List<String> = buildDepartureTimeOptions(),
+    val hasActiveFilters: Boolean = false,
+    val activeFilterCount: Int = 0
 )
 
 private fun buildDepartureTimeOptions(): List<String> {
-    val slots = (5..21).map { hour -> String.format("%02d:00", hour) }
-    return listOf("All") + slots
+    val slots = (5..21).map { hour ->
+        String.format(Locale.getDefault(), "%02d:00", hour)
+    }
+    return listOf("Todas") + slots
 }
 
 class HomeViewModel(
@@ -48,6 +54,11 @@ class HomeViewModel(
         applyFilters()
     }
 
+    fun onZoneChange(value: String) {
+        uiState = uiState.copy(selectedZone = value)
+        applyFilters()
+    }
+
     fun onDayChange(value: String) {
         uiState = uiState.copy(selectedDay = value)
         applyFilters()
@@ -58,43 +69,93 @@ class HomeViewModel(
         applyFilters()
     }
 
+    fun clearFilters() {
+        uiState = uiState.copy(
+            selectedZone = "Todos",
+            selectedDay = "Todos",
+            selectedTripType = "Todos",
+            selectedDepartureTime = "Todas"
+        )
+        applyFilters()
+    }
+
     fun applyFilters() {
         val formatter = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
         val today = formatter.format(Date())
 
-        val filtered = allRides.filter { ride ->
+        val filteredRides = allRides.filter { ride ->
+            val matchesZone = when (uiState.selectedZone) {
+                "Todos" -> true
+                else -> ride.zones?.name == uiState.selectedZone
+            }
+
             val matchesTripType = when (uiState.selectedTripType) {
-                "All" -> true
-                "To university" -> ride.type == "TO_UNIVERSITY"
-                "From university" -> ride.type == "FROM_UNIVERSITY"
+                "Todos" -> true
+                "Hacia la universidad" -> ride.type == "TO_UNIVERSITY"
+                "Desde la universidad" -> ride.type == "FROM_UNIVERSITY"
                 else -> true
             }
 
             val matchesDay = when (uiState.selectedDay) {
-                "All" -> true
-                "Today" -> ride.date == today
+                "Todos" -> true
+                "Hoy" -> ride.date == today
                 else -> true
             }
 
             val matchesDepartureTime = when (uiState.selectedDepartureTime) {
-                "All" -> true
+                "Todas" -> true
                 else -> matchesHourSlot(
                     rideTime = ride.departure_time,
                     selectedSlot = uiState.selectedDepartureTime
                 )
             }
 
-            matchesTripType && matchesDay && matchesDepartureTime
+            matchesZone && matchesTripType && matchesDay && matchesDepartureTime
         }
 
-        uiState = uiState.copy(rides = filtered)
+        val activeFilterCount = countActiveFilters(
+            zone = uiState.selectedZone,
+            day = uiState.selectedDay,
+            tripType = uiState.selectedTripType,
+            departureTime = uiState.selectedDepartureTime
+        )
+
+        uiState = uiState.copy(
+            rides = filteredRides.map { mapToRideUiModel(it) },
+            hasActiveFilters = activeFilterCount > 0,
+            activeFilterCount = activeFilterCount
+        )
+    }
+
+    private fun buildZoneOptions(rides: List<RideDto>): List<String> {
+        // obtiene zonas unicas y las ordena
+        val zones = rides
+            .mapNotNull { it.zones?.name?.trim() }
+            .filter { it.isNotEmpty() }
+            .distinct()
+            .sorted()
+
+        return listOf("Todos") + zones
+    }
+
+    private fun countActiveFilters(
+        zone: String,
+        day: String,
+        tripType: String,
+        departureTime: String
+    ): Int {
+        var count = 0
+        if (zone != "Todos") count++
+        if (day != "Todos") count++
+        if (tripType != "Todos") count++
+        if (departureTime != "Todas") count++
+        return count
     }
 
     private fun matchesHourSlot(rideTime: String, selectedSlot: String): Boolean {
+        // valida que la hora coincida
         val rideHour = rideTime.split(":").firstOrNull()?.toIntOrNull() ?: return false
         val slotHour = selectedSlot.split(":").firstOrNull()?.toIntOrNull() ?: return false
-
-        // Example: selecting 15:00 matches rides from 15:00 to 15:59.
         return rideHour == slotHour
     }
 
@@ -104,7 +165,7 @@ class HomeViewModel(
         if (token.isEmpty()) {
             uiState = uiState.copy(
                 isLoading = false,
-                errorMessage = "No active session. Please log in again."
+                errorMessage = "No hay una sesion activa. Inicia sesion nuevamente."
             )
             return
         }
@@ -118,31 +179,27 @@ class HomeViewModel(
             try {
                 val result = ridesRepository.getRides(token)
 
-                uiState = if (result != null) {
+                if (result != null) {
                     Log.d("HomeViewModel", "Rides loaded: ${result.size}")
                     allRides = result
-
-                    uiState.copy(
+                    uiState = uiState.copy(
                         isLoading = false,
-                        rides = allRides,
-                        errorMessage = ""
+                        errorMessage = "",
+                        zoneOptions = buildZoneOptions(result)
                     )
+                    applyFilters()
                 } else {
                     Log.e("HomeViewModel", "Rides result is null")
-                    uiState.copy(
+                    uiState = uiState.copy(
                         isLoading = false,
-                        errorMessage = "Could not load rides. Try again."
+                        errorMessage = "No se pudieron cargar los viajes. Intenta de nuevo."
                     )
-                }
-
-                if (result != null) {
-                    applyFilters()
                 }
             } catch (e: Exception) {
                 Log.e("HomeViewModel", "Exception loading rides", e)
                 uiState = uiState.copy(
                     isLoading = false,
-                    errorMessage = "Could not load rides. Try again."
+                    errorMessage = "No se pudieron cargar los viajes. Intenta de nuevo."
                 )
             }
         }

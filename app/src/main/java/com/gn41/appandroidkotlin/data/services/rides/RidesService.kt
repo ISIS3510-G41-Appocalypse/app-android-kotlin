@@ -6,14 +6,17 @@ import com.gn41.appandroidkotlin.data.dto.rides.RideDto
 import com.gn41.appandroidkotlin.data.services.SupabaseClient
 
 class RidesService {
-
     private val ridesApi = SupabaseClient.ridesApi
+
+    // expande relaciones para obtener conductor, vehiculo y zona
+    private val enrichedSelect = "*,drivers(*,users(*)),vehicles(*),zones(*)"
 
     suspend fun getRides(token: String): List<RideDto>? {
         return try {
             val response = ridesApi.getRides(
                 token = "Bearer $token",
-                apiKey = BuildConfig.SUPABASE_KEY
+                apiKey = BuildConfig.SUPABASE_KEY,
+                select = enrichedSelect
             )
 
             if (response.isSuccessful) {
