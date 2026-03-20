@@ -10,6 +10,9 @@ data class RideDto(
     val date: String,
     val departure_time: String,
     val state: String,
-    val type: String
+    val type: String,
+    val price: Double? = null,
+    val drivers: DriverNestedDto? = null,
+    val vehicles: VehicleNestedDto? = null,
+    val zones: ZoneNestedDto? = null
 )
-

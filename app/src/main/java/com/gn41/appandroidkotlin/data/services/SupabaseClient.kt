@@ -11,10 +11,9 @@ import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 
 object SupabaseClient {
-
     private val BASE_URL = BuildConfig.SUPABASE_URL
 
-    // Single Retrofit instance shared by all APIs
+    // instancia unica de retrofit
     private val retrofit: Retrofit by lazy {
         Retrofit.Builder()
             .baseUrl(BASE_URL)
