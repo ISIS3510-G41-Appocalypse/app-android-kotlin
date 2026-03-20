@@ -12,7 +12,6 @@ import com.gn41.appandroidkotlin.data.repositories.RidesRepositoryImpl
 import com.gn41.appandroidkotlin.data.services.auth.AuthService
 import com.gn41.appandroidkotlin.data.services.rides.RidesService
 import com.gn41.appandroidkotlin.presentation.navigation.AppNavigation
-import com.gn41.appandroidkotlin.presentation.viewmodels.HomeViewModel
 import com.gn41.appandroidkotlin.presentation.viewmodels.HomeViewModelFactory
 import com.gn41.appandroidkotlin.presentation.viewmodels.WelcomeViewModel
 import com.gn41.appandroidkotlin.presentation.viewmodels.WelcomeViewModelFactory
@@ -22,49 +21,28 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+
         setContent {
             AppAndroidKotlinTheme {
                 val sessionManager = SessionManager(this)
 
-                // --- Auth ---
                 val authService = AuthService()
                 val authRepository = AuthRepositoryImpl(authService)
                 val welcomeFactory = WelcomeViewModelFactory(authRepository, sessionManager)
                 val welcomeViewModel: WelcomeViewModel = viewModel(factory = welcomeFactory)
 
-                // --- Rides ---
                 val ridesService = RidesService()
                 val ridesRepository = RidesRepositoryImpl(ridesService)
                 val homeFactory = HomeViewModelFactory(ridesRepository, sessionManager)
-                val homeViewModel: HomeViewModel = viewModel(factory = homeFactory)
 
                 val navController = rememberNavController()
+
                 AppNavigation(
                     navController = navController,
                     welcomeViewModel = welcomeViewModel,
-                    homeViewModel = homeViewModel
+                    homeViewModelFactory = homeFactory
                 )
             }
         }
     }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

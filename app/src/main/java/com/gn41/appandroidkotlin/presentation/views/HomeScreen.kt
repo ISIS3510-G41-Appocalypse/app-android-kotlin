@@ -26,8 +26,6 @@ import com.gn41.appandroidkotlin.presentation.components.RideItemCard
 import com.gn41.appandroidkotlin.presentation.viewmodels.HomeViewModel
 
 val darkBlue = Color(0xFF0B1E3B)
-val cyanPrimary = Color(0xFF0FA3B1)
-val orangePrimary = Color(0xFFE76F00)
 val whiteCard = Color(0xFFF5F7FA)
 
 @Composable
@@ -69,7 +67,9 @@ fun HomeScreen(viewModel: HomeViewModel) {
         when {
             state.isLoading -> {
                 Box(
-                    modifier = Modifier.fillMaxSize(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f),
                     contentAlignment = Alignment.Center
                 ) {
                     Column(
@@ -79,7 +79,7 @@ fun HomeScreen(viewModel: HomeViewModel) {
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
                             text = "Loading rides...",
-                            color = Color.White,
+                            color = Color.LightGray,
                             style = MaterialTheme.typography.bodyMedium
                         )
                     }
@@ -87,15 +87,23 @@ fun HomeScreen(viewModel: HomeViewModel) {
             }
 
             state.errorMessage.isNotEmpty() -> {
-                Text(
-                    text = state.errorMessage,
-                    color = Color.Red,
-                    style = MaterialTheme.typography.bodyMedium
-                )
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = state.errorMessage,
+                        color = Color.Red,
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                }
             }
 
             state.rides.isNotEmpty() -> {
                 LazyColumn(
+                    modifier = Modifier.weight(1f),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     items(state.rides) { ride ->
@@ -105,11 +113,18 @@ fun HomeScreen(viewModel: HomeViewModel) {
             }
 
             else -> {
-                Text(
-                    text = "No rides available right now.",
-                    color = Color.LightGray,
-                    style = MaterialTheme.typography.bodyMedium
-                )
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "No rides available right now.",
+                        color = Color.LightGray,
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                }
             }
         }
     }
@@ -124,7 +139,7 @@ fun FilterCard() {
             .padding(16.dp)
     ) {
         Text(
-            text = "Zona",
+            text = "Zone",
             style = MaterialTheme.typography.titleMedium
         )
 
@@ -133,7 +148,7 @@ fun FilterCard() {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(Color.LightGray, RoundedCornerShape(8.dp))
+                .background(Color(0xFFE5E7EB), RoundedCornerShape(8.dp))
                 .padding(8.dp)
         ) {
             Text(
@@ -151,18 +166,18 @@ fun FilterCard() {
                 modifier = Modifier.weight(1f)
             ) {
                 Text(
-                    text = "Día",
+                    text = "Day",
                     style = MaterialTheme.typography.titleMedium
                 )
 
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .background(Color.LightGray, RoundedCornerShape(8.dp))
+                        .background(Color(0xFFE5E7EB), RoundedCornerShape(8.dp))
                         .padding(8.dp)
                 ) {
                     Text(
-                        text = "Hoy",
+                        text = "Today",
                         style = MaterialTheme.typography.bodyMedium
                     )
                 }
@@ -174,18 +189,18 @@ fun FilterCard() {
                 modifier = Modifier.weight(1f)
             ) {
                 Text(
-                    text = "Tipo de viaje",
+                    text = "Trip type",
                     style = MaterialTheme.typography.titleMedium
                 )
 
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .background(Color.LightGray, RoundedCornerShape(8.dp))
+                        .background(Color(0xFFE5E7EB), RoundedCornerShape(8.dp))
                         .padding(8.dp)
                 ) {
                     Text(
-                        text = "Llegada a la un",
+                        text = "All",
                         style = MaterialTheme.typography.bodyMedium
                     )
                 }
