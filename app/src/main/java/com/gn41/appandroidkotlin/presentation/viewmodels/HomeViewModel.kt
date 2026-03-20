@@ -21,11 +21,13 @@ data class HomeUiState(
     val selectedTripType: String = "All",
     val selectedDay: String = "All",
     val selectedDepartureTime: String = "All",
-    val departureTimeOptions: List<String> = buildDepartureTimeOptions()
+    val departureTimeOptions: List<String> = buildDepartureTimeOptions(),
+    val hasActiveFilters: Boolean = false,
+    val activeFilterCount: Int = 0
 )
 
 private fun buildDepartureTimeOptions(): List<String> {
-    val slots = (5..21).map { hour -> String.format("%02d:00", hour) }
+    val slots = (5..21).map { hour -> String.format(Locale.getDefault(), "%02d:00", hour) }
     return listOf("All") + slots
 }
 
@@ -58,6 +60,15 @@ class HomeViewModel(
         applyFilters()
     }
 
+    fun clearFilters() {
+        uiState = uiState.copy(
+            selectedDay = "All",
+            selectedTripType = "All",
+            selectedDepartureTime = "All"
+        )
+        applyFilters()
+    }
+
     fun applyFilters() {
         val formatter = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
         val today = formatter.format(Date())
@@ -87,7 +98,25 @@ class HomeViewModel(
             matchesTripType && matchesDay && matchesDepartureTime
         }
 
-        uiState = uiState.copy(rides = filtered)
+        val activeFilterCount = countActiveFilters(
+            day = uiState.selectedDay,
+            tripType = uiState.selectedTripType,
+            departureTime = uiState.selectedDepartureTime
+        )
+
+        uiState = uiState.copy(
+            rides = filtered,
+            hasActiveFilters = activeFilterCount > 0,
+            activeFilterCount = activeFilterCount
+        )
+    }
+
+    private fun countActiveFilters(day: String, tripType: String, departureTime: String): Int {
+        var count = 0
+        if (day != "All") count++
+        if (tripType != "All") count++
+        if (departureTime != "All") count++
+        return count
     }
 
     private fun matchesHourSlot(rideTime: String, selectedSlot: String): Boolean {

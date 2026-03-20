@@ -1,6 +1,7 @@
 package com.gn41.appandroidkotlin.presentation.views
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -64,9 +65,12 @@ fun HomeScreen(
                 selectedTripType = state.selectedTripType,
                 selectedDepartureTime = state.selectedDepartureTime,
                 departureOptions = state.departureTimeOptions,
+                hasActiveFilters = state.hasActiveFilters,
+                activeFilterCount = state.activeFilterCount,
                 onDayChange = viewModel::onDayChange,
                 onTripTypeChange = viewModel::onTripTypeChange,
-                onDepartureTimeChange = viewModel::onDepartureTimeChange
+                onDepartureTimeChange = viewModel::onDepartureTimeChange,
+                onClearFilters = viewModel::clearFilters
             )
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -127,7 +131,11 @@ fun HomeScreen(
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = "No rides available right now.",
+                            text = if (state.hasActiveFilters) {
+                                "No rides match the selected filters."
+                            } else {
+                                "No rides available right now."
+                            },
                             color = Color.LightGray,
                             style = MaterialTheme.typography.bodyMedium
                         )
@@ -235,9 +243,12 @@ fun FilterCard(
     selectedTripType: String,
     selectedDepartureTime: String,
     departureOptions: List<String>,
+    hasActiveFilters: Boolean,
+    activeFilterCount: Int,
     onDayChange: (String) -> Unit,
     onTripTypeChange: (String) -> Unit,
-    onDepartureTimeChange: (String) -> Unit
+    onDepartureTimeChange: (String) -> Unit,
+    onClearFilters: () -> Unit
 ) {
     val dayOptions = listOf("All", "Today")
     val tripTypeOptions = listOf("All", "To university", "From university")
@@ -303,6 +314,29 @@ fun FilterCard(
             options = departureOptions,
             onValueSelected = onDepartureTimeChange
         )
+
+        Spacer(modifier = Modifier.height(10.dp))
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = if (hasActiveFilters) "$activeFilterCount filters applied" else "No filters applied",
+                color = if (hasActiveFilters) Color(0xFF0D9488) else Color.Gray,
+                style = MaterialTheme.typography.bodyMedium
+            )
+
+            if (hasActiveFilters) {
+                Text(
+                    text = "Clear",
+                    color = Color(0xFF0D9488),
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.clickable { onClearFilters() }
+                )
+            }
+        }
     }
 }
 
@@ -314,16 +348,23 @@ fun FilterDropdownField(
     onValueSelected: (String) -> Unit
 ) {
     var expanded by remember { mutableStateOf(false) }
+    val isActive = selectedValue != "All"
+    val backgroundColor = if (isActive) Color(0xFFDDEAFE) else Color(0xFFE5E7EB)
+    val borderColor = if (isActive) Color(0xFF93C5FD) else Color.Transparent
 
     Text(
         text = label,
+        color = if (isActive) Color(0xFF1E3A8A) else Color.Unspecified,
         style = MaterialTheme.typography.titleMedium
     )
+
+    Spacer(modifier = Modifier.height(4.dp))
 
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .background(Color(0xFFE5E7EB), RoundedCornerShape(8.dp))
+            .border(1.dp, borderColor, RoundedCornerShape(8.dp))
+            .background(backgroundColor, RoundedCornerShape(8.dp))
             .clickable { expanded = true }
             .padding(horizontal = 10.dp, vertical = 10.dp)
     ) {
