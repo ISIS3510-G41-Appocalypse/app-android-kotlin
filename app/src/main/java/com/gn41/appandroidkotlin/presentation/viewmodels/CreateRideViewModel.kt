@@ -88,7 +88,7 @@ class CreateRideViewModel(private val rideRepository: RideRepository) : ViewMode
                     date = formState.date,
                     departureTime = formState.departureTime,
                     type = formState.type,
-                    driverId = "",
+                    driverId = 0,
                     state = ""
                 )
             )

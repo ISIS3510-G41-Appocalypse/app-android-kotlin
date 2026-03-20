@@ -4,7 +4,7 @@ import com.google.gson.annotations.SerializedName
 
 data class CreateRideRequestDto (
     @SerializedName("driver_id")
-    val driverId: String,
+    val driverId: Int,
 
     @SerializedName("vehicle_id")
     val vehicleId: Int,

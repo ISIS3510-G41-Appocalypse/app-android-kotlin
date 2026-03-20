@@ -4,8 +4,10 @@ import com.gn41.appandroidkotlin.BuildConfig
 import com.gn41.appandroidkotlin.data.dto.createRide.CreateRideRequestDto
 import com.gn41.appandroidkotlin.data.local.SessionManager
 import com.gn41.appandroidkotlin.data.services.SupabaseClient
+import com.gn41.appandroidkotlin.data.services.userId.UserIdService
 
-class RideService (private val sessionManager: SessionManager) {
+class RideService (private val sessionManager: SessionManager,
+    private val userIdService: UserIdService) {
     private val rideApi = SupabaseClient.rideApi
 
     suspend fun create(request: CreateRideRequestDto) : Result<Unit> {
@@ -13,8 +15,10 @@ class RideService (private val sessionManager: SessionManager) {
             val token = sessionManager.getToken()
                 ?: return Result.failure(Exception("No auth token"))
 
-            val userId = sessionManager.getUserId()
+            val authId = sessionManager.getUserId()
                 ?: return Result.failure(Exception("No user logged in"))
+
+            val userId = userIdService.getUserByAuthId(authId).id
 
             val finalRequest = request.copy(
                 driverId = userId,
