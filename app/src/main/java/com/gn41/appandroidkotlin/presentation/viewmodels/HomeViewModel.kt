@@ -1,6 +1,7 @@
 package com.gn41.appandroidkotlin.presentation.viewmodels
 
 import android.util.Log
+import android.util.Base64
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -8,6 +9,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.gn41.appandroidkotlin.data.dto.rides.RideDto
 import com.gn41.appandroidkotlin.data.local.SessionManager
+import com.gn41.appandroidkotlin.data.repositories.ReservationsRepository
 import com.gn41.appandroidkotlin.data.repositories.RidesRepository
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
@@ -37,7 +39,8 @@ private fun buildDepartureTimeOptions(): List<String> {
 
 class HomeViewModel(
     private val ridesRepository: RidesRepository,
-    private val sessionManager: SessionManager
+    private val sessionManager: SessionManager,
+    private val reservationsRepository: ReservationsRepository? = null
 ) : ViewModel() {
 
     private var allRides: List<RideDto> = emptyList()
@@ -67,6 +70,53 @@ class HomeViewModel(
     fun onDepartureTimeChange(value: String) {
         uiState = uiState.copy(selectedDepartureTime = value)
         applyFilters()
+    }
+
+    fun onReserveClicked(rideId: Int) {
+        val token = sessionManager.getToken()
+
+        if (token.isEmpty()) {
+            uiState = uiState.copy(errorMessage = "No hay una sesion activa. Inicia sesion nuevamente.")
+            return
+        }
+
+        val repository = reservationsRepository
+        if (repository == null) {
+            uiState = uiState.copy(errorMessage = "Reservas no disponibles por ahora.")
+            return
+        }
+
+        val userId = extractUserIdFromToken(token)
+        if (userId.isNullOrEmpty()) {
+            uiState = uiState.copy(errorMessage = "No se pudo validar el usuario.")
+            return
+        }
+
+        viewModelScope.launch {
+            try {
+                val reservations = repository.getReservations(userId, token).orEmpty()
+                val hasActiveReservation = reservations.any {
+                    it.state == "PENDIENTE" || it.state == "EN_PROGRESO"
+                }
+
+                if (hasActiveReservation) {
+                    uiState = uiState.copy(
+                        errorMessage = "Ya tienes una reserva activa (pendiente o en progreso)."
+                    )
+                    return@launch
+                }
+
+                val created = repository.createReservation(rideId, userId, token)
+                uiState = if (created) {
+                    uiState.copy(errorMessage = "Reserva creada correctamente.")
+                } else {
+                    uiState.copy(errorMessage = "No se pudo crear la reserva. Intenta de nuevo.")
+                }
+            } catch (e: Exception) {
+                Log.e("HomeViewModel", "Exception creating reservation", e)
+                uiState = uiState.copy(errorMessage = "No se pudo crear la reserva. Intenta de nuevo.")
+            }
+        }
     }
 
     fun clearFilters() {
@@ -157,6 +207,21 @@ class HomeViewModel(
         val rideHour = rideTime.split(":").firstOrNull()?.toIntOrNull() ?: return false
         val slotHour = selectedSlot.split(":").firstOrNull()?.toIntOrNull() ?: return false
         return rideHour == slotHour
+    }
+
+    private fun extractUserIdFromToken(token: String): String? {
+        return try {
+            val parts = token.split('.')
+            if (parts.size < 2) return null
+
+            val payloadBytes = Base64.decode(parts[1], Base64.URL_SAFE or Base64.NO_WRAP or Base64.NO_PADDING)
+            val payload = String(payloadBytes)
+
+            val subRegex = "\"sub\"\\s*:\\s*\"([^\"]+)\"".toRegex()
+            subRegex.find(payload)?.groupValues?.get(1)
+        } catch (e: Exception) {
+            null
+        }
     }
 
     private fun loadRides() {
