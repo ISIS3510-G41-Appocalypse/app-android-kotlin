@@ -8,7 +8,7 @@ class AuthService {
 
     private val authApi = SupabaseClient.authApi
 
-    suspend fun login(email: String, password: String): Boolean {
+    suspend fun login(email: String, password: String): String? {
         val loginRequest = LoginRequestDto(
             email = email,
             password = password
@@ -23,6 +23,7 @@ class AuthService {
         println("Response body: ${response.body()}")
         println("Error body: ${response.errorBody()?.string()}")
 
-        return response.isSuccessful && response.body() != null
+        return if (response.isSuccessful && response.body() != null) { response.body()!!.access_token
+        } else {null}
     }
 }

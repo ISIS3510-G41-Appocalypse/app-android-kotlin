@@ -23,6 +23,12 @@ class WelcomeViewModel( private val authRepository: AuthRepository) : ViewModel(
     var isLoggedIn by mutableStateOf(value = false)
         private set
 
+    var sessionToken by mutableStateOf(value = "")
+        private set
+
+
+
+
 
     //Metodos
 
@@ -46,24 +52,19 @@ class WelcomeViewModel( private val authRepository: AuthRepository) : ViewModel(
 
     fun onLoginSubmit() {
         viewModelScope.launch {
-            try {
-                val loginResult = authRepository.login(email, password)
+            val loginResult = authRepository.login(email, password)
 
-                if (loginResult) {
-                    isLoggedIn = true
-                    loginError = ""
-                } else {
-                    isLoggedIn = false
-                    loginError = "Correo o contraseña inválidos"
-                }
-
-                println("Login Result: $loginResult")
-            } catch (e: Exception) {
+            if (loginResult != null) {
+                sessionToken = loginResult
+                isLoggedIn = true
+                loginError = ""
+            } else {
+                sessionToken = ""
                 isLoggedIn = false
-                loginError = "Error de conexión"
-                println("ERROR LOGIN: ${e.message}")
-                e.printStackTrace()
+                loginError = "Correo o contraseña inválidos"
             }
+
+            println("Token: $sessionToken")
         }
     }
 
