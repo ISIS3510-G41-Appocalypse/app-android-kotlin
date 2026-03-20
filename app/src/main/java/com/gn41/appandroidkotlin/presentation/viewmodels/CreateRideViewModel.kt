@@ -73,15 +73,11 @@ class CreateRideViewModel(private val rideRepository: RideRepository,
     }
 
     fun onVehicleSelected(vehicleLicensePlate: String) {
-        viewModelScope.launch {
-            formState = formState.copy(vehicleId = vehicleLicensePlate)
-        }
+        formState = formState.copy(vehicleId = vehicleLicensePlate)
     }
 
     fun onZoneSelected(zoneName: String) {
-        viewModelScope.launch {
-            formState = formState.copy(zoneId = zoneName)
-        }
+        formState = formState.copy(zoneId = zoneName)
     }
 
     fun onTypeSelected(type: String) {

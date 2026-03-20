@@ -187,7 +187,7 @@ fun CreateRideScreen(
                         Box {
                             SelectionField(
                                 text = viewModel.vehicles
-                                    .find { it.id.toString() == viewModel.formState.vehicleId }
+                                    .find { it.licensePlate == viewModel.formState.vehicleId }
                                     ?.licensePlate ?: "Selecciona tu vehículo",
                                 leadingIcon = {
                                     Icon(Icons.Default.DirectionsCar, null, tint = TextGray)
@@ -217,7 +217,7 @@ fun CreateRideScreen(
                         Box {
                             SelectionField(
                                 text = viewModel.zones
-                                    .find { it.id.toString() == viewModel.formState.zoneId }
+                                    .find { it.name == viewModel.formState.zoneId }
                                     ?.name ?: "Selecciona tu zona",
                                 leadingIcon = {
                                     Icon(Icons.Default.Place, null, tint = TextGray)
