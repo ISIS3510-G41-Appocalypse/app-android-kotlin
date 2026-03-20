@@ -22,4 +22,20 @@ class SessionManager(context: Context) {
             .remove("session_token")
             .apply()
     }
+
+    fun saveUserId(id: String) {
+        sharedPreferences.edit()
+            .putString("session_user_id", id)
+            .apply()
+    }
+
+    fun getUserId(): String {
+        return sharedPreferences.getString("session_user_id", "") ?: ""
+    }
+
+    fun clearUserId() {
+        sharedPreferences.edit()
+            .remove("session_user_id")
+            .apply()
+    }
 }
