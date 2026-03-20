@@ -5,5 +5,5 @@ import com.gn41.appandroidkotlin.data.dto.zone.ZoneDto
 interface ZoneRepository {
     suspend fun getZones() : List<ZoneDto>
 
-    fun getZoneByName(name: String) : ZoneDto
+    suspend fun getZoneByName(name: String) : ZoneDto
 }

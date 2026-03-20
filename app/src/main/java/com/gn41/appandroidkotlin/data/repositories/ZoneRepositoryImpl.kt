@@ -8,7 +8,7 @@ class ZoneRepositoryImpl(private val zoneService: ZoneService) : ZoneRepository 
         return zoneService.getZones()
     }
 
-    override fun getZoneByName(name:String) : ZoneDto {
+    override suspend fun getZoneByName(name:String) : ZoneDto {
         return zoneService.getZoneByName(name)
     }
 }

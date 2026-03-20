@@ -9,12 +9,14 @@ interface VehicleApi {
     @GET("rest/v1/vehicles")
     suspend fun getUserVehicles(
         @Header("Authorization") token: String,
+        @Header("apikey") apiKey: String,
         @Query("driver_id") driverId: String
     ): List<VehicleDto>
 
     @GET("rest/v1/vehicles")
-    fun getVehicleByLicensePlate(
+    suspend fun getVehicleByLicensePlate(
         @Header("Authorization") token: String,
+        @Header("apikey") apiKey: String,
         @Query("license_plate") licensePlate: String
     ) : List<VehicleDto>
 }

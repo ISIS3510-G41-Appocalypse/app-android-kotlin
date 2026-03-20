@@ -55,7 +55,6 @@ class MainActivity : ComponentActivity() {
                 val vehicleRepository = VehicleRepositoryImpl(vehicleService)
                 val zoneRepository = ZoneRepositoryImpl(zoneService)
                 val createRideViewModelFactory = CreateRideViewModelFactory(rideRepository,vehicleRepository,zoneRepository)
-                val createRideViewModel: CreateRideViewModel = viewModel(factory = createRideViewModelFactory)
 
                 val navController = rememberNavController()
 
@@ -63,7 +62,7 @@ class MainActivity : ComponentActivity() {
                     navController = navController,
                     welcomeViewModel = welcomeViewModel,
                     homeViewModelFactory = homeFactory,
-                    createRideViewModel = createRideViewModel
+                    createRideViewModelFactory = createRideViewModelFactory
                 )
             }
         }

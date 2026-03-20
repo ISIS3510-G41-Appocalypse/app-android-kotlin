@@ -203,7 +203,7 @@ fun CreateRideScreen(
                                     DropdownMenuItem(
                                         text = { Text(vehicle.licensePlate) },
                                         onClick = {
-                                            viewModel.onVehicleSelected(vehicle.id.toString())
+                                            viewModel.onVehicleSelected(vehicle.licensePlate)
                                             expandedVehicle = false
                                         }
                                     )
@@ -233,7 +233,7 @@ fun CreateRideScreen(
                                     DropdownMenuItem(
                                         text = { Text(zone.name) },
                                         onClick = {
-                                            viewModel.onZoneSelected(zone.id.toString())
+                                            viewModel.onZoneSelected(zone.name)
                                             expandedZone = false
                                         }
                                     )

@@ -8,12 +8,14 @@ import retrofit2.http.Query
 interface ZoneApi {
     @GET("rest/v1/zones")
     suspend fun getZones(
-        @Header("Authorization") token: String
+        @Header("Authorization") token: String,
+        @Header("apikey") apiKey: String,
     ): List<ZoneDto>
 
     @GET("rest/v1/zones")
-    fun getZoneByName(
+    suspend fun getZoneByName(
         @Header("Authorization") token: String,
+        @Header("apikey") apiKey: String,
         @Query("name") name: String
     ) : List<ZoneDto>
 }

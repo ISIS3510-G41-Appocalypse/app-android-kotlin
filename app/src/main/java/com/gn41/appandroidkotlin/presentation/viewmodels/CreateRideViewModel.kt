@@ -1,5 +1,6 @@
 package com.gn41.appandroidkotlin.presentation.viewmodels
 
+import android.util.Log
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
@@ -60,7 +61,7 @@ class CreateRideViewModel(private val rideRepository: RideRepository,
     private fun loadInitialData() {
         viewModelScope.launch {
             isLoadingData = true
-
+            Log.d("CreateRide", "Llamando a getUserVehicles")
             val vehiclesResult = vehicleRepository.getUserVehicles()
             val zonesResult = zoneRepository.getZones()
 
@@ -72,13 +73,15 @@ class CreateRideViewModel(private val rideRepository: RideRepository,
     }
 
     fun onVehicleSelected(vehicleLicensePlate: String) {
-        val vehicleId = vehicleRepository.getVehicleByLicensePlate(vehicleLicensePlate).id
-        formState = formState.copy(vehicleId = vehicleId.toString())
+        viewModelScope.launch {
+            formState = formState.copy(vehicleId = vehicleLicensePlate)
+        }
     }
 
     fun onZoneSelected(zoneName: String) {
-        val zoneId = zoneRepository.getZoneByName(zoneName).id
-        formState = formState.copy(zoneId = zoneId.toString())
+        viewModelScope.launch {
+            formState = formState.copy(zoneId = zoneName)
+        }
     }
 
     fun onTypeSelected(type: String) {
@@ -118,8 +121,8 @@ class CreateRideViewModel(private val rideRepository: RideRepository,
 
             val result = rideRepository.createRide(
                 CreateRideRequestDto(
-                    vehicleId = formState.vehicleId.toInt(),
-                    zoneId = formState.zoneId.toInt(),
+                    vehicleId = vehicleRepository.getVehicleByLicensePlate(formState.vehicleId).id,
+                    zoneId = zoneRepository.getZoneByName(formState.zoneId).id,
                     source = formState.source,
                     destination = formState.destination,
                     price = formState.price.toDouble(),

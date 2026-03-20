@@ -15,10 +15,7 @@ class RideService (private val sessionManager: SessionManager,
             val token = sessionManager.getToken()
                 ?: return Result.failure(Exception("No auth token"))
 
-            val authId = sessionManager.getUserId()
-                ?: return Result.failure(Exception("No user logged in"))
-
-            val userId = userIdService.getUserByAuthId(authId).id
+            val userId = userIdService.getUserByAuthId().id
 
             val finalRequest = request.copy(
                 driverId = userId,
