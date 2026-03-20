@@ -6,7 +6,12 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.gn41.appandroidkotlin.data.dto.createRide.CreateRideRequestDto
+import com.gn41.appandroidkotlin.data.dto.vehicle.VehicleDto
+import com.gn41.appandroidkotlin.data.dto.zone.ZoneDto
+import com.gn41.appandroidkotlin.data.local.SessionManager
 import com.gn41.appandroidkotlin.data.repositories.RideRepository
+import com.gn41.appandroidkotlin.data.repositories.VehicleRepository
+import com.gn41.appandroidkotlin.data.repositories.ZoneRepository
 import kotlinx.coroutines.launch
 
 data class CreateRideFormState(
@@ -20,14 +25,16 @@ data class CreateRideFormState(
     val type: String = ""
 )
 
-sealed class CreateRideUiState {
-    object Idle : CreateRideUiState()
-    object Loading : CreateRideUiState()
-    object Success : CreateRideUiState()
-    data class Error(val message: String) : CreateRideUiState()
-}
+class CreateRideViewModel(private val rideRepository: RideRepository,
+    private val vehicleRepository: VehicleRepository,
+    private val zoneRepository: ZoneRepository) : ViewModel() {
 
-class CreateRideViewModel(private val rideRepository: RideRepository) : ViewModel() {
+    sealed class CreateRideUiState {
+        object Idle : CreateRideUiState()
+        object Loading : CreateRideUiState()
+        object Success : CreateRideUiState()
+        data class Error(val message: String) : CreateRideUiState()
+    }
 
     var formState by mutableStateOf(CreateRideFormState())
         private set
@@ -35,12 +42,47 @@ class CreateRideViewModel(private val rideRepository: RideRepository) : ViewMode
     var uiState by mutableStateOf<CreateRideUiState>(CreateRideUiState.Idle)
         private set
 
-    fun onVehicleSelected(vehicleId: String) {
-        formState = formState.copy(vehicleId = vehicleId)
+    var vehicles by mutableStateOf<List<VehicleDto>>(emptyList())
+        private set
+
+    var zones by mutableStateOf<List<ZoneDto>>(emptyList())
+        private set
+
+    var rideTypes = listOf("TO_UNIVERSITY","FROM_UNIVERSITY")
+
+    var isLoadingData by mutableStateOf(true)
+        private set
+
+    init {
+        loadInitialData()
     }
 
-    fun onZoneSelected(zoneId: String) {
-        formState = formState.copy(zoneId = zoneId)
+    private fun loadInitialData() {
+        viewModelScope.launch {
+            isLoadingData = true
+
+            val vehiclesResult = vehicleRepository.getUserVehicles()
+            val zonesResult = zoneRepository.getZones()
+
+            vehicles = vehiclesResult
+            zones = zonesResult
+
+            isLoadingData = false
+        }
+    }
+
+    fun onVehicleSelected(vehicleLicensePlate: String) {
+        val vehicleId = vehicleRepository.getVehicleByLicensePlate(vehicleLicensePlate).id
+        formState = formState.copy(vehicleId = vehicleId.toString())
+    }
+
+    fun onZoneSelected(zoneName: String) {
+        val zoneId = zoneRepository.getZoneByName(zoneName).id
+        formState = formState.copy(zoneId = zoneId.toString())
+    }
+
+    fun onTypeSelected(type: String) {
+        formState = formState.copy(type = type)
     }
 
     fun onSourceChanged(value: String) {
@@ -55,24 +97,20 @@ class CreateRideViewModel(private val rideRepository: RideRepository) : ViewMode
         formState = formState.copy(price = value)
     }
 
-    fun onDateSelected(value: String) {
-        formState = formState.copy(date = value)
+    fun onDateSelected(date: String) {
+        formState = formState.copy(date = date)
     }
 
-    fun onDepartureTimeSelected(value: String) {
-        formState = formState.copy(departureTime = value)
-    }
-
-    fun onTypeSelected(value: String) {
-        formState = formState.copy(type = value)
+    fun onDepartureTimeSelected(time: String) {
+        formState = formState.copy(departureTime = time)
     }
 
     fun createRide() {
         viewModelScope.launch {
-            val validationError = validateForm()
 
-            if (validationError != null) {
-                uiState = CreateRideUiState.Error(validationError)
+            val error = validateForm()
+            if (error != null) {
+                uiState = CreateRideUiState.Error(error)
                 return@launch
             }
 
@@ -85,17 +123,21 @@ class CreateRideViewModel(private val rideRepository: RideRepository) : ViewMode
                     source = formState.source,
                     destination = formState.destination,
                     price = formState.price.toDouble(),
-                    date = formState.date,
                     departureTime = formState.departureTime,
-                    type = formState.type,
+                    date = formState.date,
                     driverId = 0,
-                    state = ""
+                    state = "",
+                    type = formState.type
                 )
             )
 
             uiState = result.fold(
                 onSuccess = { CreateRideUiState.Success },
-                onFailure = { CreateRideUiState.Error(it.message ?: "Error desconocido") }
+                onFailure = {
+                    CreateRideUiState.Error(
+                        it.message ?: "Error al crear el viaje"
+                    )
+                }
             )
         }
     }
@@ -104,12 +146,12 @@ class CreateRideViewModel(private val rideRepository: RideRepository) : ViewMode
         return when {
             formState.vehicleId.isBlank() -> "Selecciona un vehículo"
             formState.zoneId.isBlank() -> "Selecciona una zona"
+            formState.type.isBlank() -> "Selecciona un tipo"
             formState.source.isBlank() -> "Ingresa punto de salida"
             formState.destination.isBlank() -> "Ingresa destino"
             formState.price.isBlank() -> "Ingresa precio"
             formState.date.isBlank() -> "Selecciona fecha"
-            formState.departureTime.isBlank() -> "Selecciona una hora"
-            formState.type.isBlank() -> "Selecciona un tipo"
+            formState.departureTime.isBlank() -> "Selecciona hora"
             else -> null
         }
     }

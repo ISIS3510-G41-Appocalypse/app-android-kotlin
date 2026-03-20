@@ -6,6 +6,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import com.gn41.appandroidkotlin.presentation.viewmodels.CreateRideViewModel
 import com.gn41.appandroidkotlin.presentation.viewmodels.HomeViewModel
 import com.gn41.appandroidkotlin.presentation.viewmodels.HomeViewModelFactory
 import com.gn41.appandroidkotlin.presentation.viewmodels.WelcomeViewModel
@@ -17,7 +18,8 @@ import com.gn41.appandroidkotlin.presentation.views.WelcomeScreen
 fun AppNavigation(
     navController: NavHostController,
     welcomeViewModel: WelcomeViewModel,
-    homeViewModelFactory: HomeViewModelFactory
+    homeViewModelFactory: HomeViewModelFactory,
+    createRideViewModel: CreateRideViewModel
 ) {
     NavHost(
         navController = navController,
@@ -47,6 +49,7 @@ fun AppNavigation(
 
         composable("create_ride") {
             CreateRideScreen(
+                viewModel = createRideViewModel,
                 onBackClick = { navController.popBackStack() }
             )
         }

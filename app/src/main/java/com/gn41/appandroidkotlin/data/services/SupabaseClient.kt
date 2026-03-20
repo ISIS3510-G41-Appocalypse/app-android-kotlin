@@ -5,6 +5,8 @@ import com.gn41.appandroidkotlin.data.services.auth.AuthApi
 import com.gn41.appandroidkotlin.data.services.rides.RideApi
 import com.gn41.appandroidkotlin.data.services.userId.UserIdApi
 import com.gn41.appandroidkotlin.data.services.rides.RidesApi
+import com.gn41.appandroidkotlin.data.services.vehicles.VehicleApi
+import com.gn41.appandroidkotlin.data.services.zones.ZoneApi
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 
@@ -29,18 +31,18 @@ object SupabaseClient {
     }
 
     val rideApi: RideApi by lazy {
-        Retrofit.Builder()
-            .baseUrl(BASE_URL)
-            .addConverterFactory(GsonConverterFactory.create())
-            .build()
-            .create(RideApi::class.java)
+        retrofit.create(RideApi::class.java)
     }
 
     val userIdApi: UserIdApi by lazy {
-        Retrofit.Builder()
-            .baseUrl(BASE_URL)
-            .addConverterFactory(GsonConverterFactory.create())
-            .build()
-            .create(UserIdApi::class.java)
+        retrofit.create(UserIdApi::class.java)
+    }
+
+    val zoneApi: ZoneApi by lazy {
+        retrofit.create(ZoneApi::class.java)
+    }
+
+    val vehicleApi: VehicleApi by lazy {
+        retrofit.create(VehicleApi::class.java)
     }
 }
