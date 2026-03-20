@@ -4,6 +4,7 @@ import androidx.compose.runtime.Composable
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import com.gn41.appandroidkotlin.presentation.viewmodels.HomeViewModel
 import com.gn41.appandroidkotlin.presentation.viewmodels.WelcomeViewModel
 import com.gn41.appandroidkotlin.presentation.views.HomeScreen
 import com.gn41.appandroidkotlin.presentation.views.WelcomeScreen
@@ -12,7 +13,8 @@ import androidx.compose.runtime.LaunchedEffect
 @Composable
 fun AppNavigation(
     navController: NavHostController,
-    welcomeViewModel: WelcomeViewModel
+    welcomeViewModel: WelcomeViewModel,
+    homeViewModel: HomeViewModel
 ) {
     NavHost(
         navController = navController,
@@ -27,15 +29,11 @@ fun AppNavigation(
                     }
                 }
             }
-
-            WelcomeScreen(
-                viewModel = welcomeViewModel
-            )
+            WelcomeScreen(viewModel = welcomeViewModel)
         }
 
-
         composable("home") {
-            HomeScreen()
+            HomeScreen(viewModel = homeViewModel)
         }
     }
 }
