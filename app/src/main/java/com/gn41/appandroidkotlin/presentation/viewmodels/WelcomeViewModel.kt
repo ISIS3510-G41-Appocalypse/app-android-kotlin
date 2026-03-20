@@ -5,8 +5,11 @@ import androidx.lifecycle.ViewModel
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import com.gn41.appandroidkotlin.data.repositories.AuthRepository
+import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.launch
+import com.gn41.appandroidkotlin.data.local.SessionManager
 
-class WelcomeViewModel( private val authRepository: AuthRepository) : ViewModel() {
+class WelcomeViewModel( private val authRepository: AuthRepository,    private val sessionManager: SessionManager) : ViewModel() {
 
     //Para ayudarnnos a decidi si mostramos o on el card de login.
     var showLoginCard by mutableStateOf(value = false)
@@ -20,6 +23,21 @@ class WelcomeViewModel( private val authRepository: AuthRepository) : ViewModel(
         private set
     var isLoggedIn by mutableStateOf(value = false)
         private set
+
+    var sessionToken by mutableStateOf(value = "")
+        private set
+
+
+    init {
+        val savedToken = sessionManager.getToken()
+
+        if (savedToken.isNotEmpty()) {
+            sessionToken = savedToken
+            isLoggedIn = true
+        }
+    }
+
+
 
 
     //Metodos
@@ -43,19 +61,23 @@ class WelcomeViewModel( private val authRepository: AuthRepository) : ViewModel(
     //ESTA ES LA FUNCIÓN QUE EFECTIVAMENTE INTENTA HACER LOGIN (no abrir la tarjeta)
 
     fun onLoginSubmit() {
-        val loginResult = authRepository.login(email, password)
+        viewModelScope.launch {
+            val loginResult = authRepository.login(email, password)
 
-        if (loginResult) {
-            isLoggedIn = true
-            loginError = ""
-        } else {
-            isLoggedIn = false
-            loginError = "Correo o contraseña inválidos"
+            if (loginResult != null) {
+                sessionToken = loginResult
+                sessionManager.saveToken(loginResult)
+                isLoggedIn = true
+                loginError = ""
+            } else {
+                sessionToken = ""
+                isLoggedIn = false
+                loginError = "Correo o contraseña inválidos"
+            }
+
+            println("Token: $sessionToken")
         }
-
-        println("Login Result: $loginResult")
     }
-
 
 
 }

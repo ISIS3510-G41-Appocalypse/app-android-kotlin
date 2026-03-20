@@ -4,19 +4,15 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
 import com.gn41.appandroidkotlin.presentation.viewmodels.WelcomeViewModel
 import com.gn41.appandroidkotlin.ui.theme.AppAndroidKotlinTheme
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.gn41.appandroidkotlin.data.local.SessionManager
 import com.gn41.appandroidkotlin.data.repositories.AuthRepositoryImpl
-import com.gn41.appandroidkotlin.data.services.AuthService
+import com.gn41.appandroidkotlin.data.services.auth.AuthService
 import com.gn41.appandroidkotlin.presentation.viewmodels.WelcomeViewModelFactory
+import androidx.navigation.compose.rememberNavController
+import com.gn41.appandroidkotlin.presentation.navigation.AppNavigation
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -26,9 +22,15 @@ class MainActivity : ComponentActivity() {
             AppAndroidKotlinTheme {
                 val authService = AuthService()
                 val authRepository = AuthRepositoryImpl(authService)
-                val factory = WelcomeViewModelFactory(authRepository)
+                val sessionManager = SessionManager(this)
+                val factory = WelcomeViewModelFactory(authRepository,sessionManager)
                 val welcomeViewModel: WelcomeViewModel = viewModel(factory = factory)
-                WelcomeScreen(welcomeViewModel)
+
+                val navController = rememberNavController()
+                AppNavigation(
+                    navController = navController,
+                    welcomeViewModel = welcomeViewModel
+                )
 
             }
         }
