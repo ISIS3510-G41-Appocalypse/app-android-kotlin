@@ -19,9 +19,7 @@ class AuthService {
             request = loginRequest
         )
 
-        println("Response code: ${response.code()}")
         println("Response body: ${response.body()}")
-        println("Error body: ${response.errorBody()?.string()}")
 
         return if (response.isSuccessful && response.body() != null) { response.body()!!.access_token
         } else {null}

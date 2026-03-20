@@ -14,6 +14,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import com.gn41.appandroidkotlin.presentation.viewmodels.WelcomeViewModel
 import com.gn41.appandroidkotlin.ui.theme.AppAndroidKotlinTheme
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.gn41.appandroidkotlin.data.local.SessionManager
 import com.gn41.appandroidkotlin.data.repositories.AuthRepositoryImpl
 import com.gn41.appandroidkotlin.data.services.auth.AuthService
 import com.gn41.appandroidkotlin.presentation.viewmodels.WelcomeViewModelFactory
@@ -26,9 +27,16 @@ class MainActivity : ComponentActivity() {
             AppAndroidKotlinTheme {
                 val authService = AuthService()
                 val authRepository = AuthRepositoryImpl(authService)
-                val factory = WelcomeViewModelFactory(authRepository)
+                val sessionManager = SessionManager(this)
+                val factory = WelcomeViewModelFactory(authRepository,sessionManager)
                 val welcomeViewModel: WelcomeViewModel = viewModel(factory = factory)
-                WelcomeScreen(welcomeViewModel)
+
+
+                if (welcomeViewModel.isLoggedIn) {
+                    HomeScreen()
+                } else {
+                    WelcomeScreen(welcomeViewModel)
+                }
 
             }
         }

@@ -7,8 +7,9 @@ import androidx.compose.runtime.setValue
 import com.gn41.appandroidkotlin.data.repositories.AuthRepository
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.launch
+import com.gn41.appandroidkotlin.data.local.SessionManager
 
-class WelcomeViewModel( private val authRepository: AuthRepository) : ViewModel() {
+class WelcomeViewModel( private val authRepository: AuthRepository,    private val sessionManager: SessionManager) : ViewModel() {
 
     //Para ayudarnnos a decidi si mostramos o on el card de login.
     var showLoginCard by mutableStateOf(value = false)
@@ -26,6 +27,15 @@ class WelcomeViewModel( private val authRepository: AuthRepository) : ViewModel(
     var sessionToken by mutableStateOf(value = "")
         private set
 
+
+    init {
+        val savedToken = sessionManager.getToken()
+
+        if (savedToken.isNotEmpty()) {
+            sessionToken = savedToken
+            isLoggedIn = true
+        }
+    }
 
 
 
@@ -56,6 +66,7 @@ class WelcomeViewModel( private val authRepository: AuthRepository) : ViewModel(
 
             if (loginResult != null) {
                 sessionToken = loginResult
+                sessionManager.saveToken(loginResult)
                 isLoggedIn = true
                 loginError = ""
             } else {
