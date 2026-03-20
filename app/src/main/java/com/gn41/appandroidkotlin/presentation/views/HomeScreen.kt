@@ -14,14 +14,13 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 
 val darkBlue = Color(0xFF0B1E3B)      // background
 val cyanPrimary = Color(0xFF0FA3B1)   // secondary color
@@ -37,26 +36,27 @@ fun HomeScreen() {
             .padding(16.dp)
     ) {
 
+        // App name → titleLarge (Lexend Bold)
         Text(
             text = "HappyRide",
             color = Color.White,
-            fontSize = 20.sp,
-            fontWeight = FontWeight.Bold
+            style = MaterialTheme.typography.titleLarge
         )
 
         Spacer(modifier = Modifier.height(16.dp))
 
+        // Section header → titleLarge (Lexend Bold)
         Text(
             text = "Oferta de viajes",
             color = Color.White,
-            fontSize = 22.sp,
-            fontWeight = FontWeight.Bold
+            style = MaterialTheme.typography.titleLarge
         )
 
+        // Subtitle description → bodyMedium (Space Grotesk Normal)
         Text(
             text = "Encuentra el viaje perfecto para tu trayecto.",
             color = Color.LightGray,
-            fontSize = 14.sp
+            style = MaterialTheme.typography.bodyMedium
         )
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -88,9 +88,10 @@ fun FilterCard() {
             .padding(16.dp)
     ) {
 
+        // Filter label → titleMedium (Lexend Bold)
         Text(
             text = "Zona",
-            fontWeight = FontWeight.Medium
+            style = MaterialTheme.typography.titleMedium
         )
 
         Spacer(modifier = Modifier.height(4.dp))
@@ -101,49 +102,36 @@ fun FilterCard() {
                 .background(Color.LightGray, RoundedCornerShape(8.dp))
                 .padding(8.dp)
         ) {
-            Text(text = "Colina")
+            // Option value → bodyMedium (Space Grotesk Normal)
+            Text(text = "Colina", style = MaterialTheme.typography.bodyMedium)
         }
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        Row(
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Column(
-                modifier = Modifier.weight(1f)
-            ) {
-                Text(
-                    text = "Día",
-                    fontWeight = FontWeight.Medium
-                )
-
+        Row(modifier = Modifier.fillMaxWidth()) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(text = "Día", style = MaterialTheme.typography.titleMedium)
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
                         .background(Color.LightGray, RoundedCornerShape(8.dp))
                         .padding(8.dp)
                 ) {
-                    Text(text = "Hoy")
+                    Text(text = "Hoy", style = MaterialTheme.typography.bodyMedium)
                 }
             }
 
             Spacer(modifier = Modifier.width(8.dp))
 
-            Column(
-                modifier = Modifier.weight(1f)
-            ) {
-                Text(
-                    text = "Tipo de viaje",
-                    fontWeight = FontWeight.Medium
-                )
-
+            Column(modifier = Modifier.weight(1f)) {
+                Text(text = "Tipo de viaje", style = MaterialTheme.typography.titleMedium)
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
                         .background(Color.LightGray, RoundedCornerShape(8.dp))
                         .padding(8.dp)
                 ) {
-                    Text(text = "Llegada a la un")
+                    Text(text = "Llegada a la un", style = MaterialTheme.typography.bodyMedium)
                 }
             }
         }
@@ -163,22 +151,24 @@ fun RideCard(name: String, price: String) {
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
+            // Driver name → titleMedium (Lexend Bold)
             Text(
                 text = name,
-                fontWeight = FontWeight.Bold
+                style = MaterialTheme.typography.titleMedium
             )
-
+            // Price → titleMedium (Lexend Bold) with accent color
             Text(
                 text = price,
                 color = orangePrimary,
-                fontWeight = FontWeight.Bold
+                style = MaterialTheme.typography.titleMedium
             )
         }
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        Text(text = "CC Parque Colina")
-        Text(text = "Universidad de los Andes")
+        // Route details → bodyMedium (Space Grotesk Normal)
+        Text(text = "CC Parque Colina",           style = MaterialTheme.typography.bodyMedium)
+        Text(text = "Universidad de los Andes",   style = MaterialTheme.typography.bodyMedium)
 
         Spacer(modifier = Modifier.height(8.dp))
 
@@ -187,10 +177,7 @@ fun RideCard(name: String, price: String) {
             colors = ButtonDefaults.buttonColors(containerColor = orangePrimary),
             modifier = Modifier.align(Alignment.End)
         ) {
-            Text(
-                text = "Reservar",
-                color = Color.White
-            )
+            Text(text = "Reservar", color = Color.White, style = MaterialTheme.typography.bodyMedium)
         }
     }
 }

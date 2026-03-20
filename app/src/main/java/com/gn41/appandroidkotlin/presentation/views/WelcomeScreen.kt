@@ -61,7 +61,7 @@ fun WelcomeHeader(){
     Text(text = "Happy Ride", style = MaterialTheme.typography.titleLarge , color = MaterialTheme.colorScheme.onBackground)
 
     Spacer(modifier = Modifier.height(4.dp))
-    Text(text = "Universidad de los Andes", style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.primary)
+    Text(text = "Universidad de los Andes", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.primary)
 
     }
 }
@@ -75,11 +75,11 @@ fun WelcomeMessage(){
         Text(text = "Uniandes", style = MaterialTheme.typography.titleLarge, textAlign = TextAlign.Center, color = MaterialTheme.colorScheme.primary)
         Spacer(modifier = Modifier.height(height = 16.dp))
 
-        Text(text = "Comparte wheels de forma simple y sin complicaciones.", style = MaterialTheme.typography.bodyLarge, textAlign = TextAlign.Center, color = MaterialTheme.colorScheme.onSurface)
+        Text(text = "Comparte wheels de forma simple y sin complicaciones.", style = MaterialTheme.typography.bodyMedium, textAlign = TextAlign.Center, color = MaterialTheme.colorScheme.onSurface)
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        Text(text = "Your ride. No stress.", style = MaterialTheme.typography.bodyLarge, textAlign = TextAlign.Center,color = MaterialTheme.colorScheme.onSurface)
+        Text(text = "Your ride. No stress.", style = MaterialTheme.typography.bodyMedium, textAlign = TextAlign.Center,color = MaterialTheme.colorScheme.onSurface)
 
 
 
