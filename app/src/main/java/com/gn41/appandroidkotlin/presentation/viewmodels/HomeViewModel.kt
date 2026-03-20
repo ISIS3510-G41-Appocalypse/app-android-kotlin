@@ -20,6 +20,7 @@ data class HomeUiState(
     val isLoading: Boolean = false,
     val rides: List<RideItemUiModel> = emptyList(),
     val errorMessage: String = "",
+    val reservationMessage: String = "",
     val selectedZone: String = "Todos",
     val zoneOptions: List<String> = listOf("Todos"),
     val selectedTripType: String = "Todos",
@@ -76,47 +77,76 @@ class HomeViewModel(
         val token = sessionManager.getToken()
 
         if (token.isEmpty()) {
-            uiState = uiState.copy(errorMessage = "No hay una sesion activa. Inicia sesion nuevamente.")
+            uiState = uiState.copy(reservationMessage = "No hay una sesion activa. Inicia sesion nuevamente.")
             return
         }
 
         val repository = reservationsRepository
         if (repository == null) {
-            uiState = uiState.copy(errorMessage = "Reservas no disponibles por ahora.")
+            uiState = uiState.copy(reservationMessage = "Reservas no disponibles por ahora.")
             return
         }
 
-        val userId = extractUserIdFromToken(token)
-        if (userId.isNullOrEmpty()) {
-            uiState = uiState.copy(errorMessage = "No se pudo validar el usuario.")
+        val authId = extractAuthIdFromToken(token)
+        if (authId.isNullOrEmpty()) {
+            uiState = uiState.copy(reservationMessage = "No se pudo validar el usuario.")
             return
         }
+
+        val ride = allRides.find { it.id == rideId }
+        val meetingPoint = ride?.source ?: ""
+        val destinationPoint = ride?.destination ?: ""
 
         viewModelScope.launch {
             try {
-                val reservations = repository.getReservations(userId, token).orEmpty()
-                val hasActiveReservation = reservations.any {
-                    it.state == "PENDIENTE" || it.state == "EN_PROGRESO"
+                val user = repository.getUserByAuthId(authId, token)
+                if (user == null) {
+                    uiState = uiState.copy(reservationMessage = "No se pudo encontrar el usuario.")
+                    return@launch
                 }
 
-                if (hasActiveReservation) {
+                val rider = repository.getRiderByUserId(user.id, token)
+                if (rider == null) {
+                    uiState = uiState.copy(reservationMessage = "No se pudo encontrar el rider.")
+                    return@launch
+                }
+
+                val reservations = repository.getReservations(rider.id, token).orEmpty()
+                val hasActive = reservations.any {
+                    it.state == "PENDIENTE" ||
+                        it.state == "ACEPTADA" ||
+                        it.state == "EN_CURSO"
+                }
+
+                if (hasActive) {
                     uiState = uiState.copy(
-                        errorMessage = "Ya tienes una reserva activa (pendiente o en progreso)."
+                        reservationMessage = "Ya tienes una reserva activa. Cancela la actual antes de reservar otro viaje."
                     )
                     return@launch
                 }
 
-                val created = repository.createReservation(rideId, userId, token)
+                val created = repository.createReservation(
+                    rideId = rideId,
+                    riderId = rider.id,
+                    meetingPoint = meetingPoint,
+                    destinationPoint = destinationPoint,
+                    token = token
+                )
+
                 uiState = if (created) {
-                    uiState.copy(errorMessage = "Reserva creada correctamente.")
+                    uiState.copy(reservationMessage = "Reserva creada correctamente.")
                 } else {
-                    uiState.copy(errorMessage = "No se pudo crear la reserva. Intenta de nuevo.")
+                    uiState.copy(reservationMessage = "No se pudo crear la reserva. Intenta de nuevo.")
                 }
             } catch (e: Exception) {
                 Log.e("HomeViewModel", "Exception creating reservation", e)
-                uiState = uiState.copy(errorMessage = "No se pudo crear la reserva. Intenta de nuevo.")
+                uiState = uiState.copy(reservationMessage = "No se pudo crear la reserva. Intenta de nuevo.")
             }
         }
+    }
+
+    fun clearReservationMessage() {
+        uiState = uiState.copy(reservationMessage = "")
     }
 
     fun clearFilters() {
@@ -209,7 +239,7 @@ class HomeViewModel(
         return rideHour == slotHour
     }
 
-    private fun extractUserIdFromToken(token: String): String? {
+    private fun extractAuthIdFromToken(token: String): String? {
         return try {
             val parts = token.split('.')
             if (parts.size < 2) return null
@@ -219,7 +249,7 @@ class HomeViewModel(
 
             val subRegex = "\"sub\"\\s*:\\s*\"([^\"]+)\"".toRegex()
             subRegex.find(payload)?.groupValues?.get(1)
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             null
         }
     }

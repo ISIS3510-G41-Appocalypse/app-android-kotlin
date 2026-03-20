@@ -8,8 +8,10 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.rememberNavController
 import com.gn41.appandroidkotlin.data.local.SessionManager
 import com.gn41.appandroidkotlin.data.repositories.AuthRepositoryImpl
+import com.gn41.appandroidkotlin.data.repositories.ReservationsRepositoryImpl
 import com.gn41.appandroidkotlin.data.repositories.RidesRepositoryImpl
 import com.gn41.appandroidkotlin.data.services.auth.AuthService
+import com.gn41.appandroidkotlin.data.services.reservations.ReservationsService
 import com.gn41.appandroidkotlin.data.services.rides.RidesService
 import com.gn41.appandroidkotlin.presentation.navigation.AppNavigation
 import com.gn41.appandroidkotlin.presentation.viewmodels.HomeViewModelFactory
@@ -33,7 +35,11 @@ class MainActivity : ComponentActivity() {
 
                 val ridesService = RidesService()
                 val ridesRepository = RidesRepositoryImpl(ridesService)
-                val homeFactory = HomeViewModelFactory(ridesRepository, sessionManager)
+
+                val reservationsService = ReservationsService()
+                val reservationsRepository = ReservationsRepositoryImpl(reservationsService)
+
+                val homeFactory = HomeViewModelFactory(ridesRepository, sessionManager, reservationsRepository)
 
                 val navController = rememberNavController()
 

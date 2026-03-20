@@ -22,6 +22,7 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -33,6 +34,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.gn41.appandroidkotlin.presentation.components.RideItemCard
 import com.gn41.appandroidkotlin.presentation.viewmodels.HomeViewModel
+import kotlinx.coroutines.delay
 
 val darkBlue = Color(0xFF0B1E3B)
 val whiteCard = Color(0xFFF5F7FA)
@@ -78,6 +80,28 @@ fun HomeScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
+            if (state.reservationMessage.isNotEmpty()) {
+                LaunchedEffect(state.reservationMessage) {
+                    delay(3000)
+                    viewModel.clearReservationMessage()
+                }
+
+                val isSuccess = state.reservationMessage.contains("correctamente")
+                Text(
+                    text = state.reservationMessage,
+                    color = if (isSuccess) Color(0xFF0D9488) else Color(0xFFB45309),
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(
+                            if (isSuccess) Color(0xFFE6FFFA) else Color(0xFFFEF3C7),
+                            RoundedCornerShape(8.dp)
+                        )
+                        .padding(horizontal = 12.dp, vertical = 8.dp)
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+            }
+
             when {
                 state.isLoading -> {
                     Box(
@@ -121,7 +145,10 @@ fun HomeScreen(
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         items(state.rides) { ride ->
-                            RideItemCard(ride = ride)
+                            RideItemCard(
+                                ride = ride,
+                                onReserveClick = { viewModel.onReserveClicked(ride.id) }
+                            )
                         }
                     }
                 }
