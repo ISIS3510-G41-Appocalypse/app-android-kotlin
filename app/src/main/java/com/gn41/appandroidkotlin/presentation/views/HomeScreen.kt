@@ -44,7 +44,7 @@ fun HomeScreen(
     onCreateRideClick: () -> Unit
 ) {
     val state = viewModel.uiState
-    var selectedBottomTab by remember { mutableStateOf("Home") }
+    var selectedBottomTab by remember { mutableStateOf("Inicio") }
 
     Box(
         modifier = Modifier
@@ -61,12 +61,15 @@ fun HomeScreen(
             Spacer(modifier = Modifier.height(16.dp))
 
             FilterCard(
+                selectedZone = state.selectedZone,
+                zoneOptions = state.zoneOptions,
                 selectedDay = state.selectedDay,
                 selectedTripType = state.selectedTripType,
                 selectedDepartureTime = state.selectedDepartureTime,
                 departureOptions = state.departureTimeOptions,
                 hasActiveFilters = state.hasActiveFilters,
                 activeFilterCount = state.activeFilterCount,
+                onZoneChange = viewModel::onZoneChange,
                 onDayChange = viewModel::onDayChange,
                 onTripTypeChange = viewModel::onTripTypeChange,
                 onDepartureTimeChange = viewModel::onDepartureTimeChange,
@@ -89,7 +92,7 @@ fun HomeScreen(
                             CircularProgressIndicator(color = Color.White)
                             Spacer(modifier = Modifier.height(8.dp))
                             Text(
-                                text = "Loading rides...",
+                                text = "Cargando viajes...",
                                 color = Color.LightGray,
                                 style = MaterialTheme.typography.bodyMedium
                             )
@@ -132,9 +135,9 @@ fun HomeScreen(
                     ) {
                         Text(
                             text = if (state.hasActiveFilters) {
-                                "No rides match the selected filters."
+                                "No hay viajes para los filtros seleccionados."
                             } else {
-                                "No rides available right now."
+                                "No hay viajes disponibles en este momento."
                             },
                             color = Color.LightGray,
                             style = MaterialTheme.typography.bodyMedium
@@ -239,19 +242,22 @@ fun HomeHeader() {
 
 @Composable
 fun FilterCard(
+    selectedZone: String,
+    zoneOptions: List<String>,
     selectedDay: String,
     selectedTripType: String,
     selectedDepartureTime: String,
     departureOptions: List<String>,
     hasActiveFilters: Boolean,
     activeFilterCount: Int,
+    onZoneChange: (String) -> Unit,
     onDayChange: (String) -> Unit,
     onTripTypeChange: (String) -> Unit,
     onDepartureTimeChange: (String) -> Unit,
     onClearFilters: () -> Unit
 ) {
-    val dayOptions = listOf("All", "Today")
-    val tripTypeOptions = listOf("All", "To university", "From university")
+    val dayOptions = listOf("Todos", "Hoy")
+    val tripTypeOptions = listOf("Todos", "Hacia la universidad", "Desde la universidad")
 
     Column(
         modifier = Modifier
@@ -259,24 +265,12 @@ fun FilterCard(
             .background(whiteCard, shape = RoundedCornerShape(16.dp))
             .padding(16.dp)
     ) {
-        Text(
-            text = "Zone",
-            style = MaterialTheme.typography.titleMedium
+        FilterDropdownField(
+            label = "Zona",
+            selectedValue = selectedZone,
+            options = zoneOptions,
+            onValueSelected = onZoneChange
         )
-
-        Spacer(modifier = Modifier.height(4.dp))
-
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(Color(0xFFE5E7EB), RoundedCornerShape(8.dp))
-                .padding(8.dp)
-        ) {
-            Text(
-                text = "Colina",
-                style = MaterialTheme.typography.bodyMedium
-            )
-        }
 
         Spacer(modifier = Modifier.height(8.dp))
 
@@ -285,7 +279,7 @@ fun FilterCard(
                 modifier = Modifier.weight(1f)
             ) {
                 FilterDropdownField(
-                    label = "Day",
+                    label = "Dia",
                     selectedValue = selectedDay,
                     options = dayOptions,
                     onValueSelected = onDayChange
@@ -298,7 +292,7 @@ fun FilterCard(
                 modifier = Modifier.weight(1f)
             ) {
                 FilterDropdownField(
-                    label = "Trip type",
+                    label = "Tipo de viaje",
                     selectedValue = selectedTripType,
                     options = tripTypeOptions,
                     onValueSelected = onTripTypeChange
@@ -309,7 +303,7 @@ fun FilterCard(
         Spacer(modifier = Modifier.height(8.dp))
 
         FilterDropdownField(
-            label = "Departure time",
+            label = "Hora de salida",
             selectedValue = selectedDepartureTime,
             options = departureOptions,
             onValueSelected = onDepartureTimeChange
@@ -323,14 +317,14 @@ fun FilterCard(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = if (hasActiveFilters) "$activeFilterCount filters applied" else "No filters applied",
+                text = if (hasActiveFilters) "$activeFilterCount filtros aplicados" else "Sin filtros aplicados",
                 color = if (hasActiveFilters) Color(0xFF0D9488) else Color.Gray,
                 style = MaterialTheme.typography.bodyMedium
             )
 
             if (hasActiveFilters) {
                 Text(
-                    text = "Clear",
+                    text = "Limpiar",
                     color = Color(0xFF0D9488),
                     style = MaterialTheme.typography.bodyMedium,
                     modifier = Modifier.clickable { onClearFilters() }
@@ -348,7 +342,7 @@ fun FilterDropdownField(
     onValueSelected: (String) -> Unit
 ) {
     var expanded by remember { mutableStateOf(false) }
-    val isActive = selectedValue != "All"
+    val isActive = selectedValue != "Todos" && selectedValue != "Todas"
     val backgroundColor = if (isActive) Color(0xFFDDEAFE) else Color(0xFFE5E7EB)
     val borderColor = if (isActive) Color(0xFF93C5FD) else Color.Transparent
 
@@ -400,7 +394,7 @@ fun BottomNavigationBar(
     selectedTab: String,
     onTabClick: (String) -> Unit
 ) {
-    val items = listOf("Home", "Viajes")
+    val items = listOf("Inicio", "Viajes")
 
     Row(
         modifier = Modifier
