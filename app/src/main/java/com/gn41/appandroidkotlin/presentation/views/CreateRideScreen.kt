@@ -2,9 +2,21 @@ package com.gn41.appandroidkotlin.presentation.views
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import com.gn41.appandroidkotlin.presentation.viewmodels.CreateRideUiState
 import com.gn41.appandroidkotlin.presentation.viewmodels.CreateRideViewModel
 
 @Composable
@@ -38,23 +50,23 @@ fun CreateRideScreen(viewModel: CreateRideViewModel) {
 
         // 🟢 Origen
         OutlinedTextField(
-            value = formState.startLocation,
-            onValueChange = viewModel::onStartLocationChanged,
+            value = formState.source,
+            onValueChange = viewModel::onSourceChanged,
             label = { Text("Punto de salida") },
             modifier = Modifier.fillMaxWidth()
         )
 
         // 🔴 Destino
         OutlinedTextField(
-            value = formState.endLocation,
-            onValueChange = viewModel::onEndLocationChanged,
+            value = formState.destination,
+            onValueChange = viewModel::onDestinationChanged,
             label = { Text("Destino") },
             modifier = Modifier.fillMaxWidth()
         )
 
         // 💰 Precio
         OutlinedTextField(
-            value = formState.pricePerSeat,
+            value = formState.price,
             onValueChange = viewModel::onPriceChanged,
             label = { Text("Precio por asiento") },
             modifier = Modifier.fillMaxWidth()
@@ -62,8 +74,8 @@ fun CreateRideScreen(viewModel: CreateRideViewModel) {
 
         // 📅 Fecha/Hora
         OutlinedTextField(
-            value = formState.departureDateTime,
-            onValueChange = viewModel::onDateTimeSelected,
+            value = formState.departureTime,
+            onValueChange = viewModel::onDepartureTimeSelected,
             label = { Text("Fecha y hora") },
             modifier = Modifier.fillMaxWidth()
         )
