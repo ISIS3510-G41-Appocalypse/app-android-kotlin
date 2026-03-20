@@ -27,6 +27,9 @@ class WelcomeViewModel( private val authRepository: AuthRepository,    private v
     var sessionToken by mutableStateOf(value = "")
         private set
 
+    var sessionUserId by mutableStateOf(value = "")
+        private set
+
 
     init {
         val savedToken = sessionManager.getToken()
@@ -65,8 +68,13 @@ class WelcomeViewModel( private val authRepository: AuthRepository,    private v
             val loginResult = authRepository.login(email, password)
 
             if (loginResult != null) {
-                sessionToken = loginResult
-                sessionManager.saveToken(loginResult)
+                sessionToken = loginResult.access_token
+                sessionManager.saveToken(loginResult.access_token)
+
+                sessionUserId = loginResult.user.id
+                sessionManager.saveUserId(loginResult.user.id)
+
+
                 isLoggedIn = true
                 loginError = ""
             } else {
