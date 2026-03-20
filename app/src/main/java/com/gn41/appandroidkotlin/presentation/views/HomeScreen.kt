@@ -1,6 +1,7 @@
 package com.gn41.appandroidkotlin.presentation.views
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -11,86 +12,245 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import com.gn41.appandroidkotlin.presentation.components.RideItemCard
+import com.gn41.appandroidkotlin.presentation.viewmodels.HomeViewModel
 
-val darkBlue = Color(0xFF0B1E3B)      // background
-val cyanPrimary = Color(0xFF0FA3B1)   // secondary color
-val orangePrimary = Color(0xFFE76F00) // reserve button
-val whiteCard = Color(0xFFF5F7FA)     // card background
+val darkBlue = Color(0xFF0B1E3B)
+val whiteCard = Color(0xFFF5F7FA)
+val selectedBottomItemColor = Color(0xFF0D9488)
 
 @Composable
-fun HomeScreen() {
-    Column(
+fun HomeScreen(
+    viewModel: HomeViewModel,
+    onCreateRideClick: () -> Unit
+) {
+    val state = viewModel.uiState
+    var selectedBottomTab by remember { mutableStateOf("Home") }
+
+    Box(
         modifier = Modifier
             .fillMaxSize()
             .background(darkBlue)
-            .padding(16.dp)
     ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp)
+        ) {
+            HomeHeader()
 
-        Text(
-            text = "HappyRide",
-            color = Color.White,
-            fontSize = 20.sp,
-            fontWeight = FontWeight.Bold
-        )
+            Spacer(modifier = Modifier.height(16.dp))
 
-        Spacer(modifier = Modifier.height(16.dp))
+            FilterCard(
+                selectedDay = state.selectedDay,
+                selectedTripType = state.selectedTripType,
+                selectedDepartureTime = state.selectedDepartureTime,
+                departureOptions = state.departureTimeOptions,
+                onDayChange = viewModel::onDayChange,
+                onTripTypeChange = viewModel::onTripTypeChange,
+                onDepartureTimeChange = viewModel::onDepartureTimeChange
+            )
 
-        Text(
-            text = "Oferta de viajes",
-            color = Color.White,
-            fontSize = 22.sp,
-            fontWeight = FontWeight.Bold
-        )
+            Spacer(modifier = Modifier.height(16.dp))
 
-        Text(
-            text = "Encuentra el viaje perfecto para tu trayecto.",
-            color = Color.LightGray,
-            fontSize = 14.sp
-        )
+            when {
+                state.isLoading -> {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .weight(1f),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            CircularProgressIndicator(color = Color.White)
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = "Loading rides...",
+                                color = Color.LightGray,
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                        }
+                    }
+                }
 
-        Spacer(modifier = Modifier.height(16.dp))
+                state.errorMessage.isNotEmpty() -> {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .weight(1f),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = state.errorMessage,
+                            color = Color.Red,
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    }
+                }
 
-        FilterCard()
+                state.rides.isNotEmpty() -> {
+                    LazyColumn(
+                        modifier = Modifier.weight(1f),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        items(state.rides) { ride ->
+                            RideItemCard(ride = ride)
+                        }
+                    }
+                }
 
-        Spacer(modifier = Modifier.height(16.dp))
+                else -> {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .weight(1f),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "No rides available right now.",
+                            color = Color.LightGray,
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    }
+                }
+            }
 
-        RideCard(
-            name = "Carlos Méndez",
-            price = "$4.500"
-        )
+            Spacer(modifier = Modifier.height(12.dp))
 
-        Spacer(modifier = Modifier.height(12.dp))
+            BottomNavigationBar(
+                selectedTab = selectedBottomTab,
+                onTabClick = { selectedBottomTab = it }
+            )
+        }
 
-        RideCard(
-            name = "Ana María Silva",
-            price = "$5.000"
+        ExpandableCreateRideButton(
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(end = 24.dp, bottom = 84.dp),
+            onCreateRideClick = onCreateRideClick
         )
     }
 }
 
 @Composable
-fun FilterCard() {
+fun ExpandableCreateRideButton(
+    modifier: Modifier = Modifier,
+    onCreateRideClick: () -> Unit
+) {
+    var expanded by remember { mutableStateOf(false) }
+
+    Column(
+        modifier = modifier,
+        horizontalAlignment = Alignment.End
+    ) {
+        if (expanded) {
+            Box(
+                modifier = Modifier
+                    .background(Color(0xFF1F2937), RoundedCornerShape(12.dp))
+                    .clickable {
+                        expanded = false
+                        onCreateRideClick()
+                    }
+                    .padding(horizontal = 12.dp, vertical = 8.dp)
+            ) {
+                Text(
+                    text = "Crear Viaje",
+                    color = Color.White,
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+        }
+
+        Box(
+            modifier = Modifier
+                .background(Color(0xFF1F2937), RoundedCornerShape(10.dp))
+                .clickable { expanded = !expanded }
+                .padding(horizontal = 10.dp, vertical = 6.dp)
+        ) {
+            Text(
+                text = "+",
+                color = Color.White,
+                style = MaterialTheme.typography.titleMedium
+            )
+        }
+    }
+}
+
+@Composable
+fun HomeHeader() {
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(
+            text = "HappyRide",
+            color = Color.White,
+            style = MaterialTheme.typography.titleLarge,
+            textAlign = TextAlign.Center
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Text(
+            text = "Oferta de viajes",
+            color = Color.White,
+            style = MaterialTheme.typography.titleLarge,
+            textAlign = TextAlign.Center
+        )
+
+        Text(
+            text = "Encuentra el viaje perfecto para tu trayecto.",
+            color = Color.LightGray,
+            style = MaterialTheme.typography.bodyMedium,
+            textAlign = TextAlign.Center
+        )
+    }
+}
+
+@Composable
+fun FilterCard(
+    selectedDay: String,
+    selectedTripType: String,
+    selectedDepartureTime: String,
+    departureOptions: List<String>,
+    onDayChange: (String) -> Unit,
+    onTripTypeChange: (String) -> Unit,
+    onDepartureTimeChange: (String) -> Unit
+) {
+    val dayOptions = listOf("All", "Today")
+    val tripTypeOptions = listOf("All", "To university", "From university")
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .background(whiteCard, shape = RoundedCornerShape(16.dp))
             .padding(16.dp)
     ) {
-
         Text(
-            text = "Zona",
-            fontWeight = FontWeight.Medium
+            text = "Zone",
+            style = MaterialTheme.typography.titleMedium
         )
 
         Spacer(modifier = Modifier.height(4.dp))
@@ -98,33 +258,27 @@ fun FilterCard() {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(Color.LightGray, RoundedCornerShape(8.dp))
+                .background(Color(0xFFE5E7EB), RoundedCornerShape(8.dp))
                 .padding(8.dp)
         ) {
-            Text(text = "Colina")
+            Text(
+                text = "Colina",
+                style = MaterialTheme.typography.bodyMedium
+            )
         }
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        Row(
-            modifier = Modifier.fillMaxWidth()
-        ) {
+        Row(modifier = Modifier.fillMaxWidth()) {
             Column(
                 modifier = Modifier.weight(1f)
             ) {
-                Text(
-                    text = "Día",
-                    fontWeight = FontWeight.Medium
+                FilterDropdownField(
+                    label = "Day",
+                    selectedValue = selectedDay,
+                    options = dayOptions,
+                    onValueSelected = onDayChange
                 )
-
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(Color.LightGray, RoundedCornerShape(8.dp))
-                        .padding(8.dp)
-                ) {
-                    Text(text = "Hoy")
-                }
             }
 
             Spacer(modifier = Modifier.width(8.dp))
@@ -132,64 +286,101 @@ fun FilterCard() {
             Column(
                 modifier = Modifier.weight(1f)
             ) {
-                Text(
-                    text = "Tipo de viaje",
-                    fontWeight = FontWeight.Medium
+                FilterDropdownField(
+                    label = "Trip type",
+                    selectedValue = selectedTripType,
+                    options = tripTypeOptions,
+                    onValueSelected = onTripTypeChange
                 )
+            }
+        }
 
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(Color.LightGray, RoundedCornerShape(8.dp))
-                        .padding(8.dp)
-                ) {
-                    Text(text = "Llegada a la un")
-                }
+        Spacer(modifier = Modifier.height(8.dp))
+
+        FilterDropdownField(
+            label = "Departure time",
+            selectedValue = selectedDepartureTime,
+            options = departureOptions,
+            onValueSelected = onDepartureTimeChange
+        )
+    }
+}
+
+@Composable
+fun FilterDropdownField(
+    label: String,
+    selectedValue: String,
+    options: List<String>,
+    onValueSelected: (String) -> Unit
+) {
+    var expanded by remember { mutableStateOf(false) }
+
+    Text(
+        text = label,
+        style = MaterialTheme.typography.titleMedium
+    )
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(Color(0xFFE5E7EB), RoundedCornerShape(8.dp))
+            .clickable { expanded = true }
+            .padding(horizontal = 10.dp, vertical = 10.dp)
+    ) {
+        Text(
+            text = selectedValue,
+            style = MaterialTheme.typography.bodyMedium
+        )
+
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false }
+        ) {
+            options.forEach { option ->
+                DropdownMenuItem(
+                    text = {
+                        Text(
+                            text = option,
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    },
+                    onClick = {
+                        onValueSelected(option)
+                        expanded = false
+                    }
+                )
             }
         }
     }
 }
 
 @Composable
-fun RideCard(name: String, price: String) {
-    Column(
+fun BottomNavigationBar(
+    selectedTab: String,
+    onTabClick: (String) -> Unit
+) {
+    val items = listOf("Home", "Viajes")
+
+    Row(
         modifier = Modifier
             .fillMaxWidth()
             .background(whiteCard, RoundedCornerShape(16.dp))
-            .padding(16.dp)
+            .padding(vertical = 10.dp, horizontal = 8.dp),
+        horizontalArrangement = Arrangement.spacedBy(24.dp, Alignment.CenterHorizontally)
     ) {
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
+        items.forEach { item ->
+            val isSelected = item == selectedTab
             Text(
-                text = name,
-                fontWeight = FontWeight.Bold
-            )
-
-            Text(
-                text = price,
-                color = orangePrimary,
-                fontWeight = FontWeight.Bold
-            )
-        }
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        Text(text = "CC Parque Colina")
-        Text(text = "Universidad de los Andes")
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        Button(
-            onClick = {},
-            colors = ButtonDefaults.buttonColors(containerColor = orangePrimary),
-            modifier = Modifier.align(Alignment.End)
-        ) {
-            Text(
-                text = "Reservar",
-                color = Color.White
+                text = item,
+                color = if (isSelected) selectedBottomItemColor else Color.Gray,
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier
+                    .clickable { onTabClick(item) }
+                    .background(
+                        if (isSelected) Color(0xFFE6FFFA) else Color.Transparent,
+                        RoundedCornerShape(10.dp)
+                    )
+                    .padding(horizontal = 8.dp, vertical = 6.dp)
             )
         }
     }
