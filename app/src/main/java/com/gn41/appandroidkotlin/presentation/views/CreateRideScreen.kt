@@ -56,6 +56,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.TextRange
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
@@ -273,9 +275,9 @@ fun CreateRideScreen(
 
                         SectionLabel("INICIO")
                         CustomOutlinedField(
-                            value = TextFieldValue(formState.source),
+                            value = formState.source,
                             onValueChange = {
-                                viewModel.onSourceChanged(it.text)
+                                viewModel.onSourceChanged(it)
                             },
                             placeholder = "Punto de salida",
                             leadingIcon = {
@@ -287,9 +289,9 @@ fun CreateRideScreen(
 
                         SectionLabel("DESTINO")
                         CustomOutlinedField(
-                            value = TextFieldValue(formState.destination),
+                            value = formState.destination,
                             onValueChange = {
-                                viewModel.onDestinationChanged(it.text)
+                                viewModel.onDestinationChanged(it)
                             },
                             placeholder = "Destino final",
                             leadingIcon = {
@@ -301,9 +303,9 @@ fun CreateRideScreen(
 
                         SectionLabel("PRECIO")
                         CustomOutlinedField(
-                            value = TextFieldValue(formState.price),
+                            value = formState.price,
                             onValueChange = {
-                                viewModel.onPriceChanged(it.text)
+                                viewModel.onPriceChanged(it)
                             },
                             placeholder = "Precio por pasajero",
                             leadingIcon = {
@@ -532,8 +534,8 @@ private fun SmallSelectionField(
 
 @Composable
 private fun CustomOutlinedField(
-    value: TextFieldValue,
-    onValueChange: (TextFieldValue) -> Unit,
+    value: String,
+    onValueChange: (String) -> Unit,
     placeholder: String,
     leadingIcon: @Composable () -> Unit
 ) {
