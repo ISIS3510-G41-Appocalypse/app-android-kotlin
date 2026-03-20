@@ -12,25 +12,39 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
 
 private val DarkColorScheme = darkColorScheme(
-    primary = Purple80,
-    secondary = PurpleGrey80,
-    tertiary = Pink80
-)
+    primary = AutumnEmber,
+    secondary = DarkCyan,
+    tertiary = CoolSteel,
+    background = PrussianBlue,
+    surface = PrussianBlue,
 
+    onPrimary = BrightSnow,
+    onSecondary = BrightSnow,
+    onTertiary = BrightSnow,
+    onBackground = BrightSnow,
+    onSurface = CoolSteel
+)
 private val LightColorScheme = lightColorScheme(
-    primary = Purple40,
-    secondary = PurpleGrey40,
-    tertiary = Pink40
+    primary = AutumnEmber,
+    secondary = DarkCyan,
+    tertiary = CoolSteel,
+    background = BrightSnow,
+    surface = BrightSnow,
+    onPrimary = BrightSnow,
+    onSecondary = BrightSnow,
+    onTertiary = BrightSnow,
+    onBackground = PrussianBlue,
+    onSurface = PrussianBlue
 
     /* Other default colors to override
-    background = Color(0xFFFFFBFE),
-    surface = Color(0xFFFFFBFE),
-    onPrimary = Color.White,
-    onSecondary = Color.White,
-    onTertiary = Color.White,
-    onBackground = Color(0xFF1C1B1F),
-    onSurface = Color(0xFF1C1B1F),
-    */
+background = Color(0xFFFFFBFE),
+surface = Color(0xFFFFFBFE),
+onPrimary = Color.White,
+onSecondary = Color.White,
+onTertiary = Color.White,
+onBackground = Color(0xFF1C1B1F),
+onSurface = Color(0xFF1C1B1F),
+*/
 )
 
 @Composable
@@ -51,7 +65,7 @@ fun AppAndroidKotlinTheme(
     }
 
     MaterialTheme(
-        colorScheme = colorScheme,
+        colorScheme = DarkColorScheme,
         typography = Typography,
         content = content
     )
