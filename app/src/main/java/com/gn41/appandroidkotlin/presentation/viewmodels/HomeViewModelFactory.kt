@@ -12,7 +12,7 @@ class HomeViewModelFactory(
     private val ridesRepository: RidesRepository,
     private val sessionManager: SessionManager,
     private val reservationsRepository: ReservationsRepository? = null,
-    private val tripRepository: TripRepository? = null
+    private val tripRepository: TripRepository? = null,
     private val vehicleRepository: VehicleRepository
 ) : ViewModelProvider.Factory {
 

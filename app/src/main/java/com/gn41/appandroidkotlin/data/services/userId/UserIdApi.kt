@@ -22,4 +22,11 @@ interface UserIdApi {
         @Query("user_id") userId: String,
         @Query("select") select: String = "id,user_id"
     ): List<DriverIdDto>
+
+    @GET("rest/v1/drivers")
+    suspend fun getDriverByUser(
+        @Header("Authorization") token: String,
+        @Header("apikey") apiKey: String,
+        @Query("user_id") userId: String
+    ): List<UserIdDto>
 }

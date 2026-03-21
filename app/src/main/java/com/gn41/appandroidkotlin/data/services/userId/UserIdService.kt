@@ -24,10 +24,10 @@ class UserIdService(
         if (token.isEmpty()) {
             throw Exception("No auth token")
         }
-
+/*
         val authId = extractAuthIdFromToken(token)
             ?: throw Exception("Auth id not found")
-
+*/
         val response = userIdApi.getUserByAuthId(
             token = "Bearer $token",
             apiKey = BuildConfig.SUPABASE_KEY,

@@ -21,7 +21,6 @@ class VehicleService(
         }
 
         val userId = userIdService.getUserByAuthId().id
-        val driverId = userIdService.getDriverIdByUserId(userId)
 
         val driverId = userIdService.getDriverByUser(userId).id
 

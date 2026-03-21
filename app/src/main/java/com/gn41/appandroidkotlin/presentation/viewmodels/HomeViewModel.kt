@@ -32,9 +32,8 @@ data class HomeUiState(
     val hasActiveFilters: Boolean = false,
     val activeFilterCount: Int = 0,
     val hasActiveRiderReservation: Boolean = false,
-    val hasActiveDriverTrip: Boolean = false
-    val isDriver: Boolean = false,
-    val activeFilterCount: Int = 0
+    val hasActiveDriverTrip: Boolean = false,
+    val isDriver: Boolean = false
 )
 
 private fun buildDepartureTimeOptions(): List<String> {
@@ -48,7 +47,7 @@ class HomeViewModel(
     private val ridesRepository: RidesRepository,
     private val sessionManager: SessionManager,
     private val reservationsRepository: ReservationsRepository? = null,
-    private val tripRepository: TripRepository? = null
+    private val tripRepository: TripRepository? = null,
     private val vehicleRepository: VehicleRepository
 ) : ViewModel() {
 
