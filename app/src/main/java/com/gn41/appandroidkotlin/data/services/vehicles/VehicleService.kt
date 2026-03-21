@@ -17,21 +17,29 @@ class VehicleService(
         val token = sessionManager.getToken()
 
         if (token.isEmpty()) {
-            throw Exception("No auth token")
+            return emptyList()
         }
 
-        val userId = userIdService.getUserByAuthId().id
+        return try {
+            val userId = userIdService.getUserByAuthId().id
+            val driver = userIdService.getDriverByUser(userId)
+            
+            if (driver == null) {
+                return emptyList()
+            }
 
-        val driverId = userIdService.getDriverByUser(userId).id
+            Log.d("CreateRide", "Token: $token")
+            Log.d("CreateRide", "driverId: ${driver.id}")
 
-        Log.d("CreateRide", "Token enviado: $token")
-        Log.d("CreateRide", "driverId enviado: $driverId")
-
-        return vehicleApi.getUserVehicles(
-            token = "Bearer $token",
-            apiKey = BuildConfig.SUPABASE_KEY,
-            driverId = "eq.$driverId"
-        )
+            vehicleApi.getUserVehicles(
+                token = "Bearer $token",
+                apiKey = BuildConfig.SUPABASE_KEY,
+                driverId = "eq.${driver.id}"
+            )
+        } catch (e: Exception) {
+            Log.e("VehicleService", "Error getting vehicles", e)
+            emptyList()
+        }
     }
 
     suspend fun getVehicleByLicensePlate(licensePlate: String): VehicleDto {

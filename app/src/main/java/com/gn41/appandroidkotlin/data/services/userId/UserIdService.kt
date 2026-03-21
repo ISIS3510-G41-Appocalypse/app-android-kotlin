@@ -38,23 +38,26 @@ class UserIdService(
             ?: throw Exception("User not found")
     }
 
-    suspend fun getDriverByUser(userId: Int): UserIdDto {
-        Log.d("CreateRide", "Llamando a getUserByAuthId")
+    suspend fun getDriverByUser(userId: Int): UserIdDto? {
+        Log.d("CreateRide", "Llamando a getDriverByUser")
 
         val token = sessionManager.getToken()
 
         if (token.isEmpty()) {
-            throw Exception("No auth token")
+            return null
         }
 
-        val response = userIdApi.getDriverByUser(
-            token = "Bearer $token",
-            apiKey = BuildConfig.SUPABASE_KEY,
-            userId = "eq.$userId"
-        )
-
-        return response.firstOrNull()
-            ?: throw Exception("User not found")
+        return try {
+            val response = userIdApi.getDriverByUser(
+                token = "Bearer $token",
+                apiKey = BuildConfig.SUPABASE_KEY,
+                userId = "eq.$userId"
+            )
+            response.firstOrNull()
+        } catch (e: Exception) {
+            Log.e("UserIdService", "Error getting driver", e)
+            null
+        }
     }
 
     suspend fun getDriverIdByUserId(userId: Int): Int {
