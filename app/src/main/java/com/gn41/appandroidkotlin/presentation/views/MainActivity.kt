@@ -41,7 +41,11 @@ class MainActivity : ComponentActivity() {
 
                 val authService = AuthService()
                 val authRepository = AuthRepositoryImpl(authService)
-                val welcomeFactory = WelcomeViewModelFactory(authRepository, sessionManager)
+
+                val tripService = TripService()
+                val tripRepository = TripRepositoryImpl(tripService)
+
+                val welcomeFactory = WelcomeViewModelFactory(authRepository, sessionManager, tripRepository)
                 val welcomeViewModel: WelcomeViewModel = viewModel(factory = welcomeFactory)
 
                 val reservationsService = ReservationsService()
@@ -50,8 +54,6 @@ class MainActivity : ComponentActivity() {
                 val ridesService = RidesService()
                 val ridesRepository = RidesRepositoryImpl(ridesService)
 
-                val tripService = TripService()
-                val tripRepository = TripRepositoryImpl(tripService)
 
                 val homeFactory = HomeViewModelFactory(
                     ridesRepository = ridesRepository,
@@ -77,7 +79,8 @@ class MainActivity : ComponentActivity() {
                 val createRideViewModelFactory = CreateRideViewModelFactory(
                     rideRepository = rideRepository,
                     vehicleRepository = vehicleRepository,
-                    zoneRepository = zoneRepository
+                    zoneRepository = zoneRepository,
+                    sessionManager = sessionManager
                 )
 
                 val navController = rememberNavController()

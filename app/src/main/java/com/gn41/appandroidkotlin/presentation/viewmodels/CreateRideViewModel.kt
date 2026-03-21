@@ -26,9 +26,12 @@ data class CreateRideFormState(
     val type: String = ""
 )
 
-class CreateRideViewModel(private val rideRepository: RideRepository,
+class CreateRideViewModel(
+    private val rideRepository: RideRepository,
     private val vehicleRepository: VehicleRepository,
-    private val zoneRepository: ZoneRepository) : ViewModel() {
+    private val zoneRepository: ZoneRepository,
+    private val sessionManager: SessionManager
+) : ViewModel() {
 
     sealed class CreateRideUiState {
         object Idle : CreateRideUiState()
@@ -54,21 +57,33 @@ class CreateRideViewModel(private val rideRepository: RideRepository,
     var isLoadingData by mutableStateOf(true)
         private set
 
+    var loadErrorMessage by mutableStateOf("")
+        private set
+
     init {
         loadInitialData()
     }
 
     private fun loadInitialData() {
         viewModelScope.launch {
-            isLoadingData = true
-            Log.d("CreateRide", "Llamando a getUserVehicles")
-            val vehiclesResult = vehicleRepository.getUserVehicles()
-            val zonesResult = zoneRepository.getZones()
+            try {
+                isLoadingData = true
+                loadErrorMessage = ""
 
-            vehicles = vehiclesResult
-            zones = zonesResult
+                Log.d("CreateRide", "Llamando a getUserVehicles")
+                val vehiclesResult = vehicleRepository.getUserVehicles()
+                val zonesResult = zoneRepository.getZones()
 
-            isLoadingData = false
+                vehicles = vehiclesResult
+                zones = zonesResult
+            } catch (e: Exception) {
+                Log.e("CreateRide", "Error loading initial data", e)
+                loadErrorMessage = "No se pudieron cargar vehiculos o zonas."
+                vehicles = emptyList()
+                zones = emptyList()
+            } finally {
+                isLoadingData = false
+            }
         }
     }
 
@@ -106,38 +121,48 @@ class CreateRideViewModel(private val rideRepository: RideRepository,
 
     fun createRide() {
         viewModelScope.launch {
-
-            val error = validateForm()
-            if (error != null) {
-                uiState = CreateRideUiState.Error(error)
-                return@launch
-            }
-
-            uiState = CreateRideUiState.Loading
-
-            val result = rideRepository.createRide(
-                CreateRideRequestDto(
-                    vehicleId = vehicleRepository.getVehicleByLicensePlate(formState.vehicleId).id,
-                    zoneId = zoneRepository.getZoneByName(formState.zoneId).id,
-                    source = formState.source,
-                    destination = formState.destination,
-                    price = formState.price.toDouble(),
-                    departureTime = formState.departureTime,
-                    date = formState.date,
-                    driverId = 0,
-                    state = "",
-                    type = formState.type
-                )
-            )
-
-            uiState = result.fold(
-                onSuccess = { CreateRideUiState.Success },
-                onFailure = {
-                    CreateRideUiState.Error(
-                        it.message ?: "Error al crear el viaje"
-                    )
+            try {
+                val error = validateForm()
+                if (error != null) {
+                    uiState = CreateRideUiState.Error(error)
+                    return@launch
                 }
-            )
+
+                uiState = CreateRideUiState.Loading
+
+                val driverId = sessionManager.getDriverId()
+                if (driverId <= 0) {
+                    uiState = CreateRideUiState.Error("No se pudo obtener tu identificación como conductor.")
+                    return@launch
+                }
+
+                val result = rideRepository.createRide(
+                    CreateRideRequestDto(
+                        vehicleId = vehicleRepository.getVehicleByLicensePlate(formState.vehicleId).id,
+                        zoneId = zoneRepository.getZoneByName(formState.zoneId).id,
+                        source = formState.source,
+                        destination = formState.destination,
+                        price = formState.price.toDouble(),
+                        departureTime = formState.departureTime,
+                        date = formState.date,
+                        driverId = driverId,
+                        state = "OFERTADO",
+                        type = formState.type
+                    )
+                )
+
+                uiState = result.fold(
+                    onSuccess = { CreateRideUiState.Success },
+                    onFailure = {
+                        CreateRideUiState.Error(
+                            it.message ?: "Error al crear el viaje"
+                        )
+                    }
+                )
+            } catch (e: Exception) {
+                Log.e("CreateRide", "Error creating ride", e)
+                uiState = CreateRideUiState.Error("No se pudo crear el viaje. Revisa tus datos.")
+            }
         }
     }
 

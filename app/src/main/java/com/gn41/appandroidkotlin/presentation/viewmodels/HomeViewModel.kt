@@ -138,9 +138,16 @@ class HomeViewModel(
                 )
 
                 uiState = if (created) {
-                    uiState.copy(reservationMessage = "Reserva creada correctamente.")
+                    uiState.copy(
+                        reservationMessage = "Reserva creada correctamente.",
+                        hasActiveRiderReservation = true
+                    )
                 } else {
                     uiState.copy(reservationMessage = "No se pudo crear la reserva. Intenta de nuevo.")
+                }
+
+                if (created) {
+                    checkBlockingStates()
                 }
             } catch (e: Exception) {
                 Log.e("HomeViewModel", "Exception creating reservation", e)
@@ -151,6 +158,10 @@ class HomeViewModel(
 
     fun clearReservationMessage() {
         uiState = uiState.copy(reservationMessage = "")
+    }
+
+    fun refreshHomeData() {
+        loadRides()
     }
 
     fun clearFilters() {
@@ -205,7 +216,9 @@ class HomeViewModel(
         )
 
         uiState = uiState.copy(
-            rides = filteredRides.map { mapToRideUiModel(it) },
+            rides = filteredRides
+                .sortedByDescending { it.drivers?.rating ?: 0.0 }
+                .map { mapToRideUiModel(it) },
             hasActiveFilters = activeFilterCount > 0,
             activeFilterCount = activeFilterCount
         )

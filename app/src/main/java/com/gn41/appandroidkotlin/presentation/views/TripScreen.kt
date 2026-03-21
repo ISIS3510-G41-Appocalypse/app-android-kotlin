@@ -29,6 +29,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.gn41.appandroidkotlin.presentation.viewmodels.ActiveDriverTripUiModel
 import com.gn41.appandroidkotlin.presentation.viewmodels.ActiveRiderTripUiModel
@@ -49,6 +50,13 @@ fun TripScreen(
         LaunchedEffect(state.infoMessage) {
             delay(3000)
             viewModel.clearInfoMessage()
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        while (true) {
+            delay(8000)
+            viewModel.refreshTrips()
         }
     }
 
@@ -135,7 +143,7 @@ fun TripScreen(
                         )
                     } else {
                         RiderSection(
-                            trip = state.activeRiderTrip,
+                            trips = state.activeRiderTrips,
                             onCancelReservation = viewModel::onCancelReservationClicked
                         )
                     }
@@ -189,32 +197,74 @@ private fun SectionSwitch(
 
 @Composable
 private fun RiderSection(
-    trip: ActiveRiderTripUiModel?,
-    onCancelReservation: () -> Unit
+    trips: List<ActiveRiderTripUiModel>,
+    onCancelReservation: (Int) -> Unit
 ) {
-    if (trip == null) {
+    if (trips.isEmpty()) {
         EmptyStateCard(message = "No tienes una reserva activa como pasajero.")
         return
     }
 
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        verticalArrangement = Arrangement.spacedBy(10.dp)
+    ) {
+        item {
+            Text(
+                text = "Mis reservas activas",
+                style = MaterialTheme.typography.titleMedium,
+                color = Color.White
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+        }
+
+        items(trips) { trip ->
+            RiderReservationCard(
+                trip = trip,
+                onCancel = { onCancelReservation(trip.reservationId) }
+            )
+        }
+    }
+}
+
+@Composable
+private fun RiderReservationCard(
+    trip: ActiveRiderTripUiModel,
+    onCancel: () -> Unit
+) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .background(whiteCard, RoundedCornerShape(14.dp))
             .padding(14.dp)
     ) {
-        Text("Mi viaje como pasajero", style = MaterialTheme.typography.titleMedium)
-        Spacer(modifier = Modifier.height(8.dp))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.Top
+        ) {
+            Text(
+                text = "${trip.source} → ${trip.destination}",
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(end = 8.dp),
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis
+            )
+            StateChip(status = trip.status)
+        }
 
-        Text("Origen: ${trip.source}", style = MaterialTheme.typography.bodyMedium)
-        Text("Destino: ${trip.destination}", style = MaterialTheme.typography.bodyMedium)
-        Text("Estado: ${mapStateLabel(trip.status)}", style = MaterialTheme.typography.bodyMedium)
+        Spacer(modifier = Modifier.height(6.dp))
+
+        Text("Estado reserva: ${mapStateLabel(trip.status)}", style = MaterialTheme.typography.bodyMedium)
+        Text("Estado viaje: ${mapStateLabel(trip.rideStatus)}", style = MaterialTheme.typography.bodyMedium)
         Text("Hora de salida: ${formatTimeText(trip.departureTime)}", style = MaterialTheme.typography.bodyMedium)
 
         Spacer(modifier = Modifier.height(10.dp))
 
         Button(
-            onClick = onCancelReservation,
+            onClick = onCancel,
             colors = ButtonDefaults.buttonColors(containerColor = AutumnEmber)
         ) {
             Text("Cancelar reserva")
@@ -256,20 +306,47 @@ private fun DriverSection(
                 Text("Estado: ${mapStateLabel(trip.status)}", style = MaterialTheme.typography.bodyMedium)
                 Text("Hora de salida: ${formatTimeText(trip.departureTime)}", style = MaterialTheme.typography.bodyMedium)
                 Text("Reservas: ${trip.reservationsCount}", style = MaterialTheme.typography.bodyMedium)
+                Text("Cupos disponibles: ${trip.availableSeats}/${trip.totalSeats}", style = MaterialTheme.typography.bodyMedium)
 
                 Spacer(modifier = Modifier.height(10.dp))
 
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    SmallActionButton(
+                        text = "Mirar en Google",
+                        onClick = onOpenRoute,
+                        accentColor = Color(0xFF2563EB)
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
                 if (trip.status == "OFERTADO") {
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        SmallActionButton(text = "Cancelar viaje", onClick = onCancelTrip)
-                        SmallActionButton(text = "Iniciar", onClick = onStartTrip)
+                        SmallActionButton(
+                            text = "Cancelar viaje",
+                            onClick = onCancelTrip,
+                            accentColor = Color(0xFFDC2626)
+                        )
+                        SmallActionButton(
+                            text = "Iniciar",
+                            onClick = onStartTrip,
+                            accentColor = Color(0xFF16A34A)
+                        )
                     }
                 }
 
                 if (trip.status == "EN_CURSO") {
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        SmallActionButton(text = "Abrir ruta", onClick = onOpenRoute)
-                        SmallActionButton(text = "Finalizar", onClick = onFinishTrip)
+                        SmallActionButton(
+                            text = "Abrir ruta",
+                            onClick = onOpenRoute,
+                            accentColor = Color(0xFF2563EB)
+                        )
+                        SmallActionButton(
+                            text = "Finalizar",
+                            onClick = onFinishTrip,
+                            accentColor = Color(0xFF16A34A)
+                        )
                     }
                 }
             }
@@ -287,9 +364,14 @@ private fun DriverSection(
             items(trip.reservations) { reservation ->
                 DriverReservationRow(
                     item = reservation,
+                    canAccept = trip.availableSeats > 0,
                     onAccept = { onAcceptReservation(reservation.id) },
                     onReject = { onRejectReservation(reservation.id) }
                 )
+            }
+        } else {
+            item {
+                EmptyStateCard(message = "No tienes ofertas sobre este viaje.")
             }
         }
     }
@@ -298,6 +380,7 @@ private fun DriverSection(
 @Composable
 private fun DriverReservationRow(
     item: TripReservationItemUiModel,
+    canAccept: Boolean,
     onAccept: () -> Unit,
     onReject: () -> Unit
 ) {
@@ -310,12 +393,30 @@ private fun DriverReservationRow(
         Text(text = item.riderName, style = MaterialTheme.typography.titleMedium)
         Spacer(modifier = Modifier.height(4.dp))
         Text(text = "Estado: ${mapStateLabel(item.status)}", style = MaterialTheme.typography.bodyMedium)
+        Text(text = "Metodo de pago: ${item.paymentMethod}", style = MaterialTheme.typography.bodyMedium)
 
         if (item.status == "PENDIENTE") {
             Spacer(modifier = Modifier.height(8.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                SmallActionButton(text = "Aceptar", onClick = onAccept)
-                SmallActionButton(text = "Rechazar", onClick = onReject)
+                SmallActionButton(
+                    text = "Aceptar",
+                    onClick = onAccept,
+                    enabled = canAccept,
+                    accentColor = Color(0xFF16A34A)
+                )
+                SmallActionButton(
+                    text = "Rechazar",
+                    onClick = onReject,
+                    accentColor = Color(0xFFDC2626)
+                )
+            }
+            if (!canAccept) {
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = "No hay cupos disponibles.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = Color(0xFFB45309)
+                )
             }
         }
     }
@@ -324,18 +425,23 @@ private fun DriverReservationRow(
 @Composable
 private fun SmallActionButton(
     text: String,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    enabled: Boolean = true,
+    accentColor: Color = AutumnEmber
 ) {
+    val backgroundColor = if (enabled) accentColor.copy(alpha = 0.12f) else Color(0xFFF1F5F9)
+
     Box(
         modifier = Modifier
-            .border(1.dp, AutumnEmber, RoundedCornerShape(10.dp))
-            .clickable { onClick() }
+            .background(backgroundColor, RoundedCornerShape(10.dp))
+            .border(1.dp, if (enabled) accentColor else Color(0xFF94A3B8), RoundedCornerShape(10.dp))
+            .clickable(enabled = enabled) { onClick() }
             .padding(horizontal = 10.dp, vertical = 8.dp)
     ) {
         Text(
             text = text,
             style = MaterialTheme.typography.bodyMedium,
-            color = AutumnEmber
+            color = if (enabled) accentColor else Color(0xFF94A3B8)
         )
     }
 }
@@ -367,10 +473,33 @@ private fun mapStateLabel(state: String): String {
         "PENDIENTE" -> "Pendiente"
         "ACEPTADA" -> "Aceptada"
         "EN_CURSO" -> "En curso"
+        "FINALIZADO" -> "Finalizado"
         "FINALIZADA" -> "Finalizada"
+        "CANCELADO" -> "Cancelado"
         "CANCELADA" -> "Cancelada"
         "RECHAZADA" -> "Rechazada"
         else -> state
+    }
+}
+
+@Composable
+private fun StateChip(status: String) {
+    val (bg, fg) = when (status) {
+        "PENDIENTE" -> Color(0xFFFEF3C7) to Color(0xFFB45309)
+        "ACEPTADA"  -> Color(0xFFD1FAE5) to Color(0xFF065F46)
+        "EN_CURSO"  -> Color(0xFFDBEAFE) to Color(0xFF1D4ED8)
+        else        -> Color(0xFFF1F5F9) to Color(0xFF64748B)
+    }
+    Box(
+        modifier = Modifier
+            .background(bg, RoundedCornerShape(8.dp))
+            .padding(horizontal = 8.dp, vertical = 4.dp)
+    ) {
+        Text(
+            text = mapStateLabel(status),
+            style = MaterialTheme.typography.bodyMedium,
+            color = fg
+        )
     }
 }
 

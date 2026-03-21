@@ -49,6 +49,10 @@ fun HomeScreen(
     val state = viewModel.uiState
     var selectedBottomTab by remember { mutableStateOf("Inicio") }
 
+    LaunchedEffect(Unit) {
+        viewModel.refreshHomeData()
+    }
+
     Box(
         modifier = Modifier
             .fillMaxSize()
