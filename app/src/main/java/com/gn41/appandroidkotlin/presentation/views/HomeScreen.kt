@@ -193,12 +193,14 @@ fun HomeScreen(
             )
         }
 
-        ExpandableCreateRideButton(
-            modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .padding(end = 24.dp, bottom = 84.dp),
-            onCreateRideClick = onCreateRideClick
-        )
+        if (state.isDriver) {
+            ExpandableCreateRideButton(
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(end = 24.dp, bottom = 84.dp),
+                onCreateRideClick = onCreateRideClick
+            )
+        }
     }
 }
 

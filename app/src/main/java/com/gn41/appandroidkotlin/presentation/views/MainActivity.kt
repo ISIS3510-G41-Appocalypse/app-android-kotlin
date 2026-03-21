@@ -48,12 +48,6 @@ class MainActivity : ComponentActivity() {
                 val ridesService = RidesService()
                 val ridesRepository = RidesRepositoryImpl(ridesService)
 
-                val homeFactory = HomeViewModelFactory(
-                    ridesRepository = ridesRepository,
-                    reservationsRepository = reservationsRepository,
-                    sessionManager = sessionManager
-                )
-
                 val userIdService = UserIdService(sessionManager)
                 val rideService = RideService(sessionManager, userIdService)
                 val vehicleService = VehicleService(sessionManager, userIdService)
@@ -62,6 +56,14 @@ class MainActivity : ComponentActivity() {
                 val rideRepository = RideRepositoryImpl(rideService)
                 val vehicleRepository = VehicleRepositoryImpl(vehicleService)
                 val zoneRepository = ZoneRepositoryImpl(zoneService)
+
+                val homeFactory = HomeViewModelFactory(
+                    ridesRepository = ridesRepository,
+                    reservationsRepository = reservationsRepository,
+                    sessionManager = sessionManager,
+                    vehicleRepository = vehicleRepository
+                )
+
 
                 val createRideViewModelFactory = CreateRideViewModelFactory(
                     rideRepository = rideRepository,

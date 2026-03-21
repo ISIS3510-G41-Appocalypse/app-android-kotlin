@@ -10,6 +10,14 @@ interface UserIdApi {
     suspend fun getUserByAuthId(
         @Header("Authorization") token: String,
         @Header("apikey") apiKey: String,
-        @Query("select") select: String = "id"
+        @Query("auth_id") authId: String
     ) : List<UserIdDto>
+
+    @GET("rest/v1/drivers")
+    suspend fun getDriverByUser(
+        @Header("Authorization") token: String,
+        @Header("apikey") apiKey: String,
+        @Query("user_id") userId: String
+    ) : List<UserIdDto>
+
 }
