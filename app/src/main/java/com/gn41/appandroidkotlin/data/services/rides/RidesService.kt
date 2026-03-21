@@ -8,11 +8,13 @@ import com.gn41.appandroidkotlin.data.services.SupabaseClient
 class RidesService {
     private val ridesApi = SupabaseClient.ridesApi
 
-    // expande relaciones para obtener conductor, vehiculo y zona
     private val enrichedSelect = "*,drivers(*,users(*)),vehicles(*),zones(*)"
 
     suspend fun getRides(token: String): List<RideDto>? {
         return try {
+            Log.d("RidesService", "URL: ${BuildConfig.SUPABASE_URL}")
+            Log.d("RidesService", "KEY ok: ${BuildConfig.SUPABASE_KEY.isNotEmpty()}")
+            
             val response = ridesApi.getRides(
                 token = "Bearer $token",
                 apiKey = BuildConfig.SUPABASE_KEY,
@@ -20,16 +22,18 @@ class RidesService {
                 order = "drivers(rating).desc.nullslast"
             )
 
+            Log.d("RidesService", "HTTP ${response.code()}")
+            
             if (response.isSuccessful) {
-                Log.d("RidesService", "getRides success: ${response.body()}")
+                Log.d("RidesService", "OK: ${response.body()?.size} rides")
                 response.body()
             } else {
-                Log.e("RidesService", "getRides failed: code=${response.code()}")
-                Log.e("RidesService", "error body=${response.errorBody()?.string()}")
+                val err = response.errorBody()?.string()
+                Log.e("RidesService", "Error ${response.code()}: $err")
                 null
             }
         } catch (e: Exception) {
-            Log.e("RidesService", "Exception in getRides", e)
+            Log.e("RidesService", "Exception: ${e.message}", e)
             null
         }
     }

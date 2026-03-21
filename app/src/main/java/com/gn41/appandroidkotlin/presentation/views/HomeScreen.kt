@@ -48,11 +48,16 @@ val selectedBottomItemColor = Color(0xFF0D9488)
 @Composable
 fun HomeScreen(
     viewModel: HomeViewModel,
+    onTripsClick: () -> Unit,
     onCreateRideClick: () -> Unit,
     onLogoutClick: () -> Unit
 ) {
     val state = viewModel.uiState
     var selectedBottomTab by remember { mutableStateOf("Inicio") }
+
+    LaunchedEffect(Unit) {
+        viewModel.refreshHomeData()
+    }
 
     Box(
         modifier = Modifier
@@ -159,7 +164,8 @@ fun HomeScreen(
                         items(state.rides) { ride ->
                             RideItemCard(
                                 ride = ride,
-                                onReserveClick = { viewModel.onReserveClicked(ride.id) }
+                                onReserveClick = { viewModel.onReserveClicked(ride.id) },
+                                isReserveEnabled = !state.hasActiveRiderReservation && !state.hasActiveDriverTrip
                             )
                         }
                     }
@@ -189,7 +195,10 @@ fun HomeScreen(
 
             BottomNavigationBar(
                 selectedTab = selectedBottomTab,
-                onTabClick = { selectedBottomTab = it }
+                onTabClick = {
+                    selectedBottomTab = it
+                    if (it == "Viajes") onTripsClick()
+                }
             )
         }
 
@@ -207,6 +216,7 @@ fun HomeScreen(
 @Composable
 fun ExpandableCreateRideButton(
     modifier: Modifier = Modifier,
+    isBlocked: Boolean = false,
     onCreateRideClick: () -> Unit
 ) {
     var expanded by remember { mutableStateOf(false) }
@@ -221,13 +231,13 @@ fun ExpandableCreateRideButton(
                     .background(Color(0xFF1F2937), RoundedCornerShape(12.dp))
                     .clickable {
                         expanded = false
-                        onCreateRideClick()
+                        if (!isBlocked) onCreateRideClick()
                     }
                     .padding(horizontal = 12.dp, vertical = 8.dp)
             ) {
                 Text(
-                    text = "Crear Viaje",
-                    color = Color.White,
+                    text = if (isBlocked) "Ya tienes un viaje activo" else "Crear Viaje",
+                    color = if (isBlocked) Color(0xFF94A3B8) else Color.White,
                     style = MaterialTheme.typography.bodyMedium
                 )
             }
@@ -237,13 +247,16 @@ fun ExpandableCreateRideButton(
 
         Box(
             modifier = Modifier
-                .background(Color(0xFF1F2937), RoundedCornerShape(10.dp))
+                .background(
+                    color = if (isBlocked) Color(0xFF374151) else Color(0xFF1F2937),
+                    shape = RoundedCornerShape(10.dp)
+                )
                 .clickable { expanded = !expanded }
                 .padding(horizontal = 10.dp, vertical = 6.dp)
         ) {
             Text(
                 text = "+",
-                color = Color.White,
+                color = if (isBlocked) Color(0xFF94A3B8) else Color.White,
                 style = MaterialTheme.typography.titleMedium
             )
         }

@@ -1,17 +1,14 @@
 package com.gn41.appandroidkotlin.data.services
 
-import android.util.Log
 import com.gn41.appandroidkotlin.BuildConfig
-import com.gn41.appandroidkotlin.data.local.SessionEvents
 import com.gn41.appandroidkotlin.data.services.auth.AuthApi
 import com.gn41.appandroidkotlin.data.services.reservations.ReservationsApi
 import com.gn41.appandroidkotlin.data.services.rides.RideApi
 import com.gn41.appandroidkotlin.data.services.rides.RidesApi
+import com.gn41.appandroidkotlin.data.services.trips.TripApi
 import com.gn41.appandroidkotlin.data.services.userId.UserIdApi
 import com.gn41.appandroidkotlin.data.services.vehicles.VehicleApi
 import com.gn41.appandroidkotlin.data.services.zones.ZoneApi
-import kotlinx.coroutines.runBlocking
-import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
@@ -19,22 +16,7 @@ import retrofit2.converter.gson.GsonConverterFactory
 object SupabaseClient {
     private val BASE_URL = BuildConfig.SUPABASE_URL
 
-    private val authInterceptor = Interceptor { chain ->
-        val request = chain.request()
-        val response = chain.proceed(request)
-
-        if (response.code() == 401) {
-            Log.e("SupabaseClient", "Authentication failed.")
-            runBlocking {
-                SessionEvents.emitSessionExpired()
-            }
-        }
-        response
-    }
-
-    private val okHttpClient = OkHttpClient.Builder()
-        .addInterceptor(authInterceptor)
-        .build()
+    private val okHttpClient = OkHttpClient.Builder().build()
 
     private val retrofit: Retrofit by lazy {
         Retrofit.Builder()
@@ -70,5 +52,9 @@ object SupabaseClient {
 
     val reservationsApi: ReservationsApi by lazy {
         retrofit.create(ReservationsApi::class.java)
+    }
+
+    val tripApi: TripApi by lazy {
+        retrofit.create(TripApi::class.java)
     }
 }

@@ -38,4 +38,20 @@ class SessionManager(context: Context) {
             .remove("session_user_id")
             .apply()
     }
+
+    fun saveDriverId(id: Int) {
+        sharedPreferences.edit()
+            .putInt("session_driver_id", id)
+            .apply()
+    }
+
+    fun getDriverId(): Int {
+        return sharedPreferences.getInt("session_driver_id", -1)
+    }
+
+    fun clearDriverId() {
+        sharedPreferences.edit()
+            .remove("session_driver_id")
+            .apply()
+    }
 }

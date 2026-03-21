@@ -180,6 +180,15 @@ fun CreateRideScreen(
                     lineHeight = 18.sp
                 )
 
+                if (viewModel.loadErrorMessage.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(10.dp))
+                    Text(
+                        text = viewModel.loadErrorMessage,
+                        color = Color(0xFFFCA5A5),
+                        fontSize = 13.sp
+                    )
+                }
+
                 Spacer(modifier = Modifier.height(20.dp))
 
                 Card(
