@@ -7,28 +7,44 @@ import com.gn41.appandroidkotlin.data.local.SessionManager
 import com.gn41.appandroidkotlin.data.services.SupabaseClient
 import com.gn41.appandroidkotlin.data.services.userId.UserIdService
 
-class VehicleService (private val sessionManager: SessionManager,
-                      private val userIdService: UserIdService) {
+class VehicleService(
+    private val sessionManager: SessionManager,
+    private val userIdService: UserIdService
+) {
     private val vehicleApi = SupabaseClient.vehicleApi
 
     suspend fun getUserVehicles(): List<VehicleDto> {
-        Log.d("CreateRide", "Token enviado: ${sessionManager.getToken()}")
         val token = sessionManager.getToken()
-        Log.d("CreateRide", "Token enviado: ${sessionManager.getToken()}")
+
+        if (token.isEmpty()) {
+            throw Exception("No auth token")
+        }
 
         val userId = userIdService.getUserByAuthId().id
 
-        Log.d("CreateRide", "Token enviado: ${sessionManager.getToken()}")
+        Log.d("CreateRide", "Token enviado: $token")
+        Log.d("CreateRide", "userId enviado: $userId")
 
-        val vehicles = vehicleApi.getUserVehicles("Bearer $token", BuildConfig.SUPABASE_KEY,"eq.$userId")
-
-        return vehicles
+        return vehicleApi.getUserVehicles(
+            token = "Bearer $token",
+            apiKey = BuildConfig.SUPABASE_KEY,
+            driverId = "eq.$userId"
+        )
     }
 
-    suspend fun getVehicleByLicensePlate(licensePlate: String) : VehicleDto {
+    suspend fun getVehicleByLicensePlate(licensePlate: String): VehicleDto {
         val token = sessionManager.getToken()
 
-        val vehicle = vehicleApi.getVehicleByLicensePlate("Bearer $token",BuildConfig.SUPABASE_KEY,"eq.$licensePlate")
+        if (token.isEmpty()) {
+            throw Exception("No auth token")
+        }
+
+        val vehicle = vehicleApi.getVehicleByLicensePlate(
+            token = "Bearer $token",
+            apiKey = BuildConfig.SUPABASE_KEY,
+            licensePlate = "eq.$licensePlate"
+        )
+
         Log.d("Vehicles", licensePlate)
         Log.d("Vehicles", "$vehicle")
 
