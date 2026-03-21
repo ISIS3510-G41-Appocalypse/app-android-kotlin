@@ -51,6 +51,12 @@ fun AppNavigation(
                 },
                 onCreateRideClick = {
                     navController.navigate("create_ride")
+                },
+                onLogoutClick = {
+                    welcomeViewModel.resetLoginState()
+                    navController.navigate("welcome") {
+                        popUpTo(0) { inclusive = true }
+                    }
                 }
             )
         }

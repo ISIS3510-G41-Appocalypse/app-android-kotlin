@@ -9,9 +9,13 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.DirectionsBus
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.ui.Alignment
@@ -57,12 +61,25 @@ fun WelcomeScreen(viewModel: WelcomeViewModel){
 @Composable
 fun WelcomeHeader(){
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-    Text(text = "[Poner el logo]" , style = MaterialTheme.typography.titleLarge , color = MaterialTheme.colorScheme.tertiary)
-    Text(text = "Happy Ride", style = MaterialTheme.typography.titleLarge , color = MaterialTheme.colorScheme.onBackground)
+        Icon(
+            imageVector = Icons.Default.DirectionsBus,
+            contentDescription = "Logo HappyRide",
+            modifier = Modifier.size(64.dp),
+            tint = MaterialTheme.colorScheme.primary
+        )
 
-    Spacer(modifier = Modifier.height(4.dp))
-    Text(text = "Universidad de los Andes", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.primary)
+        Text(
+            text = "Happy Ride",
+            style = MaterialTheme.typography.titleLarge,
+            color = MaterialTheme.colorScheme.onBackground
+        )
 
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(
+            text = "Universidad de los Andes",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.primary
+        )
     }
 }
 // slogan simple

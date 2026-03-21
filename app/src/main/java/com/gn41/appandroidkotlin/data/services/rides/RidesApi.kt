@@ -11,7 +11,7 @@ interface RidesApi {
     suspend fun getRides(
         @Header("Authorization") token: String,
         @Header("apikey") apiKey: String,
-        @Query("select") select: String
+        @Query("select") select: String,
+        @Query("order") order: String
     ): Response<List<RideDto>>
 }
-

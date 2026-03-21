@@ -22,13 +22,15 @@ class VehicleService(
 
         val userId = userIdService.getUserByAuthId().id
 
+        val driverId = userIdService.getDriverByUser(userId).id
+
         Log.d("CreateRide", "Token enviado: $token")
         Log.d("CreateRide", "userId enviado: $userId")
 
         return vehicleApi.getUserVehicles(
             token = "Bearer $token",
             apiKey = BuildConfig.SUPABASE_KEY,
-            driverId = "eq.$userId"
+            driverId = "eq.$driverId"
         )
     }
 
