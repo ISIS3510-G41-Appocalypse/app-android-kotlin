@@ -73,7 +73,7 @@ class TripService {
         }
     }
 
-    suspend fun getActiveRiderReservation(riderId: Int, token: String): TripReservationDto? {
+    suspend fun getActiveRiderReservation(riderId: Int, token: String): List<TripReservationDto> {
         return try {
             val response = tripApi.getActiveRiderReservation(
                 token = "Bearer $token",
@@ -82,14 +82,14 @@ class TripService {
             )
 
             if (response.isSuccessful) {
-                response.body()?.firstOrNull()
+                response.body() ?: emptyList<TripReservationDto>()
             } else {
                 Log.e("TripService", "getActiveRiderReservation error=${response.code()} ${response.errorBody()?.string()}")
-                null
+                emptyList<TripReservationDto>()
             }
         } catch (e: Exception) {
             Log.e("TripService", "getActiveRiderReservation exception", e)
-            null
+            emptyList<TripReservationDto>()
         }
     }
 
@@ -155,18 +155,30 @@ class TripService {
 
     suspend fun updateRideState(rideId: Int, newState: String, token: String): Boolean {
         return try {
-            val response = tripApi.updateRideState(
-                token = "Bearer $token",
-                apiKey = BuildConfig.SUPABASE_KEY,
-                rideId = "eq.$rideId",
-                body = mapOf("state" to newState)
-            )
-
-            if (!response.isSuccessful) {
-                Log.e("TripService", "updateRideState error=${response.code()} ${response.errorBody()?.string()}")
+            val stateCandidates = when (newState) {
+                "CANCELADO" -> listOf("CANCELADO", "CANCELADA")
+                "FINALIZADO" -> listOf("FINALIZADO", "FINALIZADA")
+                else -> listOf(newState)
             }
 
-            response.isSuccessful
+            var lastError = ""
+            for (state in stateCandidates) {
+                val response = tripApi.updateRideState(
+                    token = "Bearer $token",
+                    apiKey = BuildConfig.SUPABASE_KEY,
+                    rideId = "eq.$rideId",
+                    body = mapOf("state" to state)
+                )
+
+                if (response.isSuccessful) {
+                    return true
+                }
+
+                lastError = response.errorBody()?.string().orEmpty()
+                Log.e("TripService", "updateRideState error state=$state code=${response.code()} $lastError")
+            }
+
+            false
         } catch (e: Exception) {
             Log.e("TripService", "updateRideState exception", e)
             false

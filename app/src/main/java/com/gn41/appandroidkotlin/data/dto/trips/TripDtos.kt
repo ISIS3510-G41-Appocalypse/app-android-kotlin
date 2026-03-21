@@ -49,6 +49,11 @@ data class TripRideDto(
     val destination: String,
     val state: String,
     val departure_time: String,
-    val date: String
+    val date: String,
+    val vehicles: TripVehicleNestedDto? = null
+)
+
+data class TripVehicleNestedDto(
+    val number_slots: Int? = null
 )
 

@@ -23,7 +23,7 @@ class TripRepositoryImpl(
         return tripService.getDriverByUserId(userId, token)
     }
 
-    override suspend fun getActiveRiderReservation(riderId: Int, token: String): TripReservationDto? {
+    override suspend fun getActiveRiderReservation(riderId: Int, token: String): List<TripReservationDto> {
         return tripService.getActiveRiderReservation(riderId, token)
     }
 

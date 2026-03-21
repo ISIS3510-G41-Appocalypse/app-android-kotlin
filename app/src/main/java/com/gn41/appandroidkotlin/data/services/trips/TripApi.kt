@@ -42,10 +42,9 @@ interface TripApi {
         @Header("Authorization") token: String,
         @Header("apikey") apiKey: String,
         @Query("rider_id") riderId: String,
-        @Query("state") states: String = "in.(PENDIENTE,ACEPTADA,EN_CURSO)",
+        @Query("state") state: String = "in.(PENDIENTE,ACEPTADA,EN_CURSO)",
         @Query("select") select: String = "id,ride_id,rider_id,state,rides(id,source,destination,state,departure_time,date)",
-        @Query("order") order: String = "id.desc",
-        @Query("limit") limit: Int = 1
+        @Query("order") order: String = "id.desc"
     ): Response<List<TripReservationDto>>
 
     @GET("rest/v1/rides")
@@ -53,8 +52,8 @@ interface TripApi {
         @Header("Authorization") token: String,
         @Header("apikey") apiKey: String,
         @Query("driver_id") driverId: String,
-        @Query("state") states: String = "in.(OFERTADO,EN_CURSO)",
-        @Query("select") select: String = "id,source,destination,state,departure_time,date",
+        @Query("state") state: String = "in.(OFERTADO,EN_CURSO)",
+        @Query("select") select: String = "id,source,destination,state,departure_time,date,vehicles(number_slots)",
         @Query("order") order: String = "id.desc",
         @Query("limit") limit: Int = 1
     ): Response<List<TripRideDto>>
@@ -64,7 +63,7 @@ interface TripApi {
         @Header("Authorization") token: String,
         @Header("apikey") apiKey: String,
         @Query("ride_id") rideId: String,
-        @Query("state") states: String = "in.(PENDIENTE,ACEPTADA,EN_CURSO)",
+        @Query("state") state: String = "in.(PENDIENTE,ACEPTADA,EN_CURSO)",
         @Query("select") select: String = "id,ride_id,rider_id,state,riders(id,users(first_name,last_name))",
         @Query("order") order: String = "id.desc"
     ): Response<List<TripReservationDto>>
