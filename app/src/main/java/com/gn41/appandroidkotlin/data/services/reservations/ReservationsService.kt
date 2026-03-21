@@ -5,6 +5,7 @@ import com.gn41.appandroidkotlin.BuildConfig
 import com.gn41.appandroidkotlin.data.services.SupabaseClient
 
 class ReservationsService {
+
     private val reservationsApi = SupabaseClient.reservationsApi
 
     suspend fun getUserByAuthId(authId: String, token: String): UserSimpleDto? {
@@ -119,5 +120,3 @@ class ReservationsService {
         }
     }
 }
-
-
