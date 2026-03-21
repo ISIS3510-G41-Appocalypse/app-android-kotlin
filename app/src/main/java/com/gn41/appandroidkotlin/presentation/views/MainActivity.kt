@@ -4,6 +4,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.runtime.LaunchedEffect
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.rememberNavController
 import com.gn41.appandroidkotlin.data.local.SessionManager
@@ -47,12 +48,6 @@ class MainActivity : ComponentActivity() {
                 val ridesService = RidesService()
                 val ridesRepository = RidesRepositoryImpl(ridesService)
 
-                val homeFactory = HomeViewModelFactory(
-                    ridesRepository = ridesRepository,
-                    reservationsRepository = reservationsRepository,
-                    sessionManager = sessionManager
-                )
-
                 val userIdService = UserIdService(sessionManager)
                 val rideService = RideService(sessionManager, userIdService)
                 val vehicleService = VehicleService(sessionManager, userIdService)
@@ -62,6 +57,14 @@ class MainActivity : ComponentActivity() {
                 val vehicleRepository = VehicleRepositoryImpl(vehicleService)
                 val zoneRepository = ZoneRepositoryImpl(zoneService)
 
+                val homeFactory = HomeViewModelFactory(
+                    ridesRepository = ridesRepository,
+                    reservationsRepository = reservationsRepository,
+                    sessionManager = sessionManager,
+                    vehicleRepository = vehicleRepository
+                )
+
+
                 val createRideViewModelFactory = CreateRideViewModelFactory(
                     rideRepository = rideRepository,
                     vehicleRepository = vehicleRepository,
@@ -69,6 +72,19 @@ class MainActivity : ComponentActivity() {
                 )
 
                 val navController = rememberNavController()
+
+                LaunchedEffect(Unit) {
+                    com.gn41.appandroidkotlin.data.local.SessionEvents.onSessionExpired.collect {
+                        sessionManager.clearToken()
+                        sessionManager.clearUserId()
+
+                        welcomeViewModel.resetLoginState()
+
+                        navController.navigate("welcome") {
+                            popUpTo(0) { inclusive = true }
+                        }
+                    }
+                }
 
                 AppNavigation(
                     navController = navController,

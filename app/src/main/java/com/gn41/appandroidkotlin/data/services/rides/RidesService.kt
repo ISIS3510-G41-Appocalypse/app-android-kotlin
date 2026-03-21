@@ -16,7 +16,8 @@ class RidesService {
             val response = ridesApi.getRides(
                 token = "Bearer $token",
                 apiKey = BuildConfig.SUPABASE_KEY,
-                select = enrichedSelect
+                select = enrichedSelect,
+                order = "drivers(rating).desc.nullslast"
             )
 
             if (response.isSuccessful) {

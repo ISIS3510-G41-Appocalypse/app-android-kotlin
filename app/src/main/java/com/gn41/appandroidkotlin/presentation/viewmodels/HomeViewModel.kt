@@ -11,6 +11,7 @@ import com.gn41.appandroidkotlin.data.dto.rides.RideDto
 import com.gn41.appandroidkotlin.data.local.SessionManager
 import com.gn41.appandroidkotlin.data.repositories.ReservationsRepository
 import com.gn41.appandroidkotlin.data.repositories.RidesRepository
+import com.gn41.appandroidkotlin.data.repositories.VehicleRepository
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -28,6 +29,7 @@ data class HomeUiState(
     val selectedDepartureTime: String = "Todas",
     val departureTimeOptions: List<String> = buildDepartureTimeOptions(),
     val hasActiveFilters: Boolean = false,
+    val isDriver: Boolean = false,
     val activeFilterCount: Int = 0
 )
 
@@ -41,7 +43,8 @@ private fun buildDepartureTimeOptions(): List<String> {
 class HomeViewModel(
     private val ridesRepository: RidesRepository,
     private val sessionManager: SessionManager,
-    private val reservationsRepository: ReservationsRepository? = null
+    private val reservationsRepository: ReservationsRepository? = null,
+    private val vehicleRepository: VehicleRepository
 ) : ViewModel() {
 
     private var allRides: List<RideDto> = emptyList()
@@ -207,6 +210,12 @@ class HomeViewModel(
         )
     }
 
+    fun logout(onNavigateToLogin: () -> Unit) {
+        sessionManager.clearToken()
+        sessionManager.clearUserId()
+        onNavigateToLogin()
+    }
+
     private fun buildZoneOptions(rides: List<RideDto>): List<String> {
         // obtiene zonas unicas y las ordena
         val zones = rides
@@ -272,6 +281,11 @@ class HomeViewModel(
 
         viewModelScope.launch {
             try {
+                val userVehicles = vehicleRepository.getUserVehicles()
+                val isDriver = userVehicles.isNotEmpty()
+
+                uiState = uiState.copy(isDriver = isDriver)
+
                 val result = ridesRepository.getRides(token)
 
                 if (result != null) {
