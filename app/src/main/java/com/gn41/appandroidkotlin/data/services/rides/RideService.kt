@@ -21,9 +21,10 @@ class RideService(
             }
 
             val userId = userIdService.getUserByAuthId().id
+            val driverId = userIdService.getDriverIdByUserId(userId)
 
             val finalRequest = request.copy(
-                driverId = userId,
+                driverId = driverId,
                 state = "OFERTADO"
             )
 

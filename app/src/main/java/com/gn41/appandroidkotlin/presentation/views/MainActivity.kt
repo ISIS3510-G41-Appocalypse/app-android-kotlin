@@ -12,18 +12,21 @@ import com.gn41.appandroidkotlin.data.repositories.AuthRepositoryImpl
 import com.gn41.appandroidkotlin.data.repositories.ReservationsRepositoryImpl
 import com.gn41.appandroidkotlin.data.repositories.RideRepositoryImpl
 import com.gn41.appandroidkotlin.data.repositories.RidesRepositoryImpl
+import com.gn41.appandroidkotlin.data.repositories.TripRepositoryImpl
 import com.gn41.appandroidkotlin.data.repositories.VehicleRepositoryImpl
 import com.gn41.appandroidkotlin.data.repositories.ZoneRepositoryImpl
 import com.gn41.appandroidkotlin.data.services.auth.AuthService
 import com.gn41.appandroidkotlin.data.services.reservations.ReservationsService
 import com.gn41.appandroidkotlin.data.services.rides.RideService
 import com.gn41.appandroidkotlin.data.services.rides.RidesService
+import com.gn41.appandroidkotlin.data.services.trips.TripService
 import com.gn41.appandroidkotlin.data.services.userId.UserIdService
 import com.gn41.appandroidkotlin.data.services.vehicles.VehicleService
 import com.gn41.appandroidkotlin.data.services.zones.ZoneService
 import com.gn41.appandroidkotlin.presentation.navigation.AppNavigation
 import com.gn41.appandroidkotlin.presentation.viewmodels.CreateRideViewModelFactory
 import com.gn41.appandroidkotlin.presentation.viewmodels.HomeViewModelFactory
+import com.gn41.appandroidkotlin.presentation.viewmodels.TripViewModelFactory
 import com.gn41.appandroidkotlin.presentation.viewmodels.WelcomeViewModel
 import com.gn41.appandroidkotlin.presentation.viewmodels.WelcomeViewModelFactory
 import com.gn41.appandroidkotlin.ui.theme.AppAndroidKotlinTheme
@@ -39,7 +42,11 @@ class MainActivity : ComponentActivity() {
 
                 val authService = AuthService()
                 val authRepository = AuthRepositoryImpl(authService)
-                val welcomeFactory = WelcomeViewModelFactory(authRepository, sessionManager)
+
+                val tripService = TripService()
+                val tripRepository = TripRepositoryImpl(tripService)
+
+                val welcomeFactory = WelcomeViewModelFactory(authRepository, sessionManager, tripRepository)
                 val welcomeViewModel: WelcomeViewModel = viewModel(factory = welcomeFactory)
 
                 val reservationsService = ReservationsService()
@@ -47,6 +54,11 @@ class MainActivity : ComponentActivity() {
 
                 val ridesService = RidesService()
                 val ridesRepository = RidesRepositoryImpl(ridesService)
+
+                val tripViewModelFactory = TripViewModelFactory(
+                    tripRepository = tripRepository,
+                    sessionManager = sessionManager
+                )
 
                 val userIdService = UserIdService(sessionManager)
                 val rideService = RideService(sessionManager, userIdService)
@@ -61,6 +73,7 @@ class MainActivity : ComponentActivity() {
                     ridesRepository = ridesRepository,
                     reservationsRepository = reservationsRepository,
                     sessionManager = sessionManager,
+                    tripRepository = tripRepository,
                     vehicleRepository = vehicleRepository
                 )
 
@@ -68,7 +81,8 @@ class MainActivity : ComponentActivity() {
                 val createRideViewModelFactory = CreateRideViewModelFactory(
                     rideRepository = rideRepository,
                     vehicleRepository = vehicleRepository,
-                    zoneRepository = zoneRepository
+                    zoneRepository = zoneRepository,
+                    sessionManager = sessionManager
                 )
 
                 val navController = rememberNavController()
@@ -90,7 +104,8 @@ class MainActivity : ComponentActivity() {
                     navController = navController,
                     welcomeViewModel = welcomeViewModel,
                     homeViewModelFactory = homeFactory,
-                    createRideViewModelFactory = createRideViewModelFactory
+                    createRideViewModelFactory = createRideViewModelFactory,
+                    tripViewModelFactory = tripViewModelFactory
                 )
             }
         }
