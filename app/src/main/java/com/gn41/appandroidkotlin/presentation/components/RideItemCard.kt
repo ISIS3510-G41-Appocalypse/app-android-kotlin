@@ -43,7 +43,8 @@ private val TypeBadgeBg = Color(0xFFFEF3C7)
 @Composable
 fun RideItemCard(
     ride: RideItemUiModel,
-    onReserveClick: () -> Unit = {}
+    onReserveClick: () -> Unit = {},
+    isReserveEnabled: Boolean = true
 ) {
     var showDialog by remember { mutableStateOf(false) }
 
@@ -79,7 +80,8 @@ fun RideItemCard(
             vehicleInfo = ride.vehicleInfo,
             totalSlots = ride.totalSlots,
             zoneName = ride.zoneName,
-            onReserveClick = { showDialog = true }
+            isReserveEnabled = isReserveEnabled,
+            onReserveClick = { if (isReserveEnabled) showDialog = true }
         )
     }
 
@@ -190,6 +192,7 @@ private fun RideActionSection(
     vehicleInfo: String,
     totalSlots: String,
     zoneName: String,
+    isReserveEnabled: Boolean = true,
     onReserveClick: () -> Unit
 ) {
     Row(
@@ -214,12 +217,15 @@ private fun RideActionSection(
             }
         }
 
-        // boton reservar
+        // boton reservar — gris cuando está bloqueado
         Box(
             modifier = Modifier
                 .widthIn(min = 92.dp)
-                .background(AutumnEmber, RoundedCornerShape(10.dp))
-                .clickable { onReserveClick() }
+                .background(
+                    color = if (isReserveEnabled) AutumnEmber else Color(0xFFCBD5E1),
+                    shape = RoundedCornerShape(10.dp)
+                )
+                .clickable(enabled = isReserveEnabled) { onReserveClick() }
                 .padding(horizontal = 16.dp, vertical = 8.dp)
         ) {
             Text(

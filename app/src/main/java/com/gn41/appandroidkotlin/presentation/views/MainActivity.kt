@@ -11,18 +11,21 @@ import com.gn41.appandroidkotlin.data.repositories.AuthRepositoryImpl
 import com.gn41.appandroidkotlin.data.repositories.ReservationsRepositoryImpl
 import com.gn41.appandroidkotlin.data.repositories.RideRepositoryImpl
 import com.gn41.appandroidkotlin.data.repositories.RidesRepositoryImpl
+import com.gn41.appandroidkotlin.data.repositories.TripRepositoryImpl
 import com.gn41.appandroidkotlin.data.repositories.VehicleRepositoryImpl
 import com.gn41.appandroidkotlin.data.repositories.ZoneRepositoryImpl
 import com.gn41.appandroidkotlin.data.services.auth.AuthService
 import com.gn41.appandroidkotlin.data.services.reservations.ReservationsService
 import com.gn41.appandroidkotlin.data.services.rides.RideService
 import com.gn41.appandroidkotlin.data.services.rides.RidesService
+import com.gn41.appandroidkotlin.data.services.trips.TripService
 import com.gn41.appandroidkotlin.data.services.userId.UserIdService
 import com.gn41.appandroidkotlin.data.services.vehicles.VehicleService
 import com.gn41.appandroidkotlin.data.services.zones.ZoneService
 import com.gn41.appandroidkotlin.presentation.navigation.AppNavigation
 import com.gn41.appandroidkotlin.presentation.viewmodels.CreateRideViewModelFactory
 import com.gn41.appandroidkotlin.presentation.viewmodels.HomeViewModelFactory
+import com.gn41.appandroidkotlin.presentation.viewmodels.TripViewModelFactory
 import com.gn41.appandroidkotlin.presentation.viewmodels.WelcomeViewModel
 import com.gn41.appandroidkotlin.presentation.viewmodels.WelcomeViewModelFactory
 import com.gn41.appandroidkotlin.ui.theme.AppAndroidKotlinTheme
@@ -47,9 +50,18 @@ class MainActivity : ComponentActivity() {
                 val ridesService = RidesService()
                 val ridesRepository = RidesRepositoryImpl(ridesService)
 
+                val tripService = TripService()
+                val tripRepository = TripRepositoryImpl(tripService)
+
                 val homeFactory = HomeViewModelFactory(
                     ridesRepository = ridesRepository,
                     reservationsRepository = reservationsRepository,
+                    sessionManager = sessionManager,
+                    tripRepository = tripRepository
+                )
+
+                val tripViewModelFactory = TripViewModelFactory(
+                    tripRepository = tripRepository,
                     sessionManager = sessionManager
                 )
 
@@ -74,7 +86,8 @@ class MainActivity : ComponentActivity() {
                     navController = navController,
                     welcomeViewModel = welcomeViewModel,
                     homeViewModelFactory = homeFactory,
-                    createRideViewModelFactory = createRideViewModelFactory
+                    createRideViewModelFactory = createRideViewModelFactory,
+                    tripViewModelFactory = tripViewModelFactory
                 )
             }
         }

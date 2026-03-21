@@ -11,6 +11,7 @@ import com.gn41.appandroidkotlin.data.dto.rides.RideDto
 import com.gn41.appandroidkotlin.data.local.SessionManager
 import com.gn41.appandroidkotlin.data.repositories.ReservationsRepository
 import com.gn41.appandroidkotlin.data.repositories.RidesRepository
+import com.gn41.appandroidkotlin.data.repositories.TripRepository
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -28,7 +29,9 @@ data class HomeUiState(
     val selectedDepartureTime: String = "Todas",
     val departureTimeOptions: List<String> = buildDepartureTimeOptions(),
     val hasActiveFilters: Boolean = false,
-    val activeFilterCount: Int = 0
+    val activeFilterCount: Int = 0,
+    val hasActiveRiderReservation: Boolean = false,
+    val hasActiveDriverTrip: Boolean = false
 )
 
 private fun buildDepartureTimeOptions(): List<String> {
@@ -41,7 +44,8 @@ private fun buildDepartureTimeOptions(): List<String> {
 class HomeViewModel(
     private val ridesRepository: RidesRepository,
     private val sessionManager: SessionManager,
-    private val reservationsRepository: ReservationsRepository? = null
+    private val reservationsRepository: ReservationsRepository? = null,
+    private val tripRepository: TripRepository? = null
 ) : ViewModel() {
 
     private var allRides: List<RideDto> = emptyList()
@@ -265,10 +269,7 @@ class HomeViewModel(
             return
         }
 
-        uiState = uiState.copy(
-            isLoading = true,
-            errorMessage = ""
-        )
+        uiState = uiState.copy(isLoading = true, errorMessage = "")
 
         viewModelScope.launch {
             try {
@@ -283,6 +284,7 @@ class HomeViewModel(
                         zoneOptions = buildZoneOptions(result)
                     )
                     applyFilters()
+                    checkBlockingStates()
                 } else {
                     Log.e("HomeViewModel", "Rides result is null")
                     uiState = uiState.copy(
@@ -296,6 +298,51 @@ class HomeViewModel(
                     isLoading = false,
                     errorMessage = "No se pudieron cargar los viajes. Intenta de nuevo."
                 )
+            }
+        }
+    }
+
+    // verifica si el usuario ya tiene reserva activa o viaje activo como conductor
+    private fun checkBlockingStates() {
+        val token = sessionManager.getToken()
+        if (token.isEmpty()) return
+
+        val authId = extractAuthIdFromToken(token) ?: return
+
+        val resRepo = reservationsRepository ?: return
+
+        viewModelScope.launch {
+            try {
+                val user = resRepo.getUserByAuthId(authId, token) ?: return@launch
+
+                // se revisa reserva activa como pasajero
+                val rider = resRepo.getRiderByUserId(user.id, token)
+                val hasActiveRider = if (rider != null) {
+                    val reservations = resRepo.getReservations(rider.id, token).orEmpty()
+                    reservations.any { it.state == "PENDIENTE" || it.state == "ACEPTADA" || it.state == "EN_CURSO" }
+                } else {
+                    false
+                }
+
+                // se revisa viaje activo como conductor
+                val hasActiveDriver = if (tripRepository != null) {
+                    val driver = tripRepository.getDriverByUserId(user.id, token)
+                    if (driver != null) {
+                        val activeRide = tripRepository.getActiveDriverRide(driver.id, token)
+                        activeRide != null
+                    } else {
+                        false
+                    }
+                } else {
+                    false
+                }
+
+                uiState = uiState.copy(
+                    hasActiveRiderReservation = hasActiveRider,
+                    hasActiveDriverTrip = hasActiveDriver
+                )
+            } catch (e: Exception) {
+                Log.e("HomeViewModel", "checkBlockingStates exception", e)
             }
         }
     }

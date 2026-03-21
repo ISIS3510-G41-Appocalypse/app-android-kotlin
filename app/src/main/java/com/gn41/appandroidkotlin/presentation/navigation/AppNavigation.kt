@@ -10,9 +10,12 @@ import com.gn41.appandroidkotlin.presentation.viewmodels.CreateRideViewModel
 import com.gn41.appandroidkotlin.presentation.viewmodels.CreateRideViewModelFactory
 import com.gn41.appandroidkotlin.presentation.viewmodels.HomeViewModel
 import com.gn41.appandroidkotlin.presentation.viewmodels.HomeViewModelFactory
+import com.gn41.appandroidkotlin.presentation.viewmodels.TripViewModel
+import com.gn41.appandroidkotlin.presentation.viewmodels.TripViewModelFactory
 import com.gn41.appandroidkotlin.presentation.viewmodels.WelcomeViewModel
 import com.gn41.appandroidkotlin.presentation.views.CreateRideScreen
 import com.gn41.appandroidkotlin.presentation.views.HomeScreen
+import com.gn41.appandroidkotlin.presentation.views.TripScreen
 import com.gn41.appandroidkotlin.presentation.views.WelcomeScreen
 
 @Composable
@@ -20,7 +23,8 @@ fun AppNavigation(
     navController: NavHostController,
     welcomeViewModel: WelcomeViewModel,
     homeViewModelFactory: HomeViewModelFactory,
-    createRideViewModelFactory: CreateRideViewModelFactory
+    createRideViewModelFactory: CreateRideViewModelFactory,
+    tripViewModelFactory: TripViewModelFactory
 ) {
     NavHost(
         navController = navController,
@@ -42,8 +46,23 @@ fun AppNavigation(
             val homeViewModel: HomeViewModel = viewModel(factory = homeViewModelFactory)
             HomeScreen(
                 viewModel = homeViewModel,
+                onTripsClick = {
+                    navController.navigate("trips")
+                },
                 onCreateRideClick = {
                     navController.navigate("create_ride")
+                }
+            )
+        }
+
+        composable("trips") {
+            val tripViewModel: TripViewModel = viewModel(factory = tripViewModelFactory)
+            TripScreen(
+                viewModel = tripViewModel,
+                onHomeClick = {
+                    navController.navigate("home") {
+                        launchSingleTop = true
+                    }
                 }
             )
         }
