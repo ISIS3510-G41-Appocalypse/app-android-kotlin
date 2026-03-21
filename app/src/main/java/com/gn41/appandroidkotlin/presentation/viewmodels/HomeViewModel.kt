@@ -207,6 +207,12 @@ class HomeViewModel(
         )
     }
 
+    fun logout(onNavigateToLogin: () -> Unit) {
+        sessionManager.clearToken()
+        sessionManager.clearUserId()
+        onNavigateToLogin()
+    }
+    
     private fun buildZoneOptions(rides: List<RideDto>): List<String> {
         // obtiene zonas unicas y las ordena
         val zones = rides

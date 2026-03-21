@@ -4,6 +4,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.runtime.LaunchedEffect
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.rememberNavController
 import com.gn41.appandroidkotlin.data.local.SessionManager
@@ -69,6 +70,19 @@ class MainActivity : ComponentActivity() {
                 )
 
                 val navController = rememberNavController()
+
+                LaunchedEffect(Unit) {
+                    com.gn41.appandroidkotlin.data.local.SessionEvents.onSessionExpired.collect {
+                        sessionManager.clearToken()
+                        sessionManager.clearUserId()
+
+                        welcomeViewModel.resetLoginState()
+
+                        navController.navigate("welcome") {
+                            popUpTo(0) { inclusive = true }
+                        }
+                    }
+                }
 
                 AppNavigation(
                     navController = navController,
