@@ -68,6 +68,7 @@ dependencies {
     implementation("com.squareup.retrofit2:converter-gson:2.9.0")
     implementation(libs.androidx.material3)
     implementation(libs.androidx.compose.ui.text)
+    implementation(libs.firebase.sessions)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

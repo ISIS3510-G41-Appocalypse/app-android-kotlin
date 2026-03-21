@@ -6,14 +6,19 @@ import com.gn41.appandroidkotlin.data.local.SessionManager
 import com.gn41.appandroidkotlin.data.services.SupabaseClient
 import com.gn41.appandroidkotlin.data.services.userId.UserIdService
 
-class RideService (private val sessionManager: SessionManager,
-    private val userIdService: UserIdService) {
+class RideService(
+    private val sessionManager: SessionManager,
+    private val userIdService: UserIdService
+) {
     private val rideApi = SupabaseClient.rideApi
 
-    suspend fun create(request: CreateRideRequestDto) : Result<Unit> {
-        try {
+    suspend fun create(request: CreateRideRequestDto): Result<Unit> {
+        return try {
             val token = sessionManager.getToken()
-                ?: return Result.failure(Exception("No auth token"))
+
+            if (token.isEmpty()) {
+                return Result.failure(Exception("No auth token"))
+            }
 
             val userId = userIdService.getUserByAuthId().id
 
@@ -22,16 +27,15 @@ class RideService (private val sessionManager: SessionManager,
                 state = "OFERTADO"
             )
 
-            rideApi.create( apiKey = BuildConfig.SUPABASE_KEY,
+            rideApi.create(
                 authorization = "Bearer $token",
-                finalRequest)
+                apiKey = BuildConfig.SUPABASE_KEY,
+                request = finalRequest
+            )
 
             Result.success(Unit)
-
         } catch (e: Exception) {
             Result.failure(e)
         }
-
-        return Result.success(Unit)
     }
 }

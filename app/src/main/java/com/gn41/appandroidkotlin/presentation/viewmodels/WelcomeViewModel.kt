@@ -87,5 +87,12 @@ class WelcomeViewModel( private val authRepository: AuthRepository,    private v
         }
     }
 
-
+    fun resetLoginState() {
+        isLoggedIn = false
+        sessionToken = ""
+        sessionUserId = ""
+        email = ""
+        password = ""
+        showLoginCard = false
+    }
 }

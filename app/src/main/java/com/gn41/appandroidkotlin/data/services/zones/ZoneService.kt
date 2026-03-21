@@ -5,21 +5,36 @@ import com.gn41.appandroidkotlin.data.dto.zone.ZoneDto
 import com.gn41.appandroidkotlin.data.local.SessionManager
 import com.gn41.appandroidkotlin.data.services.SupabaseClient
 
-class ZoneService (private val sessionManager: SessionManager) {
+class ZoneService(
+    private val sessionManager: SessionManager
+) {
     private val zoneApi = SupabaseClient.zoneApi
 
     suspend fun getZones(): List<ZoneDto> {
         val token = sessionManager.getToken()
 
-        val zones = zoneApi.getZones("Bearer $token", BuildConfig.SUPABASE_KEY)
+        if (token.isEmpty()) {
+            throw Exception("No auth token")
+        }
 
-        return zones
+        return zoneApi.getZones(
+            token = "Bearer $token",
+            apiKey = BuildConfig.SUPABASE_KEY
+        )
     }
 
-    suspend fun getZoneByName(name:String): ZoneDto {
+    suspend fun getZoneByName(name: String): ZoneDto {
         val token = sessionManager.getToken()
 
-        val zone = zoneApi.getZoneByName("Bearer $token", BuildConfig.SUPABASE_KEY,"eq.$name")
+        if (token.isEmpty()) {
+            throw Exception("No auth token")
+        }
+
+        val zone = zoneApi.getZoneByName(
+            token = "Bearer $token",
+            apiKey = BuildConfig.SUPABASE_KEY,
+            name = "eq.$name"
+        )
 
         return zone.firstOrNull()
             ?: throw Exception("Zone not found")

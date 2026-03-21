@@ -16,12 +16,18 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Logout
+import androidx.compose.material.icons.filled.Logout
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -33,6 +39,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.gn41.appandroidkotlin.presentation.components.RideItemCard
 import com.gn41.appandroidkotlin.presentation.viewmodels.HomeViewModel
+import kotlinx.coroutines.delay
 
 val darkBlue = Color(0xFF0B1E3B)
 val whiteCard = Color(0xFFF5F7FA)
@@ -41,7 +48,8 @@ val selectedBottomItemColor = Color(0xFF0D9488)
 @Composable
 fun HomeScreen(
     viewModel: HomeViewModel,
-    onCreateRideClick: () -> Unit
+    onCreateRideClick: () -> Unit,
+    onLogoutClick: () -> Unit
 ) {
     val state = viewModel.uiState
     var selectedBottomTab by remember { mutableStateOf("Inicio") }
@@ -56,7 +64,13 @@ fun HomeScreen(
                 .fillMaxSize()
                 .padding(16.dp)
         ) {
-            HomeHeader()
+            HomeHeader(
+                onLogoutClick = {
+                    viewModel.logout {
+                        onLogoutClick()
+                    }
+                }
+            )
 
             Spacer(modifier = Modifier.height(16.dp))
 
@@ -77,6 +91,28 @@ fun HomeScreen(
             )
 
             Spacer(modifier = Modifier.height(16.dp))
+
+            if (state.reservationMessage.isNotEmpty()) {
+                LaunchedEffect(state.reservationMessage) {
+                    delay(3000)
+                    viewModel.clearReservationMessage()
+                }
+
+                val isSuccess = state.reservationMessage.contains("correctamente")
+                Text(
+                    text = state.reservationMessage,
+                    color = if (isSuccess) Color(0xFF0D9488) else Color(0xFFB45309),
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(
+                            if (isSuccess) Color(0xFFE6FFFA) else Color(0xFFFEF3C7),
+                            RoundedCornerShape(8.dp)
+                        )
+                        .padding(horizontal = 12.dp, vertical = 8.dp)
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+            }
 
             when {
                 state.isLoading -> {
@@ -121,7 +157,10 @@ fun HomeScreen(
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         items(state.rides) { ride ->
-                            RideItemCard(ride = ride)
+                            RideItemCard(
+                                ride = ride,
+                                onReserveClick = { viewModel.onReserveClicked(ride.id) }
+                            )
                         }
                     }
                 }
@@ -154,12 +193,14 @@ fun HomeScreen(
             )
         }
 
-        ExpandableCreateRideButton(
-            modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .padding(end = 24.dp, bottom = 84.dp),
-            onCreateRideClick = onCreateRideClick
-        )
+        if (state.isDriver) {
+            ExpandableCreateRideButton(
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(end = 24.dp, bottom = 84.dp),
+                onCreateRideClick = onCreateRideClick
+            )
+        }
     }
 }
 
@@ -210,33 +251,45 @@ fun ExpandableCreateRideButton(
 }
 
 @Composable
-fun HomeHeader() {
-    Column(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Text(
-            text = "HappyRide",
-            color = Color.White,
-            style = MaterialTheme.typography.titleLarge,
-            textAlign = TextAlign.Center
-        )
+fun HomeHeader(onLogoutClick: () -> Unit) {
+    Box(modifier = Modifier.fillMaxWidth()) {
+        Column(
+            modifier = Modifier.fillMaxWidth(),horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                text = "HappyRide",
+                color = Color.White,
+                style = MaterialTheme.typography.titleLarge,
+                textAlign = TextAlign.Center
+            )
 
-        Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
-        Text(
-            text = "Oferta de viajes",
-            color = Color.White,
-            style = MaterialTheme.typography.titleLarge,
-            textAlign = TextAlign.Center
-        )
+            Text(
+                text = "Oferta de viajes",
+                color = Color.White,
+                style = MaterialTheme.typography.titleLarge,
+                textAlign = TextAlign.Center
+            )
 
-        Text(
-            text = "Encuentra el viaje perfecto para tu trayecto.",
-            color = Color.LightGray,
-            style = MaterialTheme.typography.bodyMedium,
-            textAlign = TextAlign.Center
-        )
+            Text(
+                text = "Encuentra el viaje perfecto para tu trayecto.",
+                color = Color.LightGray,
+                style = MaterialTheme.typography.bodyMedium,
+                textAlign = TextAlign.Center
+            )
+        }
+
+        IconButton(
+            onClick = onLogoutClick,
+            modifier = Modifier.align(Alignment.TopEnd)
+        ) {
+            Icon(
+                imageVector = Icons.Default.Logout,
+                contentDescription = "Cerrar sesión",
+                tint = Color.White
+            )
+        }
     }
 }
 

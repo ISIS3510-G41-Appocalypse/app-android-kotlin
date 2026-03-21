@@ -1,6 +1,7 @@
 package com.gn41.appandroidkotlin.presentation.viewmodels
 
 import android.util.Log
+import android.util.Base64
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -8,7 +9,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.gn41.appandroidkotlin.data.dto.rides.RideDto
 import com.gn41.appandroidkotlin.data.local.SessionManager
+import com.gn41.appandroidkotlin.data.repositories.ReservationsRepository
 import com.gn41.appandroidkotlin.data.repositories.RidesRepository
+import com.gn41.appandroidkotlin.data.repositories.VehicleRepository
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -18,6 +21,7 @@ data class HomeUiState(
     val isLoading: Boolean = false,
     val rides: List<RideItemUiModel> = emptyList(),
     val errorMessage: String = "",
+    val reservationMessage: String = "",
     val selectedZone: String = "Todos",
     val zoneOptions: List<String> = listOf("Todos"),
     val selectedTripType: String = "Todos",
@@ -25,6 +29,7 @@ data class HomeUiState(
     val selectedDepartureTime: String = "Todas",
     val departureTimeOptions: List<String> = buildDepartureTimeOptions(),
     val hasActiveFilters: Boolean = false,
+    val isDriver: Boolean = false,
     val activeFilterCount: Int = 0
 )
 
@@ -37,7 +42,9 @@ private fun buildDepartureTimeOptions(): List<String> {
 
 class HomeViewModel(
     private val ridesRepository: RidesRepository,
-    private val sessionManager: SessionManager
+    private val sessionManager: SessionManager,
+    private val reservationsRepository: ReservationsRepository? = null,
+    private val vehicleRepository: VehicleRepository
 ) : ViewModel() {
 
     private var allRides: List<RideDto> = emptyList()
@@ -67,6 +74,82 @@ class HomeViewModel(
     fun onDepartureTimeChange(value: String) {
         uiState = uiState.copy(selectedDepartureTime = value)
         applyFilters()
+    }
+
+    fun onReserveClicked(rideId: Int) {
+        val token = sessionManager.getToken()
+
+        if (token.isEmpty()) {
+            uiState = uiState.copy(reservationMessage = "No hay una sesion activa. Inicia sesion nuevamente.")
+            return
+        }
+
+        val repository = reservationsRepository
+        if (repository == null) {
+            uiState = uiState.copy(reservationMessage = "Reservas no disponibles por ahora.")
+            return
+        }
+
+        val authId = extractAuthIdFromToken(token)
+        if (authId.isNullOrEmpty()) {
+            uiState = uiState.copy(reservationMessage = "No se pudo validar el usuario.")
+            return
+        }
+
+        val ride = allRides.find { it.id == rideId }
+        val meetingPoint = ride?.source ?: ""
+        val destinationPoint = ride?.destination ?: ""
+
+        viewModelScope.launch {
+            try {
+                val user = repository.getUserByAuthId(authId, token)
+                if (user == null) {
+                    uiState = uiState.copy(reservationMessage = "No se pudo encontrar el usuario.")
+                    return@launch
+                }
+
+                val rider = repository.getRiderByUserId(user.id, token)
+                if (rider == null) {
+                    uiState = uiState.copy(reservationMessage = "No se pudo encontrar el rider.")
+                    return@launch
+                }
+
+                val reservations = repository.getReservations(rider.id, token).orEmpty()
+                val hasActive = reservations.any {
+                    it.state == "PENDIENTE" ||
+                        it.state == "ACEPTADA" ||
+                        it.state == "EN_CURSO"
+                }
+
+                if (hasActive) {
+                    uiState = uiState.copy(
+                        reservationMessage = "Ya tienes una reserva activa. Cancela la actual antes de reservar otro viaje."
+                    )
+                    return@launch
+                }
+
+                val created = repository.createReservation(
+                    rideId = rideId,
+                    riderId = rider.id,
+                    meetingPoint = meetingPoint,
+                    destinationPoint = destinationPoint,
+                    token = token
+                )
+
+                uiState = if (created) {
+                    uiState.copy(reservationMessage = "Reserva creada correctamente.")
+                } else {
+                    uiState.copy(reservationMessage = "No se pudo crear la reserva. Intenta de nuevo.")
+                }
+            } catch (e: Exception) {
+                Log.e("HomeViewModel", "Exception creating reservation", e)
+                uiState = uiState.copy(reservationMessage = "No se pudo crear la reserva. Intenta de nuevo.")
+            }
+        }
+    }
+
+    fun clearReservationMessage() {
+        uiState = uiState.copy(reservationMessage = "")
     }
 
     fun clearFilters() {
@@ -127,6 +210,12 @@ class HomeViewModel(
         )
     }
 
+    fun logout(onNavigateToLogin: () -> Unit) {
+        sessionManager.clearToken()
+        sessionManager.clearUserId()
+        onNavigateToLogin()
+    }
+
     private fun buildZoneOptions(rides: List<RideDto>): List<String> {
         // obtiene zonas unicas y las ordena
         val zones = rides
@@ -159,6 +248,21 @@ class HomeViewModel(
         return rideHour == slotHour
     }
 
+    private fun extractAuthIdFromToken(token: String): String? {
+        return try {
+            val parts = token.split('.')
+            if (parts.size < 2) return null
+
+            val payloadBytes = Base64.decode(parts[1], Base64.URL_SAFE or Base64.NO_WRAP or Base64.NO_PADDING)
+            val payload = String(payloadBytes)
+
+            val subRegex = "\"sub\"\\s*:\\s*\"([^\"]+)\"".toRegex()
+            subRegex.find(payload)?.groupValues?.get(1)
+        } catch (_: Exception) {
+            null
+        }
+    }
+
     private fun loadRides() {
         val token = sessionManager.getToken()
 
@@ -177,6 +281,11 @@ class HomeViewModel(
 
         viewModelScope.launch {
             try {
+                val userVehicles = vehicleRepository.getUserVehicles()
+                val isDriver = userVehicles.isNotEmpty()
+
+                uiState = uiState.copy(isDriver = isDriver)
+
                 val result = ridesRepository.getRides(token)
 
                 if (result != null) {

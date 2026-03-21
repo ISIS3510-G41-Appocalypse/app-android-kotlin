@@ -47,6 +47,7 @@ import androidx.compose.material3.TimePicker
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -64,6 +65,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.gn41.appandroidkotlin.presentation.viewmodels.CreateRideViewModel
 import com.gn41.appandroidkotlin.presentation.viewmodels.CreateRideViewModel.CreateRideUiState
+import kotlinx.coroutines.delay
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
@@ -93,6 +95,12 @@ fun CreateRideScreen(
 
     val formState = viewModel.formState
     val uiState = viewModel.uiState
+
+    LaunchedEffect(uiState) {
+        if (uiState is CreateRideUiState.Success) {
+            onBackClick()
+        }
+    }
 
     val backgroundBrush = Brush.verticalGradient(
         colors = listOf(DarkBlueTop, DarkBlueBottom)
