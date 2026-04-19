@@ -18,12 +18,22 @@ class WelcomeViewModel(
     private val tripRepository: TripRepository
 ) : ViewModel() {
 
+    companion object {
+        private const val MAX_EMAIL_LENGTH = 50
+        private const val MAX_PASSWORD_LENGTH = 30
+    }
+
     //Para ayudarnnos a decidi si mostramos o on el card de login.
     var showLoginCard by mutableStateOf(value = false)
         private set
     var email by mutableStateOf(value = "")
         private set
     var password by mutableStateOf(value = "")
+        private set
+
+    var emailInputError by mutableStateOf(value = "")
+        private set
+    var passwordInputError by mutableStateOf(value = "")
         private set
 
     var loginError by mutableStateOf(value = "")
@@ -53,7 +63,7 @@ class WelcomeViewModel(
     //Metodos
 
     fun onLoginClicked() {
-        showLoginCard = true;
+        showLoginCard = true
     }
     //esta la vamos a implementar despues.... pero se puede reutilizar en el logi card... on en el botón de registro del home.
     fun onRegisterClicked() {
@@ -61,16 +71,54 @@ class WelcomeViewModel(
     }
 
     fun onEmailInput(newEmail: String) {
-        email = newEmail
+        if (newEmail.length > MAX_EMAIL_LENGTH) {
+            email = newEmail.take(MAX_EMAIL_LENGTH)
+            emailInputError = "Solo puedes escribir $MAX_EMAIL_LENGTH caracteres"
+        } else {
+            email = newEmail
+
+            if (newEmail.length < MAX_EMAIL_LENGTH) {
+                emailInputError = ""
+            }
+        }
+
+        if (loginError.isNotEmpty()) {
+            loginError = ""
+        }
     }
 
     fun onPasswordInput(newPassword: String) {
-        password = newPassword
-    }
+        if (newPassword.length > MAX_PASSWORD_LENGTH) {
+            password = newPassword.take(MAX_PASSWORD_LENGTH)
+            passwordInputError = "Solo puedes escribir $MAX_PASSWORD_LENGTH caracteres"
+        } else {
+            password = newPassword
 
+            if (newPassword.length < MAX_PASSWORD_LENGTH) {
+                passwordInputError = ""
+            }
+        }
+
+        if (loginError.isNotEmpty()) {
+            loginError = ""
+        }
+    }
     fun onLoginSubmit() {
+        val cleanEmail = email.trim().lowercase()
+        val cleanPassword = password.trim()
+
+        if (cleanEmail.isEmpty() || cleanPassword.isEmpty()) {
+            loginError = "Completa el correo y la contraseña"
+            return
+        }
+
+        if (!cleanEmail.endsWith("@uniandes.edu.co")) {
+            loginError = "Solo se permite correo institucional @uniandes.edu.co"
+            return
+        }
+
         viewModelScope.launch {
-            val loginResult = authRepository.login(email, password)
+            val loginResult = authRepository.login(cleanEmail, cleanPassword)
 
             if (loginResult != null) {
                 sessionToken = loginResult.access_token
@@ -81,6 +129,8 @@ class WelcomeViewModel(
 
                 obtenerDriverId(loginResult.access_token)
 
+                email = cleanEmail
+                password = cleanPassword
                 isLoggedIn = true
                 loginError = ""
             } else {
@@ -144,6 +194,8 @@ class WelcomeViewModel(
         sessionUserId = ""
         email = ""
         password = ""
+        emailInputError = ""
+        passwordInputError = ""
         showLoginCard = false
     }
 }
