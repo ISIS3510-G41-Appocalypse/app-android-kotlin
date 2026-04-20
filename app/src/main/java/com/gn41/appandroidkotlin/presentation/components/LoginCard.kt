@@ -30,6 +30,7 @@ import com.gn41.appandroidkotlin.presentation.viewmodels.WelcomeViewModel
 import com.gn41.appandroidkotlin.ui.theme.AutumnEmber
 import com.gn41.appandroidkotlin.ui.theme.BrightSnow
 import com.gn41.appandroidkotlin.ui.theme.CoolSteel
+import androidx.compose.material3.CircularProgressIndicator
 
 @Composable
 fun LoginCard(viewModel: WelcomeViewModel, isLandscape: Boolean) {
@@ -148,12 +149,23 @@ fun LoginCard(viewModel: WelcomeViewModel, isLandscape: Boolean) {
             Button(
                 onClick = { viewModel.onLoginSubmit() },
                 modifier = Modifier.fillMaxWidth(),
+                enabled = !viewModel.isLoading,
                 colors = ButtonDefaults.buttonColors(
                     containerColor = MaterialTheme.colorScheme.primary,
                     contentColor = MaterialTheme.colorScheme.onPrimary
                 )
             ) {
-                Text(text = "Iniciar sesión")
+                if (viewModel.isLoading) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.height(18.dp),
+                        strokeWidth = 2.dp,
+                        color = MaterialTheme.colorScheme.onPrimary
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(text = "Iniciando...")
+                } else {
+                    Text(text = "Iniciar sesión")
+                }
             }
 
             // Error message aquí

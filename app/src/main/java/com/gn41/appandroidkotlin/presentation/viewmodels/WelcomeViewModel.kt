@@ -11,11 +11,14 @@ import com.gn41.appandroidkotlin.data.repositories.TripRepository
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.launch
 import com.gn41.appandroidkotlin.data.local.SessionManager
+import com.gn41.appandroidkotlin.core.connectivity.NetworkHelper
+import kotlinx.coroutines.withTimeoutOrNull
 
 class WelcomeViewModel(
     private val authRepository: AuthRepository,
     private val sessionManager: SessionManager,
-    private val tripRepository: TripRepository
+    private val tripRepository: TripRepository,
+    private val networkHelper: NetworkHelper
 ) : ViewModel() {
 
     companion object {
@@ -45,6 +48,9 @@ class WelcomeViewModel(
         private set
 
     var sessionUserId by mutableStateOf(value = "")
+        private set
+
+    var isLoading by mutableStateOf(value = false)
         private set
 
 
@@ -117,8 +123,18 @@ class WelcomeViewModel(
             return
         }
 
+        if (!networkHelper.isInternetAvailable()) {
+            loginError = "Revisa tu conexión a internet y vuelve a intentar"
+            return
+        }
+
         viewModelScope.launch {
-            val loginResult = authRepository.login(cleanEmail, cleanPassword)
+            isLoading = true
+            loginError = ""
+
+            val loginResult = withTimeoutOrNull(8000) {
+                authRepository.login(cleanEmail, cleanPassword)
+            }
 
             if (loginResult != null) {
                 sessionToken = loginResult.access_token
@@ -136,9 +152,10 @@ class WelcomeViewModel(
             } else {
                 sessionToken = ""
                 isLoggedIn = false
-                loginError = "Correo o contraseña inválidos"
+                loginError = "La solicitud tardó demasiado o no se pudo completar. Intenta nuevamente"
             }
 
+            isLoading = false
             Log.d("WelcomeVM", "Token: $sessionToken")
         }
     }
@@ -197,5 +214,6 @@ class WelcomeViewModel(
         emailInputError = ""
         passwordInputError = ""
         showLoginCard = false
+        isLoading = false
     }
 }

@@ -46,7 +46,12 @@ class MainActivity : ComponentActivity() {
                 val tripService = TripService()
                 val tripRepository = TripRepositoryImpl(tripService)
 
-                val welcomeFactory = WelcomeViewModelFactory(authRepository, sessionManager, tripRepository)
+                val welcomeFactory = WelcomeViewModelFactory(
+                    context = this,
+                    authRepository = authRepository,
+                    sessionManager = sessionManager,
+                    tripRepository = tripRepository
+                )
                 val welcomeViewModel: WelcomeViewModel = viewModel(factory = welcomeFactory)
 
                 val reservationsService = ReservationsService()
