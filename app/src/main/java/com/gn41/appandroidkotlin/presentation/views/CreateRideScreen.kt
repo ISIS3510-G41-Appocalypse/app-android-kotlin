@@ -25,16 +25,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DatePicker
@@ -42,8 +32,19 @@ import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SelectableDates
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TimePicker
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
@@ -57,16 +58,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.TextRange
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.gn41.appandroidkotlin.presentation.viewmodels.CreateRideViewModel
 import com.gn41.appandroidkotlin.presentation.viewmodels.CreateRideViewModel.CreateRideUiState
-import kotlinx.coroutines.delay
 import java.text.SimpleDateFormat
+import java.time.Instant
+import java.time.ZoneId
 import java.util.Calendar
 import java.util.Locale
 
@@ -359,6 +358,15 @@ fun CreateRideScreen(
                             }
                         }
 
+                        if (viewModel.timeValidationMessage.isNotEmpty()) {
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = viewModel.timeValidationMessage,
+                                color = Color.Red,
+                                fontSize = 12.sp
+                            )
+                        }
+
                         Spacer(modifier = Modifier.height(18.dp))
 
                         Button(
@@ -385,6 +393,7 @@ fun CreateRideScreen(
                                 contentDescription = null
                             )
                         }
+
                         when (uiState) {
                             is CreateRideUiState.Loading -> {
                                 CircularProgressIndicator()
@@ -413,14 +422,26 @@ fun CreateRideScreen(
     }
 
     if (showDatePicker) {
-        val datePickerState = rememberDatePickerState()
+        val todayMillis = Calendar.getInstance().apply {
+            set(Calendar.HOUR_OF_DAY, 0)
+            set(Calendar.MINUTE, 0)
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
+        }.timeInMillis
+
+        val datePickerState = rememberDatePickerState(
+            selectableDates = object : SelectableDates {
+                override fun isSelectableDate(utcTimeMillis: Long): Boolean {
+                    return utcTimeMillis >= todayMillis
+                }
+            }
+        )
 
         DatePickerDialog(
             onDismissRequest = { showDatePicker = false },
             confirmButton = {
                 TextButton(onClick = {
                     datePickerState.selectedDateMillis?.let { millis ->
-
                         val calendar = Calendar.getInstance()
                         calendar.timeInMillis = millis
 
@@ -438,6 +459,7 @@ fun CreateRideScreen(
             DatePicker(state = datePickerState)
         }
     }
+
     if (showTimePicker) {
         val timeState = rememberTimePickerState(is24Hour = true)
 
@@ -452,8 +474,11 @@ fun CreateRideScreen(
                         timeState.minute
                     )
 
-                    viewModel.onDepartureTimeSelected(time)
-                    showTimePicker = false
+                    viewModel.validateAndSetDepartureTime(time)
+
+                    if (viewModel.timeValidationMessage.isEmpty()) {
+                        showTimePicker = false
+                    }
                 }) {
                     Text("Aceptar")
                 }
