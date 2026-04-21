@@ -8,18 +8,23 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.gn41.appandroidkotlin.data.local.SessionManager
+import com.gn41.appandroidkotlin.data.repositories.LocationRepository
 import com.gn41.appandroidkotlin.data.repositories.TripRepository
+import com.gn41.appandroidkotlin.domain.UserSharedLocation
 import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+import java.util.TimeZone
 
 class TripViewModel(
     private val tripRepository: TripRepository,
-    private val sessionManager: SessionManager
+    private val sessionManager: SessionManager,
+    private val locationRepository: LocationRepository
 ) : ViewModel() {
 
     var uiState by mutableStateOf(TripUiState())
         private set
-
-
 
     init {
         loadTrips()
@@ -92,19 +97,19 @@ class TripViewModel(
                         val reservationItems = reservations
                             .sortedBy { stateOrder(it.state) }
                             .map { reservation ->
-                            val firstName = reservation.riders?.users?.first_name.orEmpty()
-                            val lastName = reservation.riders?.users?.last_name.orEmpty()
-                            val riderName = listOf(firstName, lastName)
-                                .filter { it.isNotBlank() }
-                                .joinToString(" ")
-                                .ifBlank { "Rider" }
+                                val firstName = reservation.riders?.users?.first_name.orEmpty()
+                                val lastName = reservation.riders?.users?.last_name.orEmpty()
+                                val riderName = listOf(firstName, lastName)
+                                    .filter { it.isNotBlank() }
+                                    .joinToString(" ")
+                                    .ifBlank { "Rider" }
 
-                            TripReservationItemUiModel(
-                                id = reservation.id,
-                                riderName = riderName,
-                                status = reservation.state
-                            )
-                        }
+                                TripReservationItemUiModel(
+                                    id = reservation.id,
+                                    riderName = riderName,
+                                    status = reservation.state
+                                )
+                            }
 
                         val totalSeats = activeRide.vehicles?.number_slots ?: 0
                         val acceptedReservations = reservationItems.count {
@@ -131,12 +136,24 @@ class TripViewModel(
                     null
                 }
 
+                val currentRideId = when {
+                    driverTrip != null -> driverTrip.rideId
+                    riderTrips.isNotEmpty() -> riderTrips.first().rideId
+                    else -> null
+                }
+
                 uiState = uiState.copy(
                     isLoading = false,
                     errorMessage = "",
                     activeRiderTrips = riderTrips,
-                    activeDriverTrip = driverTrip
+                    activeDriverTrip = driverTrip,
+                    currentUserId = user.id,
+                    currentRideId = currentRideId
                 )
+
+                if (currentRideId != null) {
+                    loadLocationsForCurrentRide()
+                }
             } catch (e: Exception) {
                 Log.e("TripViewModel", "loadTrips exception", e)
                 uiState = uiState.copy(
@@ -264,6 +281,8 @@ class TripViewModel(
             locationErrorMessage = "",
             locationStatusMessage = "Ubicación actualizada."
         )
+
+        saveCurrentLocationToBackend(latitude, longitude)
     }
 
     fun onLocationRequestFailed(message: String) {
@@ -285,7 +304,40 @@ class TripViewModel(
         )
     }
 
-    private fun changeReservationState(
+    private fun saveCurrentLocationToBackend(latitude: Double, longitude: Double) {
+        val token = sessionManager.getToken()
+        val userId = uiState.currentUserId
+        val rideId = uiState.currentRideId
+
+        if (!uiState.isLocationSharingEnabled) return
+        if (token.isEmpty()) return
+        if (userId == null || rideId == null) return
+
+        viewModelScope.launch {
+            val success = locationRepository.saveLocation(
+                location = UserSharedLocation(
+                    userId = userId,
+                    rideId = rideId,
+                    latitude = latitude,
+                    longitude = longitude,
+                    timestamp = buildIsoTimestamp(),
+                    isSharingEnabled = true
+                ),
+                token = token
+            )
+
+            if (!success) {
+                uiState = uiState.copy(
+                    locationErrorMessage = "No se pudo guardar la ubicación en el servidor.",
+                    locationStatusMessage = "Ubicación obtenida localmente, pero no se pudo registrar."
+                )
+            } else {
+                loadLocationsForCurrentRide()
+            }
+        }
+    }
+
+private fun changeReservationState(
         reservationId: Int,
         newState: String,
         successMessage: String
@@ -344,12 +396,41 @@ class TripViewModel(
         }
     }
 
-    // pendiente primero, luego aceptada, luego en curso
+    private fun buildIsoTimestamp(): String {
+        val formatter = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.US)
+        formatter.timeZone = TimeZone.getTimeZone("UTC")
+        return formatter.format(Date())
+    }
+
     private fun stateOrder(state: String): Int = when (state) {
         "PENDIENTE" -> 0
         "ACEPTADA" -> 1
         "EN_CURSO" -> 2
         else -> 3
     }
-}
 
+
+    fun loadLocationsForCurrentRide() {
+        val token = sessionManager.getToken()
+        val rideId = uiState.currentRideId
+
+        if (token.isEmpty() || rideId == null) {
+            return
+        }
+
+        viewModelScope.launch {
+            try {
+                val locations = locationRepository.getLocationsByRide(
+                    rideId = rideId,
+                    token = token
+                )
+
+                uiState = uiState.copy(
+                    rideLocations = locations
+                )
+            } catch (e: Exception) {
+                Log.e("TripViewModel", "loadLocationsForCurrentRide exception", e)
+            }
+        }
+    }
+}
