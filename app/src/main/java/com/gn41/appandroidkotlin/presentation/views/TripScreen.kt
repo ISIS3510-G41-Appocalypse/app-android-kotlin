@@ -1,5 +1,6 @@
 package com.gn41.appandroidkotlin.presentation.views
 
+import android.content.res.Configuration
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -8,13 +9,14 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -29,15 +31,17 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.shape.RoundedCornerShape
+import com.gn41.appandroidkotlin.presentation.components.TripLocationCard
 import com.gn41.appandroidkotlin.presentation.viewmodels.ActiveDriverTripUiModel
 import com.gn41.appandroidkotlin.presentation.viewmodels.ActiveRiderTripUiModel
 import com.gn41.appandroidkotlin.presentation.viewmodels.TripReservationItemUiModel
 import com.gn41.appandroidkotlin.presentation.viewmodels.TripViewModel
 import com.gn41.appandroidkotlin.ui.theme.AutumnEmber
 import kotlinx.coroutines.delay
-import com.gn41.appandroidkotlin.presentation.components.TripLocationCard
 
 @Composable
 fun TripScreen(
@@ -46,6 +50,8 @@ fun TripScreen(
 ) {
     val state = viewModel.uiState
     var selectedSection by remember { mutableStateOf("Conductor") }
+    val configuration = LocalConfiguration.current
+    val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
 
     if (state.infoMessage.isNotEmpty()) {
         LaunchedEffect(state.infoMessage) {
@@ -82,13 +88,6 @@ fun TripScreen(
         )
 
         Spacer(modifier = Modifier.height(16.dp))
-
-        SectionSwitch(
-            selectedSection = selectedSection,
-            onSectionSelected = { selectedSection = it }
-        )
-
-        Spacer(modifier = Modifier.height(12.dp))
 
         if (state.infoMessage.isNotEmpty()) {
             Text(
@@ -131,23 +130,36 @@ fun TripScreen(
                     }
                 }
 
+                isLandscape -> {
+                    LandscapeTripsContent(
+                        selectedSection = selectedSection,
+                        onSectionSelected = { selectedSection = it },
+                        driverTrip = state.activeDriverTrip,
+                        riderTrips = state.activeRiderTrips,
+                        onAcceptReservation = viewModel::onAcceptReservationClicked,
+                        onRejectReservation = viewModel::onRejectReservationClicked,
+                        onCancelTrip = viewModel::onCancelTripClicked,
+                        onStartTrip = viewModel::onStartTripClicked,
+                        onOpenRoute = viewModel::onOpenRouteClicked,
+                        onFinishTrip = viewModel::onFinishTripClicked,
+                        onCancelReservation = viewModel::onCancelReservationClicked
+                    )
+                }
+
                 else -> {
-                    if (selectedSection == "Conductor") {
-                        DriverSection(
-                            trip = state.activeDriverTrip,
-                            onAcceptReservation = viewModel::onAcceptReservationClicked,
-                            onRejectReservation = viewModel::onRejectReservationClicked,
-                            onCancelTrip = viewModel::onCancelTripClicked,
-                            onStartTrip = viewModel::onStartTripClicked,
-                            onOpenRoute = viewModel::onOpenRouteClicked,
-                            onFinishTrip = viewModel::onFinishTripClicked
-                        )
-                    } else {
-                        RiderSection(
-                            trips = state.activeRiderTrips,
-                            onCancelReservation = viewModel::onCancelReservationClicked
-                        )
-                    }
+                    PortraitTripsContent(
+                        selectedSection = selectedSection,
+                        onSectionSelected = { selectedSection = it },
+                        driverTrip = state.activeDriverTrip,
+                        riderTrips = state.activeRiderTrips,
+                        onAcceptReservation = viewModel::onAcceptReservationClicked,
+                        onRejectReservation = viewModel::onRejectReservationClicked,
+                        onCancelTrip = viewModel::onCancelTripClicked,
+                        onStartTrip = viewModel::onStartTripClicked,
+                        onOpenRoute = viewModel::onOpenRouteClicked,
+                        onFinishTrip = viewModel::onFinishTripClicked,
+                        onCancelReservation = viewModel::onCancelReservationClicked
+                    )
                 }
             }
         }
@@ -160,6 +172,144 @@ fun TripScreen(
                 if (it == "Inicio") onHomeClick()
             }
         )
+    }
+}
+
+@Composable
+private fun PortraitTripsContent(
+    selectedSection: String,
+    onSectionSelected: (String) -> Unit,
+    driverTrip: ActiveDriverTripUiModel?,
+    riderTrips: List<ActiveRiderTripUiModel>,
+    onAcceptReservation: (Int) -> Unit,
+    onRejectReservation: (Int) -> Unit,
+    onCancelTrip: () -> Unit,
+    onStartTrip: () -> Unit,
+    onOpenRoute: () -> Unit,
+    onFinishTrip: () -> Unit,
+    onCancelReservation: (Int) -> Unit
+) {
+    Column(
+        modifier = Modifier.fillMaxSize()
+    ) {
+        SectionSwitch(
+            selectedSection = selectedSection,
+            onSectionSelected = onSectionSelected
+        )
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        Box(
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxWidth()
+        ) {
+            if (selectedSection == "Conductor") {
+                DriverSection(
+                    trip = driverTrip,
+                    onAcceptReservation = onAcceptReservation,
+                    onRejectReservation = onRejectReservation,
+                    onCancelTrip = onCancelTrip,
+                    onStartTrip = onStartTrip,
+                    onOpenRoute = onOpenRoute,
+                    onFinishTrip = onFinishTrip
+                )
+            } else {
+                RiderSection(
+                    trips = riderTrips,
+                    onCancelReservation = onCancelReservation
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun LandscapeTripsContent(
+    selectedSection: String,
+    onSectionSelected: (String) -> Unit,
+    driverTrip: ActiveDriverTripUiModel?,
+    riderTrips: List<ActiveRiderTripUiModel>,
+    onAcceptReservation: (Int) -> Unit,
+    onRejectReservation: (Int) -> Unit,
+    onCancelTrip: () -> Unit,
+    onStartTrip: () -> Unit,
+    onOpenRoute: () -> Unit,
+    onFinishTrip: () -> Unit,
+    onCancelReservation: (Int) -> Unit
+) {
+    Row(
+        modifier = Modifier.fillMaxSize(),
+        horizontalArrangement = Arrangement.spacedBy(14.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .weight(0.42f)
+                .fillMaxHeight()
+        ) {
+            SectionSwitch(
+                selectedSection = selectedSection,
+                onSectionSelected = onSectionSelected
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth()
+            ) {
+                if (selectedSection == "Conductor") {
+                    DriverSummarySection(
+                        trip = driverTrip,
+                        onAcceptReservation = onAcceptReservation,
+                        onRejectReservation = onRejectReservation,
+                        onCancelTrip = onCancelTrip,
+                        onStartTrip = onStartTrip,
+                        onOpenRoute = onOpenRoute,
+                        onFinishTrip = onFinishTrip
+                    )
+                } else {
+                    RiderSummarySection(
+                        trips = riderTrips,
+                        onCancelReservation = onCancelReservation
+                    )
+                }
+            }
+        }
+
+        Box(
+            modifier = Modifier
+                .weight(0.58f)
+                .fillMaxHeight()
+        ) {
+            if (selectedSection == "Conductor") {
+                if (driverTrip != null) {
+                    var isLocationSharingEnabled by remember(driverTrip.rideId) { mutableStateOf(false) }
+
+                    TripLocationCard(
+                        isDriver = true,
+                        isLocationSharingEnabled = isLocationSharingEnabled,
+                        onToggleLocationSharing = { isLocationSharingEnabled = it }
+                    )
+                } else {
+                    EmptyStateCard(message = "No hay un viaje activo para mostrar en el mapa.")
+                }
+            } else {
+                val firstTrip = riderTrips.firstOrNull()
+                if (firstTrip != null) {
+                    var isLocationSharingEnabled by remember(firstTrip.reservationId) { mutableStateOf(false) }
+
+                    TripLocationCard(
+                        isDriver = false,
+                        isLocationSharingEnabled = isLocationSharingEnabled,
+                        onToggleLocationSharing = { isLocationSharingEnabled = it }
+                    )
+                } else {
+                    EmptyStateCard(message = "No hay una reserva activa para mostrar en el mapa.")
+                }
+            }
+        }
     }
 }
 
@@ -241,6 +391,38 @@ private fun RiderSection(
 }
 
 @Composable
+private fun RiderSummarySection(
+    trips: List<ActiveRiderTripUiModel>,
+    onCancelReservation: (Int) -> Unit
+) {
+    if (trips.isEmpty()) {
+        EmptyStateCard(message = "No tienes una reserva activa como pasajero.")
+        return
+    }
+
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        verticalArrangement = Arrangement.spacedBy(10.dp)
+    ) {
+        item {
+            Text(
+                text = "Mis reservas activas",
+                style = MaterialTheme.typography.titleMedium,
+                color = Color.White
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+        }
+
+        items(trips) { trip ->
+            RiderReservationCard(
+                trip = trip,
+                onCancel = { onCancelReservation(trip.reservationId) }
+            )
+        }
+    }
+}
+
+@Composable
 private fun RiderReservationCard(
     trip: ActiveRiderTripUiModel,
     onCancel: () -> Unit
@@ -310,64 +492,13 @@ private fun DriverSection(
             Column(
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(whiteCard, RoundedCornerShape(14.dp))
-                        .padding(14.dp)
-                ) {
-                    Text("Mi viaje como conductor", style = MaterialTheme.typography.titleMedium)
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    Text("Origen: ${trip.source}", style = MaterialTheme.typography.bodyMedium)
-                    Text("Destino: ${trip.destination}", style = MaterialTheme.typography.bodyMedium)
-                    Text("Estado: ${mapStateLabel(trip.status)}", style = MaterialTheme.typography.bodyMedium)
-                    Text("Hora de salida: ${formatTimeText(trip.departureTime)}", style = MaterialTheme.typography.bodyMedium)
-                    Text("Reservas: ${trip.reservationsCount}", style = MaterialTheme.typography.bodyMedium)
-                    Text("Cupos disponibles: ${trip.availableSeats}/${trip.totalSeats}", style = MaterialTheme.typography.bodyMedium)
-
-                    Spacer(modifier = Modifier.height(10.dp))
-
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        SmallActionButton(
-                            text = "Mirar en Google",
-                            onClick = onOpenRoute,
-                            accentColor = Color(0xFF2563EB)
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    if (trip.status == "OFERTADO") {
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            SmallActionButton(
-                                text = "Cancelar viaje",
-                                onClick = onCancelTrip,
-                                accentColor = Color(0xFFDC2626)
-                            )
-                            SmallActionButton(
-                                text = "Iniciar",
-                                onClick = onStartTrip,
-                                accentColor = Color(0xFF16A34A)
-                            )
-                        }
-                    }
-
-                    if (trip.status == "EN_CURSO") {
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            SmallActionButton(
-                                text = "Abrir ruta",
-                                onClick = onOpenRoute,
-                                accentColor = Color(0xFF2563EB)
-                            )
-                            SmallActionButton(
-                                text = "Finalizar",
-                                onClick = onFinishTrip,
-                                accentColor = Color(0xFF16A34A)
-                            )
-                        }
-                    }
-                }
+                DriverMainCard(
+                    trip = trip,
+                    onCancelTrip = onCancelTrip,
+                    onStartTrip = onStartTrip,
+                    onOpenRoute = onOpenRoute,
+                    onFinishTrip = onFinishTrip
+                )
 
                 TripLocationCard(
                     isDriver = true,
@@ -397,6 +528,128 @@ private fun DriverSection(
         } else {
             item {
                 EmptyStateCard(message = "No tienes ofertas sobre este viaje.")
+            }
+        }
+    }
+}
+
+@Composable
+private fun DriverSummarySection(
+    trip: ActiveDriverTripUiModel?,
+    onAcceptReservation: (Int) -> Unit,
+    onRejectReservation: (Int) -> Unit,
+    onCancelTrip: () -> Unit,
+    onStartTrip: () -> Unit,
+    onOpenRoute: () -> Unit,
+    onFinishTrip: () -> Unit
+) {
+    if (trip == null) {
+        EmptyStateCard(message = "No tienes un viaje activo como conductor.")
+        return
+    }
+
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        verticalArrangement = Arrangement.spacedBy(10.dp)
+    ) {
+        item {
+            DriverMainCard(
+                trip = trip,
+                onCancelTrip = onCancelTrip,
+                onStartTrip = onStartTrip,
+                onOpenRoute = onOpenRoute,
+                onFinishTrip = onFinishTrip
+            )
+        }
+
+        if (trip.reservations.isNotEmpty()) {
+            item {
+                Text(
+                    text = "Reservas actuales",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = Color.White
+                )
+            }
+
+            items(trip.reservations) { reservation ->
+                DriverReservationRow(
+                    item = reservation,
+                    canAccept = trip.availableSeats > 0,
+                    onAccept = { onAcceptReservation(reservation.id) },
+                    onReject = { onRejectReservation(reservation.id) }
+                )
+            }
+        } else {
+            item {
+                EmptyStateCard(message = "No tienes ofertas sobre este viaje.")
+            }
+        }
+    }
+}
+
+@Composable
+private fun DriverMainCard(
+    trip: ActiveDriverTripUiModel,
+    onCancelTrip: () -> Unit,
+    onStartTrip: () -> Unit,
+    onOpenRoute: () -> Unit,
+    onFinishTrip: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(whiteCard, RoundedCornerShape(14.dp))
+            .padding(14.dp)
+    ) {
+        Text("Mi viaje como conductor", style = MaterialTheme.typography.titleMedium)
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Text("Origen: ${trip.source}", style = MaterialTheme.typography.bodyMedium)
+        Text("Destino: ${trip.destination}", style = MaterialTheme.typography.bodyMedium)
+        Text("Estado: ${mapStateLabel(trip.status)}", style = MaterialTheme.typography.bodyMedium)
+        Text("Hora de salida: ${formatTimeText(trip.departureTime)}", style = MaterialTheme.typography.bodyMedium)
+        Text("Reservas: ${trip.reservationsCount}", style = MaterialTheme.typography.bodyMedium)
+        Text("Cupos disponibles: ${trip.availableSeats}/${trip.totalSeats}", style = MaterialTheme.typography.bodyMedium)
+
+        Spacer(modifier = Modifier.height(10.dp))
+
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            SmallActionButton(
+                text = "Mirar en Google",
+                onClick = onOpenRoute,
+                accentColor = Color(0xFF2563EB)
+            )
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        if (trip.status == "OFERTADO") {
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                SmallActionButton(
+                    text = "Cancelar viaje",
+                    onClick = onCancelTrip,
+                    accentColor = Color(0xFFDC2626)
+                )
+                SmallActionButton(
+                    text = "Iniciar",
+                    onClick = onStartTrip,
+                    accentColor = Color(0xFF16A34A)
+                )
+            }
+        }
+
+        if (trip.status == "EN_CURSO") {
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                SmallActionButton(
+                    text = "Abrir ruta",
+                    onClick = onOpenRoute,
+                    accentColor = Color(0xFF2563EB)
+                )
+                SmallActionButton(
+                    text = "Finalizar",
+                    onClick = onFinishTrip,
+                    accentColor = Color(0xFF16A34A)
+                )
             }
         }
     }
@@ -527,7 +780,3 @@ private fun StateChip(status: String) {
         )
     }
 }
-
-
-
-
