@@ -69,6 +69,7 @@ fun TripScreen(
     ) { granted ->
         viewModel.onLocationPermissionResult(granted)
         if (granted && viewModel.uiState.isLocationSharingEnabled) {
+            viewModel.onLocationRequestStarted()
             requestLastKnownLocation(context, viewModel)
         }
     }
@@ -97,6 +98,7 @@ fun TripScreen(
             viewModel.onLocationPermissionResult(granted)
 
             if (granted) {
+                viewModel.onLocationRequestStarted()
                 requestLastKnownLocation(context, viewModel)
             } else {
                 locationPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
@@ -812,11 +814,13 @@ private fun requestLastKnownLocation(
         }
     }
 
-    bestLocation?.let {
+    if (bestLocation != null) {
         viewModel.onLocationUpdated(
-            latitude = it.latitude,
-            longitude = it.longitude
+            latitude = bestLocation!!.latitude,
+            longitude = bestLocation!!.longitude
         )
+    } else {
+        viewModel.onLocationRequestFailed("No se pudo obtener la ubicación.")
     }
 }
 
