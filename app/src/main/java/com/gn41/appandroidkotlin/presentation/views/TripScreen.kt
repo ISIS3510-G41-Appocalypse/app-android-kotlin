@@ -283,6 +283,19 @@ private fun LandscapeTripsContent(
     onFinishTrip: () -> Unit,
     onCancelReservation: (Int) -> Unit
 ) {
+    val state = viewModel.uiState
+
+    val sharedUsersCount = state.rideLocations
+        .map { it.userId }
+        .distinct()
+        .size
+
+    val totalUsersInRide = if (selectedSection == "Conductor") {
+        (driverTrip?.reservationsCount ?: 0) + 1
+    } else {
+        sharedUsersCount
+    }
+
     Row(
         modifier = Modifier.fillMaxSize(),
         horizontalArrangement = Arrangement.spacedBy(14.dp)
@@ -332,11 +345,13 @@ private fun LandscapeTripsContent(
                 if (driverTrip != null) {
                     TripLocationCard(
                         isDriver = true,
-                        isLocationSharingEnabled = viewModel.uiState.isLocationSharingEnabled,
+                        isLocationSharingEnabled = state.isLocationSharingEnabled,
                         onToggleLocationSharing = viewModel::onToggleLocationSharing,
-                        hasLocationPermission = viewModel.uiState.hasLocationPermission,
-                        currentLatitude = viewModel.uiState.currentLatitude,
-                        currentLongitude = viewModel.uiState.currentLongitude
+                        hasLocationPermission = state.hasLocationPermission,
+                        currentLatitude = state.currentLatitude,
+                        currentLongitude = state.currentLongitude,
+                        sharedUsersCount = sharedUsersCount,
+                        totalUsersInRide = totalUsersInRide
                     )
                 } else {
                     EmptyStateCard(message = "No hay un viaje activo para mostrar en el mapa.")
@@ -346,11 +361,13 @@ private fun LandscapeTripsContent(
                 if (firstTrip != null) {
                     TripLocationCard(
                         isDriver = false,
-                        isLocationSharingEnabled = viewModel.uiState.isLocationSharingEnabled,
+                        isLocationSharingEnabled = state.isLocationSharingEnabled,
                         onToggleLocationSharing = viewModel::onToggleLocationSharing,
-                        hasLocationPermission = viewModel.uiState.hasLocationPermission,
-                        currentLatitude = viewModel.uiState.currentLatitude,
-                        currentLongitude = viewModel.uiState.currentLongitude
+                        hasLocationPermission = state.hasLocationPermission,
+                        currentLatitude = state.currentLatitude,
+                        currentLongitude = state.currentLongitude,
+                        sharedUsersCount = sharedUsersCount,
+                        totalUsersInRide = totalUsersInRide
                     )
                 } else {
                     EmptyStateCard(message = "No hay una reserva activa para mostrar en el mapa.")
@@ -404,6 +421,15 @@ private fun RiderSection(
         return
     }
 
+    val state = viewModel.uiState
+
+    val sharedUsersCount = state.rideLocations
+        .map { it.userId }
+        .distinct()
+        .size
+
+    val totalUsersInRide = sharedUsersCount
+
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         verticalArrangement = Arrangement.spacedBy(10.dp)
@@ -428,11 +454,13 @@ private fun RiderSection(
 
                 TripLocationCard(
                     isDriver = false,
-                    isLocationSharingEnabled = viewModel.uiState.isLocationSharingEnabled,
+                    isLocationSharingEnabled = state.isLocationSharingEnabled,
                     onToggleLocationSharing = viewModel::onToggleLocationSharing,
-                    hasLocationPermission = viewModel.uiState.hasLocationPermission,
-                    currentLatitude = viewModel.uiState.currentLatitude,
-                    currentLongitude = viewModel.uiState.currentLongitude
+                    hasLocationPermission = state.hasLocationPermission,
+                    currentLatitude = state.currentLatitude,
+                    currentLongitude = state.currentLongitude,
+                    sharedUsersCount = sharedUsersCount,
+                    totalUsersInRide = totalUsersInRide
                 )
             }
         }
@@ -532,6 +560,15 @@ private fun DriverSection(
         return
     }
 
+    val state = viewModel.uiState
+
+    val sharedUsersCount = state.rideLocations
+        .map { it.userId }
+        .distinct()
+        .size
+
+    val totalUsersInRide = trip.reservationsCount + 1
+
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         verticalArrangement = Arrangement.spacedBy(10.dp)
@@ -550,11 +587,13 @@ private fun DriverSection(
 
                 TripLocationCard(
                     isDriver = true,
-                    isLocationSharingEnabled = viewModel.uiState.isLocationSharingEnabled,
+                    isLocationSharingEnabled = state.isLocationSharingEnabled,
                     onToggleLocationSharing = viewModel::onToggleLocationSharing,
-                    hasLocationPermission = viewModel.uiState.hasLocationPermission,
-                    currentLatitude = viewModel.uiState.currentLatitude,
-                    currentLongitude = viewModel.uiState.currentLongitude
+                    hasLocationPermission = state.hasLocationPermission,
+                    currentLatitude = state.currentLatitude,
+                    currentLongitude = state.currentLongitude,
+                    sharedUsersCount = sharedUsersCount,
+                    totalUsersInRide = totalUsersInRide
                 )
             }
         }

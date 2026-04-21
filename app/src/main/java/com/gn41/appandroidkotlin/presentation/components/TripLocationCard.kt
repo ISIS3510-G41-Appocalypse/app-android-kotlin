@@ -38,7 +38,9 @@ fun TripLocationCard(
     onToggleLocationSharing: (Boolean) -> Unit,
     hasLocationPermission: Boolean,
     currentLatitude: Double?,
-    currentLongitude: Double?
+    currentLongitude: Double?,
+    sharedUsersCount: Int,
+    totalUsersInRide: Int
 ) {
     val configuration = LocalConfiguration.current
     val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
@@ -115,6 +117,41 @@ fun TripLocationCard(
                             text = statusText,
                             style = MaterialTheme.typography.bodyMedium,
                             color = TripLocationSecondaryText
+                        )
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        Text(
+                            text = if (hasLocationPermission) "Permiso: concedido" else "Permiso: no concedido",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = Color.LightGray
+                        )
+
+                        Spacer(modifier = Modifier.height(4.dp))
+
+                        Text(
+                            text = if (currentLatitude != null && currentLongitude != null)
+                                "Ubicación disponible"
+                            else
+                                "Ubicación no disponible",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = Color.LightGray
+                        )
+
+                        Spacer(modifier = Modifier.height(4.dp))
+
+                        Text(
+                            text = "Usuarios compartiendo: $sharedUsersCount",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = Color.LightGray
+                        )
+
+                        Spacer(modifier = Modifier.height(4.dp))
+
+                        Text(
+                            text = "Usuarios en el ride: $totalUsersInRide",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = Color.LightGray
                         )
                     }
 
@@ -219,6 +256,22 @@ fun TripLocationCard(
                             "Ubicación disponible"
                         else
                             "Ubicación no disponible",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Color.LightGray
+                    )
+
+                    Spacer(modifier = Modifier.height(4.dp))
+
+                    Text(
+                        text = "Usuarios compartiendo: $sharedUsersCount",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Color.LightGray
+                    )
+
+                    Spacer(modifier = Modifier.height(4.dp))
+
+                    Text(
+                        text = "Usuarios en el ride: $totalUsersInRide",
                         style = MaterialTheme.typography.bodySmall,
                         color = Color.LightGray
                     )
