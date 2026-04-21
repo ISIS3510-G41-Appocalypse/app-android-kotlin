@@ -54,4 +54,12 @@ class SessionManager(context: Context) {
             .remove("session_driver_id")
             .apply()
     }
+
+    fun saveLocationSharingEnabled(enabled: Boolean) {
+        sharedPreferences.edit().putBoolean("location_sharing_enabled", enabled).apply()
+    }
+
+    fun isLocationSharingEnabled(): Boolean {
+        return sharedPreferences.getBoolean("location_sharing_enabled", false)
+    }
 }

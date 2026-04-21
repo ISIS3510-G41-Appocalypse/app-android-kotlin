@@ -27,6 +27,9 @@ class TripViewModel(
         private set
 
     init {
+        uiState = uiState.copy(
+            isLocationSharingEnabled = sessionManager.isLocationSharingEnabled()
+        )
         loadTrips()
     }
 
@@ -237,6 +240,8 @@ class TripViewModel(
     }
 
     fun onToggleLocationSharing(enabled: Boolean) {
+        sessionManager.saveLocationSharingEnabled(enabled)
+
         uiState = if (enabled) {
             uiState.copy(
                 isLocationSharingEnabled = true,

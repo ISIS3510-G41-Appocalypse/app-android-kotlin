@@ -351,7 +351,9 @@ private fun LandscapeTripsContent(
                         currentLatitude = state.currentLatitude,
                         currentLongitude = state.currentLongitude,
                         sharedUsersCount = sharedUsersCount,
-                        totalUsersInRide = totalUsersInRide
+                        totalUsersInRide = totalUsersInRide,
+                        rideLocations = state.rideLocations,
+                        currentUserId = state.currentUserId ?: -1
                     )
                 } else {
                     EmptyStateCard(message = "No hay un viaje activo para mostrar en el mapa.")
@@ -360,14 +362,16 @@ private fun LandscapeTripsContent(
                 val firstTrip = riderTrips.firstOrNull()
                 if (firstTrip != null) {
                     TripLocationCard(
-                        isDriver = false,
+                        isDriver = true,
                         isLocationSharingEnabled = state.isLocationSharingEnabled,
                         onToggleLocationSharing = viewModel::onToggleLocationSharing,
                         hasLocationPermission = state.hasLocationPermission,
                         currentLatitude = state.currentLatitude,
                         currentLongitude = state.currentLongitude,
                         sharedUsersCount = sharedUsersCount,
-                        totalUsersInRide = totalUsersInRide
+                        totalUsersInRide = totalUsersInRide,
+                        rideLocations = state.rideLocations,
+                        currentUserId = state.currentUserId ?: -1
                     )
                 } else {
                     EmptyStateCard(message = "No hay una reserva activa para mostrar en el mapa.")
@@ -453,14 +457,16 @@ private fun RiderSection(
                 )
 
                 TripLocationCard(
-                    isDriver = false,
+                    isDriver = true,
                     isLocationSharingEnabled = state.isLocationSharingEnabled,
                     onToggleLocationSharing = viewModel::onToggleLocationSharing,
                     hasLocationPermission = state.hasLocationPermission,
                     currentLatitude = state.currentLatitude,
                     currentLongitude = state.currentLongitude,
                     sharedUsersCount = sharedUsersCount,
-                    totalUsersInRide = totalUsersInRide
+                    totalUsersInRide = totalUsersInRide,
+                    rideLocations = state.rideLocations,
+                    currentUserId = state.currentUserId ?: -1
                 )
             }
         }
@@ -593,7 +599,9 @@ private fun DriverSection(
                     currentLatitude = state.currentLatitude,
                     currentLongitude = state.currentLongitude,
                     sharedUsersCount = sharedUsersCount,
-                    totalUsersInRide = totalUsersInRide
+                    totalUsersInRide = totalUsersInRide,
+                    rideLocations = state.rideLocations,
+                    currentUserId = state.currentUserId ?: -1
                 )
             }
         }

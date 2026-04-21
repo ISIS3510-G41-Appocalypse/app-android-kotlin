@@ -25,6 +25,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.unit.dp
+import com.gn41.appandroidkotlin.domain.UserSharedLocation
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
 import com.google.maps.android.compose.GoogleMap
@@ -46,7 +47,9 @@ fun TripLocationCard(
     currentLatitude: Double?,
     currentLongitude: Double?,
     sharedUsersCount: Int,
-    totalUsersInRide: Int
+    totalUsersInRide: Int,
+    rideLocations: List<UserSharedLocation>,
+    currentUserId: Int
 ) {
     val configuration = LocalConfiguration.current
     val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
@@ -117,6 +120,21 @@ fun TripLocationCard(
                             title = "Tu ubicación"
                         )
                     }
+
+                    rideLocations
+                        .filter { it.isSharingEnabled }
+                        .groupBy { it.userId }
+                        .mapNotNull { (_, locations) -> locations.maxByOrNull { it.timestamp } }
+                        .forEach { location ->
+                            if (location.userId != currentUserId) {
+                                val position = LatLng(location.latitude, location.longitude)
+
+                                Marker(
+                                    state = MarkerState(position = position),
+                                    title = "Usuario ${location.userId}"
+                                )
+                            }
+                        }
                 }
             }
 
