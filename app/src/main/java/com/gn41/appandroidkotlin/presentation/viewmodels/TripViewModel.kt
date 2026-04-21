@@ -220,17 +220,68 @@ class TripViewModel(
     }
 
     fun onToggleLocationSharing(enabled: Boolean) {
-        uiState = uiState.copy(isLocationSharingEnabled = enabled)
+        uiState = if (enabled) {
+            uiState.copy(
+                isLocationSharingEnabled = true,
+                locationErrorMessage = "",
+                locationStatusMessage = "Compartiendo ubicación."
+            )
+        } else {
+            uiState.copy(
+                isLocationSharingEnabled = false,
+                currentLatitude = null,
+                currentLongitude = null,
+                isLocationLoading = false,
+                lastLocationTimestamp = null,
+                locationErrorMessage = "",
+                locationStatusMessage = "Ubicación compartida desactivada."
+            )
+        }
     }
 
     fun onLocationPermissionResult(granted: Boolean) {
-        uiState = uiState.copy(hasLocationPermission = granted)
+        uiState = uiState.copy(
+            hasLocationPermission = granted,
+            locationErrorMessage = if (granted) "" else "Permiso de ubicación denegado.",
+            locationStatusMessage = if (granted) uiState.locationStatusMessage else "No se concedió el permiso de ubicación."
+        )
+    }
+
+    fun onLocationRequestStarted() {
+        uiState = uiState.copy(
+            isLocationLoading = true,
+            locationErrorMessage = "",
+            locationStatusMessage = "Obteniendo ubicación..."
+        )
     }
 
     fun onLocationUpdated(latitude: Double, longitude: Double) {
         uiState = uiState.copy(
             currentLatitude = latitude,
-            currentLongitude = longitude
+            currentLongitude = longitude,
+            isLocationLoading = false,
+            lastLocationTimestamp = System.currentTimeMillis(),
+            locationErrorMessage = "",
+            locationStatusMessage = "Ubicación actualizada."
+        )
+    }
+
+    fun onLocationRequestFailed(message: String) {
+        uiState = uiState.copy(
+            isLocationLoading = false,
+            locationErrorMessage = message,
+            locationStatusMessage = "No se pudo obtener la ubicación."
+        )
+    }
+
+    fun onLocationCleared() {
+        uiState = uiState.copy(
+            currentLatitude = null,
+            currentLongitude = null,
+            isLocationLoading = false,
+            lastLocationTimestamp = null,
+            locationErrorMessage = "",
+            locationStatusMessage = "Ubicación limpiada."
         )
     }
 

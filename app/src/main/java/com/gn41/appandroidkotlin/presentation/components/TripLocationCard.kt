@@ -35,7 +35,10 @@ private val TripLocationSecondaryText = Color(0xFFB8B8C7)
 fun TripLocationCard(
     isDriver: Boolean,
     isLocationSharingEnabled: Boolean,
-    onToggleLocationSharing: (Boolean) -> Unit
+    onToggleLocationSharing: (Boolean) -> Unit,
+    hasLocationPermission: Boolean,
+    currentLatitude: Double?,
+    currentLongitude: Double?
 ) {
     val configuration = LocalConfiguration.current
     val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
@@ -199,6 +202,25 @@ fun TripLocationCard(
                         text = statusText,
                         style = MaterialTheme.typography.bodyMedium,
                         color = TripLocationSecondaryText
+                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Text(
+                        text = if (hasLocationPermission) "Permiso: concedido" else "Permiso: no concedido",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Color.LightGray
+                    )
+
+                    Spacer(modifier = Modifier.height(4.dp))
+
+                    Text(
+                        text = if (currentLatitude != null && currentLongitude != null)
+                            "Ubicación disponible"
+                        else
+                            "Ubicación no disponible",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Color.LightGray
                     )
                 }
             }

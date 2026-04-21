@@ -331,7 +331,10 @@ private fun LandscapeTripsContent(
                     TripLocationCard(
                         isDriver = true,
                         isLocationSharingEnabled = viewModel.uiState.isLocationSharingEnabled,
-                        onToggleLocationSharing = viewModel::onToggleLocationSharing
+                        onToggleLocationSharing = viewModel::onToggleLocationSharing,
+                        hasLocationPermission = viewModel.uiState.hasLocationPermission,
+                        currentLatitude = viewModel.uiState.currentLatitude,
+                        currentLongitude = viewModel.uiState.currentLongitude
                     )
                 } else {
                     EmptyStateCard(message = "No hay un viaje activo para mostrar en el mapa.")
@@ -342,7 +345,10 @@ private fun LandscapeTripsContent(
                     TripLocationCard(
                         isDriver = false,
                         isLocationSharingEnabled = viewModel.uiState.isLocationSharingEnabled,
-                        onToggleLocationSharing = viewModel::onToggleLocationSharing
+                        onToggleLocationSharing = viewModel::onToggleLocationSharing,
+                        hasLocationPermission = viewModel.uiState.hasLocationPermission,
+                        currentLatitude = viewModel.uiState.currentLatitude,
+                        currentLongitude = viewModel.uiState.currentLongitude
                     )
                 } else {
                     EmptyStateCard(message = "No hay una reserva activa para mostrar en el mapa.")
@@ -421,7 +427,10 @@ private fun RiderSection(
                 TripLocationCard(
                     isDriver = false,
                     isLocationSharingEnabled = viewModel.uiState.isLocationSharingEnabled,
-                    onToggleLocationSharing = viewModel::onToggleLocationSharing
+                    onToggleLocationSharing = viewModel::onToggleLocationSharing,
+                    hasLocationPermission = viewModel.uiState.hasLocationPermission,
+                    currentLatitude = viewModel.uiState.currentLatitude,
+                    currentLongitude = viewModel.uiState.currentLongitude
                 )
             }
         }
@@ -540,7 +549,10 @@ private fun DriverSection(
                 TripLocationCard(
                     isDriver = true,
                     isLocationSharingEnabled = viewModel.uiState.isLocationSharingEnabled,
-                    onToggleLocationSharing = viewModel::onToggleLocationSharing
+                    onToggleLocationSharing = viewModel::onToggleLocationSharing,
+                    hasLocationPermission = viewModel.uiState.hasLocationPermission,
+                    currentLatitude = viewModel.uiState.currentLatitude,
+                    currentLongitude = viewModel.uiState.currentLongitude
                 )
             }
         }

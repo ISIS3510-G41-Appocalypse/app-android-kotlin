@@ -41,6 +41,9 @@ data class TripUiState(
     val hasLocationPermission: Boolean = false,
     val currentLatitude: Double? = null,
     val currentLongitude: Double? = null,
-    val locationErrorMessage: String = ""
+    val locationErrorMessage: String = "",
+    val isLocationLoading: Boolean = false,
+    val lastLocationTimestamp: Long? = null,
+    val locationStatusMessage: String = ""
 )
 
