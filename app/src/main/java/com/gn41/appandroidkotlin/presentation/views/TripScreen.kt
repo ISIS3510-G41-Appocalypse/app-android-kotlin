@@ -37,6 +37,7 @@ import com.gn41.appandroidkotlin.presentation.viewmodels.TripReservationItemUiMo
 import com.gn41.appandroidkotlin.presentation.viewmodels.TripViewModel
 import com.gn41.appandroidkotlin.ui.theme.AutumnEmber
 import kotlinx.coroutines.delay
+import com.gn41.appandroidkotlin.presentation.components.TripLocationCard
 
 @Composable
 fun TripScreen(
@@ -219,10 +220,22 @@ private fun RiderSection(
         }
 
         items(trips) { trip ->
-            RiderReservationCard(
-                trip = trip,
-                onCancel = { onCancelReservation(trip.reservationId) }
-            )
+            var isLocationSharingEnabled by remember(trip.reservationId) { mutableStateOf(false) }
+
+            Column(
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                RiderReservationCard(
+                    trip = trip,
+                    onCancel = { onCancelReservation(trip.reservationId) }
+                )
+
+                TripLocationCard(
+                    isDriver = false,
+                    isLocationSharingEnabled = isLocationSharingEnabled,
+                    onToggleLocationSharing = { isLocationSharingEnabled = it }
+                )
+            }
         }
     }
 }
@@ -292,63 +305,75 @@ private fun DriverSection(
         verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
         item {
+            var isLocationSharingEnabled by remember(trip.rideId) { mutableStateOf(false) }
+
             Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(whiteCard, RoundedCornerShape(14.dp))
-                    .padding(14.dp)
+                verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                Text("Mi viaje como conductor", style = MaterialTheme.typography.titleMedium)
-                Spacer(modifier = Modifier.height(8.dp))
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(whiteCard, RoundedCornerShape(14.dp))
+                        .padding(14.dp)
+                ) {
+                    Text("Mi viaje como conductor", style = MaterialTheme.typography.titleMedium)
+                    Spacer(modifier = Modifier.height(8.dp))
 
-                Text("Origen: ${trip.source}", style = MaterialTheme.typography.bodyMedium)
-                Text("Destino: ${trip.destination}", style = MaterialTheme.typography.bodyMedium)
-                Text("Estado: ${mapStateLabel(trip.status)}", style = MaterialTheme.typography.bodyMedium)
-                Text("Hora de salida: ${formatTimeText(trip.departureTime)}", style = MaterialTheme.typography.bodyMedium)
-                Text("Reservas: ${trip.reservationsCount}", style = MaterialTheme.typography.bodyMedium)
-                Text("Cupos disponibles: ${trip.availableSeats}/${trip.totalSeats}", style = MaterialTheme.typography.bodyMedium)
+                    Text("Origen: ${trip.source}", style = MaterialTheme.typography.bodyMedium)
+                    Text("Destino: ${trip.destination}", style = MaterialTheme.typography.bodyMedium)
+                    Text("Estado: ${mapStateLabel(trip.status)}", style = MaterialTheme.typography.bodyMedium)
+                    Text("Hora de salida: ${formatTimeText(trip.departureTime)}", style = MaterialTheme.typography.bodyMedium)
+                    Text("Reservas: ${trip.reservationsCount}", style = MaterialTheme.typography.bodyMedium)
+                    Text("Cupos disponibles: ${trip.availableSeats}/${trip.totalSeats}", style = MaterialTheme.typography.bodyMedium)
 
-                Spacer(modifier = Modifier.height(10.dp))
+                    Spacer(modifier = Modifier.height(10.dp))
 
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    SmallActionButton(
-                        text = "Mirar en Google",
-                        onClick = onOpenRoute,
-                        accentColor = Color(0xFF2563EB)
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                if (trip.status == "OFERTADO") {
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         SmallActionButton(
-                            text = "Cancelar viaje",
-                            onClick = onCancelTrip,
-                            accentColor = Color(0xFFDC2626)
-                        )
-                        SmallActionButton(
-                            text = "Iniciar",
-                            onClick = onStartTrip,
-                            accentColor = Color(0xFF16A34A)
-                        )
-                    }
-                }
-
-                if (trip.status == "EN_CURSO") {
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        SmallActionButton(
-                            text = "Abrir ruta",
+                            text = "Mirar en Google",
                             onClick = onOpenRoute,
                             accentColor = Color(0xFF2563EB)
                         )
-                        SmallActionButton(
-                            text = "Finalizar",
-                            onClick = onFinishTrip,
-                            accentColor = Color(0xFF16A34A)
-                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    if (trip.status == "OFERTADO") {
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            SmallActionButton(
+                                text = "Cancelar viaje",
+                                onClick = onCancelTrip,
+                                accentColor = Color(0xFFDC2626)
+                            )
+                            SmallActionButton(
+                                text = "Iniciar",
+                                onClick = onStartTrip,
+                                accentColor = Color(0xFF16A34A)
+                            )
+                        }
+                    }
+
+                    if (trip.status == "EN_CURSO") {
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            SmallActionButton(
+                                text = "Abrir ruta",
+                                onClick = onOpenRoute,
+                                accentColor = Color(0xFF2563EB)
+                            )
+                            SmallActionButton(
+                                text = "Finalizar",
+                                onClick = onFinishTrip,
+                                accentColor = Color(0xFF16A34A)
+                            )
+                        }
                     }
                 }
+
+                TripLocationCard(
+                    isDriver = true,
+                    isLocationSharingEnabled = isLocationSharingEnabled,
+                    onToggleLocationSharing = { isLocationSharingEnabled = it }
+                )
             }
         }
 
