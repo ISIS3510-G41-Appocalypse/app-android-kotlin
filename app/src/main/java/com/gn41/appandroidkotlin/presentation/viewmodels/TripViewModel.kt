@@ -19,6 +19,8 @@ class TripViewModel(
     var uiState by mutableStateOf(TripUiState())
         private set
 
+
+
     init {
         loadTrips()
     }
@@ -211,7 +213,25 @@ class TripViewModel(
     }
 
     fun clearInfoMessage() {
-        uiState = uiState.copy(infoMessage = "")
+        uiState = uiState.copy(
+            infoMessage = "",
+            locationErrorMessage = ""
+        )
+    }
+
+    fun onToggleLocationSharing(enabled: Boolean) {
+        uiState = uiState.copy(isLocationSharingEnabled = enabled)
+    }
+
+    fun onLocationPermissionResult(granted: Boolean) {
+        uiState = uiState.copy(hasLocationPermission = granted)
+    }
+
+    fun onLocationUpdated(latitude: Double, longitude: Double) {
+        uiState = uiState.copy(
+            currentLatitude = latitude,
+            currentLongitude = longitude
+        )
     }
 
     private fun changeReservationState(

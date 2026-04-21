@@ -1,6 +1,14 @@
 package com.gn41.appandroidkotlin.presentation.views
 
+import android.Manifest
+import android.annotation.SuppressLint
+import android.content.Context
+import android.content.pm.PackageManager
 import android.content.res.Configuration
+import android.location.Location
+import android.location.LocationManager
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -17,6 +25,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -32,9 +41,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.core.content.ContextCompat
 import com.gn41.appandroidkotlin.presentation.components.TripLocationCard
 import com.gn41.appandroidkotlin.presentation.viewmodels.ActiveDriverTripUiModel
 import com.gn41.appandroidkotlin.presentation.viewmodels.ActiveRiderTripUiModel
@@ -49,9 +59,19 @@ fun TripScreen(
     onHomeClick: () -> Unit
 ) {
     val state = viewModel.uiState
+    val context = LocalContext.current
     var selectedSection by remember { mutableStateOf("Conductor") }
     val configuration = LocalConfiguration.current
     val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+
+    val locationPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        viewModel.onLocationPermissionResult(granted)
+        if (granted && viewModel.uiState.isLocationSharingEnabled) {
+            requestLastKnownLocation(context, viewModel)
+        }
+    }
 
     if (state.infoMessage.isNotEmpty()) {
         LaunchedEffect(state.infoMessage) {
@@ -64,6 +84,23 @@ fun TripScreen(
         while (true) {
             delay(8000)
             viewModel.refreshTrips()
+        }
+    }
+
+    LaunchedEffect(state.isLocationSharingEnabled) {
+        if (state.isLocationSharingEnabled) {
+            val granted = ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.ACCESS_FINE_LOCATION
+            ) == PackageManager.PERMISSION_GRANTED
+
+            viewModel.onLocationPermissionResult(granted)
+
+            if (granted) {
+                requestLastKnownLocation(context, viewModel)
+            } else {
+                locationPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
+            }
         }
     }
 
@@ -132,6 +169,7 @@ fun TripScreen(
 
                 isLandscape -> {
                     LandscapeTripsContent(
+                        viewModel = viewModel,
                         selectedSection = selectedSection,
                         onSectionSelected = { selectedSection = it },
                         driverTrip = state.activeDriverTrip,
@@ -148,6 +186,7 @@ fun TripScreen(
 
                 else -> {
                     PortraitTripsContent(
+                        viewModel = viewModel,
                         selectedSection = selectedSection,
                         onSectionSelected = { selectedSection = it },
                         driverTrip = state.activeDriverTrip,
@@ -177,6 +216,7 @@ fun TripScreen(
 
 @Composable
 private fun PortraitTripsContent(
+    viewModel: TripViewModel,
     selectedSection: String,
     onSectionSelected: (String) -> Unit,
     driverTrip: ActiveDriverTripUiModel?,
@@ -206,6 +246,7 @@ private fun PortraitTripsContent(
         ) {
             if (selectedSection == "Conductor") {
                 DriverSection(
+                    viewModel = viewModel,
                     trip = driverTrip,
                     onAcceptReservation = onAcceptReservation,
                     onRejectReservation = onRejectReservation,
@@ -216,6 +257,7 @@ private fun PortraitTripsContent(
                 )
             } else {
                 RiderSection(
+                    viewModel = viewModel,
                     trips = riderTrips,
                     onCancelReservation = onCancelReservation
                 )
@@ -226,6 +268,7 @@ private fun PortraitTripsContent(
 
 @Composable
 private fun LandscapeTripsContent(
+    viewModel: TripViewModel,
     selectedSection: String,
     onSectionSelected: (String) -> Unit,
     driverTrip: ActiveDriverTripUiModel?,
@@ -285,12 +328,10 @@ private fun LandscapeTripsContent(
         ) {
             if (selectedSection == "Conductor") {
                 if (driverTrip != null) {
-                    var isLocationSharingEnabled by remember(driverTrip.rideId) { mutableStateOf(false) }
-
                     TripLocationCard(
                         isDriver = true,
-                        isLocationSharingEnabled = isLocationSharingEnabled,
-                        onToggleLocationSharing = { isLocationSharingEnabled = it }
+                        isLocationSharingEnabled = viewModel.uiState.isLocationSharingEnabled,
+                        onToggleLocationSharing = viewModel::onToggleLocationSharing
                     )
                 } else {
                     EmptyStateCard(message = "No hay un viaje activo para mostrar en el mapa.")
@@ -298,12 +339,10 @@ private fun LandscapeTripsContent(
             } else {
                 val firstTrip = riderTrips.firstOrNull()
                 if (firstTrip != null) {
-                    var isLocationSharingEnabled by remember(firstTrip.reservationId) { mutableStateOf(false) }
-
                     TripLocationCard(
                         isDriver = false,
-                        isLocationSharingEnabled = isLocationSharingEnabled,
-                        onToggleLocationSharing = { isLocationSharingEnabled = it }
+                        isLocationSharingEnabled = viewModel.uiState.isLocationSharingEnabled,
+                        onToggleLocationSharing = viewModel::onToggleLocationSharing
                     )
                 } else {
                     EmptyStateCard(message = "No hay una reserva activa para mostrar en el mapa.")
@@ -348,6 +387,7 @@ private fun SectionSwitch(
 
 @Composable
 private fun RiderSection(
+    viewModel: TripViewModel,
     trips: List<ActiveRiderTripUiModel>,
     onCancelReservation: (Int) -> Unit
 ) {
@@ -370,8 +410,6 @@ private fun RiderSection(
         }
 
         items(trips) { trip ->
-            var isLocationSharingEnabled by remember(trip.reservationId) { mutableStateOf(false) }
-
             Column(
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
@@ -382,8 +420,8 @@ private fun RiderSection(
 
                 TripLocationCard(
                     isDriver = false,
-                    isLocationSharingEnabled = isLocationSharingEnabled,
-                    onToggleLocationSharing = { isLocationSharingEnabled = it }
+                    isLocationSharingEnabled = viewModel.uiState.isLocationSharingEnabled,
+                    onToggleLocationSharing = viewModel::onToggleLocationSharing
                 )
             }
         }
@@ -469,6 +507,7 @@ private fun RiderReservationCard(
 
 @Composable
 private fun DriverSection(
+    viewModel: TripViewModel,
     trip: ActiveDriverTripUiModel?,
     onAcceptReservation: (Int) -> Unit,
     onRejectReservation: (Int) -> Unit,
@@ -487,8 +526,6 @@ private fun DriverSection(
         verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
         item {
-            var isLocationSharingEnabled by remember(trip.rideId) { mutableStateOf(false) }
-
             Column(
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
@@ -502,8 +539,8 @@ private fun DriverSection(
 
                 TripLocationCard(
                     isDriver = true,
-                    isLocationSharingEnabled = isLocationSharingEnabled,
-                    onToggleLocationSharing = { isLocationSharingEnabled = it }
+                    isLocationSharingEnabled = viewModel.uiState.isLocationSharingEnabled,
+                    onToggleLocationSharing = viewModel::onToggleLocationSharing
                 )
             }
         }
@@ -740,6 +777,37 @@ private fun EmptyStateCard(message: String) {
     }
 }
 
+@SuppressLint("MissingPermission")
+private fun requestLastKnownLocation(
+    context: Context,
+    viewModel: TripViewModel
+) {
+    val locationManager = context.getSystemService(Context.LOCATION_SERVICE) as? LocationManager ?: return
+
+    val providers = listOf(
+        LocationManager.GPS_PROVIDER,
+        LocationManager.NETWORK_PROVIDER
+    )
+
+    var bestLocation: Location? = null
+
+    providers.forEach { provider ->
+        val location = locationManager.getLastKnownLocation(provider)
+        if (location != null) {
+            if (bestLocation == null || location.time > bestLocation!!.time) {
+                bestLocation = location
+            }
+        }
+    }
+
+    bestLocation?.let {
+        viewModel.onLocationUpdated(
+            latitude = it.latitude,
+            longitude = it.longitude
+        )
+    }
+}
+
 private fun formatTimeText(rawTime: String): String {
     val parts = rawTime.split(":")
     return if (parts.size >= 2) "${parts[0]}:${parts[1]}" else rawTime
@@ -764,9 +832,9 @@ private fun mapStateLabel(state: String): String {
 private fun StateChip(status: String) {
     val (bg, fg) = when (status) {
         "PENDIENTE" -> Color(0xFFFEF3C7) to Color(0xFFB45309)
-        "ACEPTADA"  -> Color(0xFFD1FAE5) to Color(0xFF065F46)
-        "EN_CURSO"  -> Color(0xFFDBEAFE) to Color(0xFF1D4ED8)
-        else        -> Color(0xFFF1F5F9) to Color(0xFF64748B)
+        "ACEPTADA" -> Color(0xFFD1FAE5) to Color(0xFF065F46)
+        "EN_CURSO" -> Color(0xFFDBEAFE) to Color(0xFF1D4ED8)
+        else -> Color(0xFFF1F5F9) to Color(0xFF64748B)
     }
     Box(
         modifier = Modifier

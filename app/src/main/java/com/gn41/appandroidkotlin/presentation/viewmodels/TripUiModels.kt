@@ -35,6 +35,12 @@ data class TripUiState(
     val errorMessage: String = "",
     val activeRiderTrips: List<ActiveRiderTripUiModel> = emptyList(),
     val activeDriverTrip: ActiveDriverTripUiModel? = null,
-    val infoMessage: String = ""
+    val infoMessage: String = "",
+
+    val isLocationSharingEnabled: Boolean = false,
+    val hasLocationPermission: Boolean = false,
+    val currentLatitude: Double? = null,
+    val currentLongitude: Double? = null,
+    val locationErrorMessage: String = ""
 )
 
