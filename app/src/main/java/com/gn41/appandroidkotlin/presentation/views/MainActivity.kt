@@ -30,6 +30,8 @@ import com.gn41.appandroidkotlin.presentation.viewmodels.TripViewModelFactory
 import com.gn41.appandroidkotlin.presentation.viewmodels.WelcomeViewModel
 import com.gn41.appandroidkotlin.presentation.viewmodels.WelcomeViewModelFactory
 import com.gn41.appandroidkotlin.ui.theme.AppAndroidKotlinTheme
+import com.gn41.appandroidkotlin.data.services.location.LocationService
+import com.gn41.appandroidkotlin.data.repositories.LocationRepositoryImpl
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -46,7 +48,12 @@ class MainActivity : ComponentActivity() {
                 val tripService = TripService()
                 val tripRepository = TripRepositoryImpl(tripService)
 
-                val welcomeFactory = WelcomeViewModelFactory(authRepository, sessionManager, tripRepository)
+                val welcomeFactory = WelcomeViewModelFactory(
+                    context = this,
+                    authRepository = authRepository,
+                    sessionManager = sessionManager,
+                    tripRepository = tripRepository
+                )
                 val welcomeViewModel: WelcomeViewModel = viewModel(factory = welcomeFactory)
 
                 val reservationsService = ReservationsService()
@@ -54,10 +61,13 @@ class MainActivity : ComponentActivity() {
 
                 val ridesService = RidesService()
                 val ridesRepository = RidesRepositoryImpl(ridesService)
+                val locationService = LocationService()
+                val locationRepository = LocationRepositoryImpl(locationService)
 
                 val tripViewModelFactory = TripViewModelFactory(
                     tripRepository = tripRepository,
-                    sessionManager = sessionManager
+                    sessionManager = sessionManager,
+                    locationRepository = locationRepository
                 )
 
                 val userIdService = UserIdService(sessionManager)

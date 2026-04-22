@@ -65,102 +65,108 @@ fun HomeScreen(
             .background(darkBlue)
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(16.dp)
+            modifier = Modifier.fillMaxSize()
         ) {
-            HomeHeader(
-                onLogoutClick = {
-                    viewModel.logout {
-                        onLogoutClick()
+            LazyColumn(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                item {
+                    HomeHeader(
+                        onLogoutClick = {
+                            viewModel.logout {
+                                onLogoutClick()
+                            }
+                        }
+                    )
+                }
+
+                item {
+                    FilterCard(
+                        selectedZone = state.selectedZone,
+                        zoneOptions = state.zoneOptions,
+                        selectedDay = state.selectedDay,
+                        selectedTripType = state.selectedTripType,
+                        selectedDepartureTime = state.selectedDepartureTime,
+                        departureOptions = state.departureTimeOptions,
+                        hasActiveFilters = state.hasActiveFilters,
+                        activeFilterCount = state.activeFilterCount,
+                        onZoneChange = viewModel::onZoneChange,
+                        onDayChange = viewModel::onDayChange,
+                        onTripTypeChange = viewModel::onTripTypeChange,
+                        onDepartureTimeChange = viewModel::onDepartureTimeChange,
+                        onClearFilters = viewModel::clearFilters
+                    )
+                }
+
+                if (state.reservationMessage.isNotEmpty()) {
+                    item {
+                        LaunchedEffect(state.reservationMessage) {
+                            delay(3000)
+                            viewModel.clearReservationMessage()
+                        }
+
+                        val isSuccess = state.reservationMessage.contains("correctamente")
+                        Text(
+                            text = state.reservationMessage,
+                            color = if (isSuccess) Color(0xFF0D9488) else Color(0xFFB45309),
+                            style = MaterialTheme.typography.bodyMedium,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(
+                                    if (isSuccess) Color(0xFFE6FFFA) else Color(0xFFFEF3C7),
+                                    RoundedCornerShape(8.dp)
+                                )
+                                .padding(horizontal = 12.dp, vertical = 8.dp)
+                        )
                     }
                 }
-            )
 
-            Spacer(modifier = Modifier.height(16.dp))
-
-            FilterCard(
-                selectedZone = state.selectedZone,
-                zoneOptions = state.zoneOptions,
-                selectedDay = state.selectedDay,
-                selectedTripType = state.selectedTripType,
-                selectedDepartureTime = state.selectedDepartureTime,
-                departureOptions = state.departureTimeOptions,
-                hasActiveFilters = state.hasActiveFilters,
-                activeFilterCount = state.activeFilterCount,
-                onZoneChange = viewModel::onZoneChange,
-                onDayChange = viewModel::onDayChange,
-                onTripTypeChange = viewModel::onTripTypeChange,
-                onDepartureTimeChange = viewModel::onDepartureTimeChange,
-                onClearFilters = viewModel::clearFilters
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            if (state.reservationMessage.isNotEmpty()) {
-                LaunchedEffect(state.reservationMessage) {
-                    delay(3000)
-                    viewModel.clearReservationMessage()
-                }
-
-                val isSuccess = state.reservationMessage.contains("correctamente")
-                Text(
-                    text = state.reservationMessage,
-                    color = if (isSuccess) Color(0xFF0D9488) else Color(0xFFB45309),
-                    style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(
-                            if (isSuccess) Color(0xFFE6FFFA) else Color(0xFFFEF3C7),
-                            RoundedCornerShape(8.dp)
-                        )
-                        .padding(horizontal = 12.dp, vertical = 8.dp)
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-            }
-
-            when {
-                state.isLoading -> {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .weight(1f),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            CircularProgressIndicator(color = Color.White)
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Text(
-                                text = "Cargando viajes...",
-                                color = Color.LightGray,
-                                style = MaterialTheme.typography.bodyMedium
-                            )
+                when {
+                    state.isLoading -> {
+                        item {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 40.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Column(
+                                    horizontalAlignment = Alignment.CenterHorizontally
+                                ) {
+                                    CircularProgressIndicator(color = Color.White)
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    Text(
+                                        text = "Cargando viajes...",
+                                        color = Color.LightGray,
+                                        style = MaterialTheme.typography.bodyMedium
+                                    )
+                                }
+                            }
                         }
                     }
-                }
 
-                state.errorMessage.isNotEmpty() -> {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .weight(1f),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = state.errorMessage,
-                            color = Color.Red,
-                            style = MaterialTheme.typography.bodyMedium
-                        )
+                    state.errorMessage.isNotEmpty() -> {
+                        item {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 40.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = state.errorMessage,
+                                    color = Color.Red,
+                                    style = MaterialTheme.typography.bodyMedium
+                                )
+                            }
+                        }
                     }
-                }
 
-                state.rides.isNotEmpty() -> {
-                    LazyColumn(
-                        modifier = Modifier.weight(1f),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
+                    state.rides.isNotEmpty() -> {
                         items(state.rides) { ride ->
                             RideItemCard(
                                 ride = ride,
@@ -169,29 +175,29 @@ fun HomeScreen(
                             )
                         }
                     }
-                }
 
-                else -> {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .weight(1f),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = if (state.hasActiveFilters) {
-                                "No hay viajes para los filtros seleccionados."
-                            } else {
-                                "No hay viajes disponibles en este momento."
-                            },
-                            color = Color.LightGray,
-                            style = MaterialTheme.typography.bodyMedium
-                        )
+                    else -> {
+                        item {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 40.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = if (state.hasActiveFilters) {
+                                        "No hay viajes para los filtros seleccionados."
+                                    } else {
+                                        "No hay viajes disponibles en este momento."
+                                    },
+                                    color = Color.LightGray,
+                                    style = MaterialTheme.typography.bodyMedium
+                                )
+                            }
+                        }
                     }
                 }
             }
-
-            Spacer(modifier = Modifier.height(12.dp))
 
             BottomNavigationBar(
                 selectedTab = selectedBottomTab,

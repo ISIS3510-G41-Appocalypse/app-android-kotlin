@@ -1,5 +1,7 @@
 package com.gn41.appandroidkotlin.presentation.viewmodels
 
+import com.gn41.appandroidkotlin.domain.UserSharedLocation
+
 data class TripReservationItemUiModel(
     val id: Int,
     val riderName: String,
@@ -35,6 +37,19 @@ data class TripUiState(
     val errorMessage: String = "",
     val activeRiderTrips: List<ActiveRiderTripUiModel> = emptyList(),
     val activeDriverTrip: ActiveDriverTripUiModel? = null,
-    val infoMessage: String = ""
+    val infoMessage: String = "",
+
+    val isLocationSharingEnabled: Boolean = false,
+    val hasLocationPermission: Boolean = false,
+    val currentLatitude: Double? = null,
+    val currentLongitude: Double? = null,
+    val locationErrorMessage: String = "",
+    val isLocationLoading: Boolean = false,
+    val lastLocationTimestamp: Long? = null,
+    val locationStatusMessage: String = "",
+
+    val currentUserId: Int? = null,
+    val currentRideId: Int? = null,
+    val rideLocations: List<UserSharedLocation> = emptyList()
 )
 
