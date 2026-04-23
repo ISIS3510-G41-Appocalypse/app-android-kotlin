@@ -211,7 +211,13 @@ fun HomeScreen(
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
                     .padding(end = 24.dp, bottom = 84.dp),
-                isBlocked = state.hasActiveDriverTrip,
+                isBlocked = state.hasActiveDriverTrip || state.hasActiveRiderReservation,
+                blockedMessage = when {
+                    state.hasActiveDriverTrip && state.hasActiveRiderReservation -> "Ya tienes un viaje o reserva activa"
+                    state.hasActiveDriverTrip -> "Ya tienes un viaje activo"
+                    state.hasActiveRiderReservation -> "Ya tienes una reserva activa"
+                    else -> ""
+                },
                 onCreateRideClick = onCreateRideClick
             )
         }
@@ -222,6 +228,7 @@ fun HomeScreen(
 fun ExpandableCreateRideButton(
     modifier: Modifier = Modifier,
     isBlocked: Boolean = false,
+    blockedMessage: String = "Ya tienes un viaje activo",
     onCreateRideClick: () -> Unit
 ) {
     var expanded by remember { mutableStateOf(false) }
@@ -241,7 +248,7 @@ fun ExpandableCreateRideButton(
                     .padding(horizontal = 12.dp, vertical = 8.dp)
             ) {
                 Text(
-                    text = if (isBlocked) "Ya tienes un viaje activo" else "Crear Viaje",
+                    text = if (isBlocked) blockedMessage else "Crear Viaje",
                     color = if (isBlocked) Color(0xFF94A3B8) else Color.White,
                     style = MaterialTheme.typography.bodyMedium
                 )
