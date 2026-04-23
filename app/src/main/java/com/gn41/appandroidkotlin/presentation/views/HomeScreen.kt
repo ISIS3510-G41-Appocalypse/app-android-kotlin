@@ -55,10 +55,6 @@ fun HomeScreen(
     val state = viewModel.uiState
     var selectedBottomTab by remember { mutableStateOf("Inicio") }
 
-    LaunchedEffect(Unit) {
-        viewModel.refreshHomeData()
-    }
-
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -171,7 +167,9 @@ fun HomeScreen(
                             RideItemCard(
                                 ride = ride,
                                 onReserveClick = { viewModel.onReserveClicked(ride.id) },
-                                isReserveEnabled = !state.hasActiveRiderReservation && !state.hasActiveDriverTrip
+                                isReserveEnabled = !state.hasActiveRiderReservation &&
+                                    !state.hasActiveDriverTrip &&
+                                    ride.availableSlots > 0
                             )
                         }
                     }
@@ -213,6 +211,7 @@ fun HomeScreen(
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
                     .padding(end = 24.dp, bottom = 84.dp),
+                isBlocked = state.hasActiveDriverTrip,
                 onCreateRideClick = onCreateRideClick
             )
         }
