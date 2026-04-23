@@ -26,7 +26,7 @@ data class HomeUiState(
     val selectedZone: String = "Todos",
     val zoneOptions: List<String> = listOf("Todos"),
     val selectedTripType: String = "Todos",
-    val selectedDay: String = "Todos",
+    val selectedDay: String = "Hoy",
     val selectedDepartureTime: String = "Todas",
     val departureTimeOptions: List<String> = buildDepartureTimeOptions(),
     val hasActiveFilters: Boolean = false,
@@ -52,6 +52,10 @@ class HomeViewModel(
 ) : ViewModel() {
 
     private var allRides: List<RideDto> = emptyList()
+    
+    // IDs resueltos confiably desde el token (no desde SessionManager directo)
+    private var currentResolvedUserId: Int? = null
+    private var currentResolvedDriverId: Int? = null
 
     var uiState by mutableStateOf(HomeUiState())
         private set
@@ -170,7 +174,7 @@ class HomeViewModel(
     fun clearFilters() {
         uiState = uiState.copy(
             selectedZone = "Todos",
-            selectedDay = "Todos",
+            selectedDay = "Hoy",
             selectedTripType = "Todos",
             selectedDepartureTime = "Todas"
         )
@@ -178,10 +182,29 @@ class HomeViewModel(
     }
 
     fun applyFilters() {
-        val formatter = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
-        val today = formatter.format(Date())
+        val dateFormatter = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).apply {
+            isLenient = false
+        }
+        val dateTimeFormatter = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault()).apply {
+            isLenient = false
+        }
+        val now = Date()
+        val today = dateFormatter.format(now)
 
         val filteredRides = allRides.filter { ride ->
+            val isUpcomingRide = isRideUpcoming(
+                ride = ride,
+                now = now,
+                dateFormatter = dateFormatter,
+                dateTimeFormatter = dateTimeFormatter
+            )
+
+            val isNotOwnRide = !isRideCreatedByCurrentUser(
+                ride = ride,
+                currentUserId = currentResolvedUserId,
+                currentDriverId = currentResolvedDriverId
+            )
+
             val matchesZone = when (uiState.selectedZone) {
                 "Todos" -> true
                 else -> ride.zones?.name == uiState.selectedZone
@@ -195,8 +218,12 @@ class HomeViewModel(
             }
 
             val matchesDay = when (uiState.selectedDay) {
-                "Todos" -> true
                 "Hoy" -> ride.date == today
+                "Próximos viajes" -> {
+                    val rideDate = dateFormatter.parse(ride.date)
+                    val todayDate = dateFormatter.parse(today)
+                    rideDate != null && todayDate != null && rideDate.after(todayDate)
+                }
                 else -> true
             }
 
@@ -208,7 +235,7 @@ class HomeViewModel(
                 )
             }
 
-            matchesZone && matchesTripType && matchesDay && matchesDepartureTime
+            isUpcomingRide && isNotOwnRide && matchesZone && matchesTripType && matchesDay && matchesDepartureTime
         }
 
         val activeFilterCount = countActiveFilters(
@@ -230,6 +257,9 @@ class HomeViewModel(
     fun logout(onNavigateToLogin: () -> Unit) {
         sessionManager.clearToken()
         sessionManager.clearUserId()
+        sessionManager.clearDriverId()
+        currentResolvedUserId = null
+        currentResolvedDriverId = null
         onNavigateToLogin()
     }
 
@@ -252,7 +282,7 @@ class HomeViewModel(
     ): Int {
         var count = 0
         if (zone != "Todos") count++
-        if (day != "Todos") count++
+        if (day != "Hoy") count++
         if (tripType != "Todos") count++
         if (departureTime != "Todas") count++
         return count
@@ -263,6 +293,43 @@ class HomeViewModel(
         val rideHour = rideTime.split(":").firstOrNull()?.toIntOrNull() ?: return false
         val slotHour = selectedSlot.split(":").firstOrNull()?.toIntOrNull() ?: return false
         return rideHour == slotHour
+    }
+
+    private fun isRideUpcoming(
+        ride: RideDto,
+        now: Date,
+        dateFormatter: SimpleDateFormat,
+        dateTimeFormatter: SimpleDateFormat
+    ): Boolean {
+        val rideDate = dateFormatter.parse(ride.date) ?: return false
+        val todayDate = dateFormatter.parse(dateFormatter.format(now)) ?: return false
+
+        if (rideDate.before(todayDate)) return false
+        if (rideDate.after(todayDate)) return true
+
+        val normalizedTime = normalizeRideTime(ride.departure_time) ?: return false
+        val rideDateTime = dateTimeFormatter.parse("${ride.date} $normalizedTime") ?: return false
+        return !rideDateTime.before(now)
+    }
+
+    private fun isRideCreatedByCurrentUser(
+        ride: RideDto,
+        currentUserId: Int?,
+        currentDriverId: Int?
+    ): Boolean {
+        if (currentDriverId != null && ride.driver_id == currentDriverId) return true
+        if (currentUserId != null && ride.drivers?.user_id == currentUserId) return true
+        return false
+    }
+
+    private fun normalizeRideTime(rideTime: String): String? {
+        val parts = rideTime.split(":")
+        if (parts.size < 2) return null
+
+        val hour = parts[0].toIntOrNull() ?: return null
+        val minute = parts[1].toIntOrNull() ?: return null
+
+        return String.format(Locale.getDefault(), "%02d:%02d", hour, minute)
     }
 
     private fun extractAuthIdFromToken(token: String): String? {
@@ -277,6 +344,37 @@ class HomeViewModel(
             subRegex.find(payload)?.groupValues?.get(1)
         } catch (_: Exception) {
             null
+        }
+    }
+
+    private suspend fun resolveCurrentUserFromToken(token: String) {
+        try {
+            val authId = extractAuthIdFromToken(token) ?: return
+            val resRepo = reservationsRepository ?: return
+
+            val user = resRepo.getUserByAuthId(authId, token)
+            if (user != null) {
+                currentResolvedUserId = user.id
+                Log.d("HomeViewModel", "[RESOLVE] currentUserId set to: ${user.id}")
+
+                // Resolver driver si existe
+                val driver = tripRepository?.getDriverByUserId(user.id, token)
+                if (driver != null) {
+                    currentResolvedDriverId = driver.id
+                    Log.d("HomeViewModel", "[RESOLVE] currentDriverId set to: ${driver.id}")
+                } else {
+                    currentResolvedDriverId = null
+                    Log.d("HomeViewModel", "[RESOLVE] No driver found for this user")
+                }
+            } else {
+                Log.w("HomeViewModel", "[RESOLVE] Could not resolve user from token")
+                currentResolvedUserId = null
+                currentResolvedDriverId = null
+            }
+        } catch (e: Exception) {
+            Log.e("HomeViewModel", "[RESOLVE] Exception resolving current user", e)
+            currentResolvedUserId = null
+            currentResolvedDriverId = null
         }
     }
 
@@ -300,10 +398,14 @@ class HomeViewModel(
 
                 uiState = uiState.copy(isDriver = isDriver)
 
+                // Resolver usuario actual confiably desde el token
+                resolveCurrentUserFromToken(token)
+
                 val result = ridesRepository.getRides(token)
 
                 if (result != null) {
                     Log.d("HomeViewModel", "Rides loaded: ${result.size}")
+                    Log.d("HomeViewModel", "[FILTRO] Resolved userId: $currentResolvedUserId, driverId: $currentResolvedDriverId")
                     allRides = result
                     uiState = uiState.copy(
                         isLoading = false,

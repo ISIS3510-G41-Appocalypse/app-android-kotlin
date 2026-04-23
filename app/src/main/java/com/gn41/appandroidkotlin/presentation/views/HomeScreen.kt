@@ -181,7 +181,10 @@ fun HomeScreen(
                             }
 
                             state.rides.isNotEmpty() -> {
-                                items(state.rides) { ride ->
+                                items(
+                                    items = state.rides,
+                                    key = { it.id }
+                                ) { ride ->
                                     RideItemCard(
                                         ride = ride,
                                         onReserveClick = { viewModel.onReserveClicked(ride.id) },
@@ -316,7 +319,10 @@ fun HomeScreen(
                         }
 
                         state.rides.isNotEmpty() -> {
-                            items(state.rides) { ride ->
+                            items(
+                                items = state.rides,
+                                key = { it.id }
+                            ) { ride ->
                                 RideItemCard(
                                     ride = ride,
                                     onReserveClick = { viewModel.onReserveClicked(ride.id) },
@@ -491,7 +497,7 @@ fun FilterCard(
     onDepartureTimeChange: (String) -> Unit,
     onClearFilters: () -> Unit
 ) {
-    val dayOptions = listOf("Todos", "Hoy")
+    val dayOptions = listOf("Hoy", "Próximos viajes")
     val tripTypeOptions = listOf("Todos", "Hacia la universidad", "Desde la universidad")
 
     Column(
