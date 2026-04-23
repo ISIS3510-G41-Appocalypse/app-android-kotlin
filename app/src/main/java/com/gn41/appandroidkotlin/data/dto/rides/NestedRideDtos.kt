@@ -9,6 +9,7 @@ data class DriverNestedDto(
     val id: Int = 0,
     val user_id: Int? = null,
     val rating: Double? = null,
+    val cancellation_odds: Double? = null,
     val users: UserNestedDto? = null
 )
 

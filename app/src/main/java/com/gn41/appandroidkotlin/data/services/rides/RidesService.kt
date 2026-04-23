@@ -8,7 +8,7 @@ import com.gn41.appandroidkotlin.data.services.SupabaseClient
 class RidesService {
     private val ridesApi = SupabaseClient.ridesApi
 
-    private val enrichedSelect = "*,drivers(*,users(*)),vehicles(*),zones(*)"
+    private val enrichedSelect = "*,drivers(*,users(*)),vehicles(*),zones(*),reservations(state)"
 
     suspend fun getRides(token: String): List<RideDto>? {
         return try {

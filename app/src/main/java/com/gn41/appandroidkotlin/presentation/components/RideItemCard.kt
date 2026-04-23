@@ -35,10 +35,10 @@ import com.gn41.appandroidkotlin.presentation.viewmodels.RideItemUiModel
 import com.gn41.appandroidkotlin.ui.theme.AutumnEmber
 import com.gn41.appandroidkotlin.ui.theme.BrightSnow
 import com.gn41.appandroidkotlin.ui.theme.CoolSteel
+import com.gn41.appandroidkotlin.ui.theme.DarkCyan
 import com.gn41.appandroidkotlin.ui.theme.PrussianBlue
 
 private val CardDivider = Color(0xFFE2E8F0)
-private val TypeBadgeBg = Color(0xFFFEF3C7)
 
 @Composable
 fun RideItemCard(
@@ -60,7 +60,11 @@ fun RideItemCard(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.Top
         ) {
-            DriverInfoSection(name = ride.driverName, rating = ride.driverRating)
+            DriverInfoSection(
+                name = ride.driverName,
+                rating = ride.driverRating,
+                cancellationRiskPercent = ride.cancellationRiskPercent
+            )
             PriceSection(price = ride.price)
         }
 
@@ -79,6 +83,7 @@ fun RideItemCard(
         RideActionSection(
             vehicleInfo = ride.vehicleInfo,
             totalSlots = ride.totalSlots,
+            availableSlots = ride.availableSlots,
             zoneName = ride.zoneName,
             isReserveEnabled = isReserveEnabled,
             onReserveClick = { if (isReserveEnabled) showDialog = true }
@@ -110,17 +115,36 @@ fun RideItemCard(
 }
 
 @Composable
-private fun DriverInfoSection(name: String, rating: String?) {
+private fun DriverInfoSection(
+    name: String,
+    rating: String?,
+    cancellationRiskPercent: Int?
+) {
+    val ratingValue = rating ?: "Sin calificacion"
+    val ratingColor = ratingSemaphoreColor(rating)
+    val riskValue = cancellationRiskPercent?.let { "${it}%" } ?: "Sin viajes"
+    val riskColor = cancellationRiskSemaphoreColor(cancellationRiskPercent)
+
     Column {
         Text(
             text = name,
             style = MaterialTheme.typography.titleMedium,
             color = PrussianBlue
         )
-        if (rating != null) {
-            Spacer(modifier = Modifier.height(2.dp))
-            LabeledValueText(label = "Calificacion", value = rating, color = PrussianBlue)
-        }
+        Spacer(modifier = Modifier.height(2.dp))
+        LabeledValueText(
+            label = "Calificacion",
+            value = ratingValue,
+            color = PrussianBlue,
+            valueColor = ratingColor
+        )
+        Spacer(modifier = Modifier.height(2.dp))
+        LabeledValueText(
+            label = "Riesgo de cancelación",
+            value = riskValue,
+            color = PrussianBlue,
+            valueColor = riskColor
+        )
     }
 }
 
@@ -169,10 +193,12 @@ private fun RideRouteSection(ride: RideItemUiModel) {
 
     Spacer(modifier = Modifier.height(8.dp))
 
+    val (badgeBackground, badgeText) = rideTypeBadgeColors(ride.type)
+
     // tipo de viaje en badge
     Box(
         modifier = Modifier
-            .background(TypeBadgeBg, RoundedCornerShape(6.dp))
+            .background(badgeBackground, RoundedCornerShape(6.dp))
             .padding(horizontal = 8.dp, vertical = 4.dp)
     ) {
         Text(
@@ -181,16 +207,25 @@ private fun RideRouteSection(ride: RideItemUiModel) {
                 append(mapRideTypeLabel(ride.type))
             },
             style = MaterialTheme.typography.bodyMedium,
-            color = AutumnEmber,
+            color = badgeText,
             fontWeight = FontWeight.Medium
         )
+    }
+}
+
+private fun rideTypeBadgeColors(type: String): Pair<Color, Color> {
+    return when (type) {
+        "TO_UNIVERSITY" -> Color(0xFFE6FFFA) to DarkCyan
+        "FROM_UNIVERSITY" -> Color(0xFFFEF3C7) to AutumnEmber
+        else -> Color(0xFFE2E8F0) to PrussianBlue
     }
 }
 
 @Composable
 private fun RideActionSection(
     vehicleInfo: String,
-    totalSlots: String,
+    totalSlots: Int,
+    availableSlots: Int,
     zoneName: String,
     isReserveEnabled: Boolean = true,
     onReserveClick: () -> Unit
@@ -207,9 +242,11 @@ private fun RideActionSection(
                 .padding(end = 12.dp)
         ) {
             LabeledValueText(label = "Vehiculo", value = vehicleInfo, color = PrussianBlue)
-            if (totalSlots.isNotEmpty()) {
+            if (totalSlots > 0) {
                 Spacer(modifier = Modifier.height(2.dp))
-                LabeledValueText(label = "Cupos", value = totalSlots, color = PrussianBlue)
+                LabeledValueText(label = "Cupos totales", value = totalSlots.toString(), color = PrussianBlue)
+                Spacer(modifier = Modifier.height(2.dp))
+                LabeledValueText(label = "Cupos disponibles", value = availableSlots.toString(), color = PrussianBlue)
             }
             if (zoneName.isNotEmpty()) {
                 Spacer(modifier = Modifier.height(2.dp))
@@ -262,16 +299,35 @@ private fun mapRideTypeLabel(type: String): String {
 private fun LabeledValueText(
     label: String,
     value: String,
-    color: Color = PrussianBlue
+    color: Color = PrussianBlue,
+    valueColor: Color = color
 ) {
     Text(
         text = buildAnnotatedString {
             withStyle(SpanStyle(fontWeight = FontWeight.SemiBold, color = color)) { append("$label: ") }
-            append(value)
+            withStyle(SpanStyle(color = valueColor)) { append(value) }
         },
         style = MaterialTheme.typography.bodyMedium,
         color = color
     )
+}
+
+private fun ratingSemaphoreColor(rating: String?): Color {
+    val ratingNumber = rating?.toDoubleOrNull() ?: return CoolSteel
+    return when {
+        ratingNumber >= 4.5 -> DarkCyan
+        ratingNumber >= 3.5 -> AutumnEmber
+        else -> Color(0xFFDC2626)
+    }
+}
+
+private fun cancellationRiskSemaphoreColor(riskPercent: Int?): Color {
+    val risk = riskPercent ?: return CoolSteel
+    return when {
+        risk <= 20 -> DarkCyan
+        risk <= 50 -> AutumnEmber
+        else -> Color(0xFFDC2626)
+    }
 }
 
 private fun formatDateText(rawDate: String): String {
