@@ -14,7 +14,8 @@ data class RideItemUiModel(
     val driverName: String,
     val driverRating: String?,
     val vehicleInfo: String,
-    val totalSlots: String,
+    val totalSlots: Int,
+    val availableSlots: Int,
     val zoneName: String
 )
 
@@ -39,7 +40,11 @@ fun mapToRideUiModel(dto: RideDto): RideItemUiModel {
         dto.vehicles?.model
     ).joinToString(" ").ifBlank { "No disponible" }
 
-    val totalSlots = dto.vehicles?.number_slots?.toString() ?: ""
+    val totalSlots = dto.vehicles?.number_slots ?: 0
+    val bookedSlots = dto.reservations.orEmpty().count {
+        it.state == "PENDIENTE" || it.state == "ACEPTADA" || it.state == "EN_CURSO"
+    }
+    val availableSlots = (totalSlots - bookedSlots).coerceAtLeast(0)
 
     val zoneName = dto.zones?.name ?: ""
 
@@ -60,6 +65,7 @@ fun mapToRideUiModel(dto: RideDto): RideItemUiModel {
         driverRating = driverRating,
         vehicleInfo = vehicleInfo,
         totalSlots = totalSlots,
+        availableSlots = availableSlots,
         zoneName = zoneName
     )
 }

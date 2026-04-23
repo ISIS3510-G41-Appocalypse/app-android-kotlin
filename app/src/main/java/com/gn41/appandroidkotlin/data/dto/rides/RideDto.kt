@@ -1,5 +1,9 @@
 package com.gn41.appandroidkotlin.data.dto.rides
 
+data class RideReservationNestedDto(
+    val state: String? = null
+)
+
 data class RideDto(
     val id: Int,
     val driver_id: Int,
@@ -14,5 +18,6 @@ data class RideDto(
     val price: Double? = null,
     val drivers: DriverNestedDto? = null,
     val vehicles: VehicleNestedDto? = null,
-    val zones: ZoneNestedDto? = null
+    val zones: ZoneNestedDto? = null,
+    val reservations: List<RideReservationNestedDto>? = null
 )
