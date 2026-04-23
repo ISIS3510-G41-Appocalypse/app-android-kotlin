@@ -32,6 +32,7 @@ import com.gn41.appandroidkotlin.presentation.viewmodels.WelcomeViewModelFactory
 import com.gn41.appandroidkotlin.ui.theme.AppAndroidKotlinTheme
 import com.gn41.appandroidkotlin.data.services.location.LocationService
 import com.gn41.appandroidkotlin.data.repositories.LocationRepositoryImpl
+import com.gn41.appandroidkotlin.presentation.viewmodels.ActiveRideViewModelFactory
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -95,6 +96,10 @@ class MainActivity : ComponentActivity() {
                     sessionManager = sessionManager
                 )
 
+                val activeRideViewModelFactory = ActiveRideViewModelFactory(
+                    rideRepository = rideRepository
+                )
+
                 val navController = rememberNavController()
 
                 LaunchedEffect(Unit) {
@@ -115,7 +120,7 @@ class MainActivity : ComponentActivity() {
                     welcomeViewModel = welcomeViewModel,
                     homeViewModelFactory = homeFactory,
                     createRideViewModelFactory = createRideViewModelFactory,
-                    tripViewModelFactory = tripViewModelFactory
+                    activeRideViewModelFactory = activeRideViewModelFactory
                 )
             }
         }

@@ -6,6 +6,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import com.gn41.appandroidkotlin.presentation.viewmodels.ActiveRideViewModel
+import com.gn41.appandroidkotlin.presentation.viewmodels.ActiveRideViewModelFactory
 import com.gn41.appandroidkotlin.presentation.viewmodels.CreateRideViewModel
 import com.gn41.appandroidkotlin.presentation.viewmodels.CreateRideViewModelFactory
 import com.gn41.appandroidkotlin.presentation.viewmodels.HomeViewModel
@@ -13,6 +15,7 @@ import com.gn41.appandroidkotlin.presentation.viewmodels.HomeViewModelFactory
 import com.gn41.appandroidkotlin.presentation.viewmodels.TripViewModel
 import com.gn41.appandroidkotlin.presentation.viewmodels.TripViewModelFactory
 import com.gn41.appandroidkotlin.presentation.viewmodels.WelcomeViewModel
+import com.gn41.appandroidkotlin.presentation.views.ActiveRideScreen
 import com.gn41.appandroidkotlin.presentation.views.CreateRideScreen
 import com.gn41.appandroidkotlin.presentation.views.HomeScreen
 import com.gn41.appandroidkotlin.presentation.views.TripScreen
@@ -24,7 +27,7 @@ fun AppNavigation(
     welcomeViewModel: WelcomeViewModel,
     homeViewModelFactory: HomeViewModelFactory,
     createRideViewModelFactory: CreateRideViewModelFactory,
-    tripViewModelFactory: TripViewModelFactory
+    activeRideViewModelFactory: ActiveRideViewModelFactory
 ) {
     NavHost(
         navController = navController,
@@ -62,10 +65,10 @@ fun AppNavigation(
         }
 
         composable("trips") {
-            val tripViewModel: TripViewModel = viewModel(factory = tripViewModelFactory)
-            TripScreen(
-                viewModel = tripViewModel,
-                onHomeClick = {
+            val activeRideViewModel: ActiveRideViewModel = viewModel(factory = activeRideViewModelFactory)
+            ActiveRideScreen(
+                viewModel = activeRideViewModel,
+                onBackClick = {
                     navController.navigate("home") {
                         launchSingleTop = true
                     }
