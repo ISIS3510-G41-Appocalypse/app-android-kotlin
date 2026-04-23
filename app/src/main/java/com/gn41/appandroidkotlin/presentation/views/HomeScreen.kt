@@ -1,5 +1,6 @@
 package com.gn41.appandroidkotlin.presentation.views
 
+import android.content.res.Configuration
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -9,15 +10,16 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.Logout
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
@@ -35,6 +37,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.gn41.appandroidkotlin.presentation.components.RideItemCard
@@ -54,6 +57,9 @@ fun HomeScreen(
 ) {
     val state = viewModel.uiState
     var selectedBottomTab by remember { mutableStateOf("Inicio") }
+    val configuration = LocalConfiguration.current
+    val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+    val navigationBottomPadding = 32.dp
 
     Box(
         modifier = Modifier
@@ -63,80 +69,278 @@ fun HomeScreen(
         Column(
             modifier = Modifier.fillMaxSize()
         ) {
-            LazyColumn(
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                item {
-                    HomeHeader(
-                        onLogoutClick = {
-                            viewModel.logout {
-                                onLogoutClick()
+            if (isLandscape) {
+                HomeHeader(
+                    onLogoutClick = {
+                        viewModel.logout {
+                            onLogoutClick()
+                        }
+                    }
+                )
+
+                Row(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    LazyColumn(
+                        modifier = Modifier
+                            .weight(0.4f)
+                            .fillMaxHeight(),
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        item {
+                            FilterCard(
+                                selectedZone = state.selectedZone,
+                                zoneOptions = state.zoneOptions,
+                                selectedDay = state.selectedDay,
+                                selectedTripType = state.selectedTripType,
+                                selectedDepartureTime = state.selectedDepartureTime,
+                                departureOptions = state.departureTimeOptions,
+                                hasActiveFilters = state.hasActiveFilters,
+                                activeFilterCount = state.activeFilterCount,
+                                onZoneChange = viewModel::onZoneChange,
+                                onDayChange = viewModel::onDayChange,
+                                onTripTypeChange = viewModel::onTripTypeChange,
+                                onDepartureTimeChange = viewModel::onDepartureTimeChange,
+                                onClearFilters = viewModel::clearFilters
+                            )
+                        }
+                    }
+
+                    LazyColumn(
+                        modifier = Modifier
+                            .weight(0.6f)
+                            .fillMaxHeight(),
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        if (state.reservationMessage.isNotEmpty()) {
+                            item {
+                                LaunchedEffect(state.reservationMessage) {
+                                    delay(3000)
+                                    viewModel.clearReservationMessage()
+                                }
+
+                                val isSuccess = state.reservationMessage.contains("correctamente")
+                                Text(
+                                    text = state.reservationMessage,
+                                    color = if (isSuccess) Color(0xFF0D9488) else Color(0xFFB45309),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .background(
+                                            if (isSuccess) Color(0xFFE6FFFA) else Color(0xFFFEF3C7),
+                                            RoundedCornerShape(8.dp)
+                                        )
+                                        .padding(horizontal = 12.dp, vertical = 8.dp)
+                                )
                             }
                         }
-                    )
-                }
 
-                item {
-                    FilterCard(
-                        selectedZone = state.selectedZone,
-                        zoneOptions = state.zoneOptions,
-                        selectedDay = state.selectedDay,
-                        selectedTripType = state.selectedTripType,
-                        selectedDepartureTime = state.selectedDepartureTime,
-                        departureOptions = state.departureTimeOptions,
-                        hasActiveFilters = state.hasActiveFilters,
-                        activeFilterCount = state.activeFilterCount,
-                        onZoneChange = viewModel::onZoneChange,
-                        onDayChange = viewModel::onDayChange,
-                        onTripTypeChange = viewModel::onTripTypeChange,
-                        onDepartureTimeChange = viewModel::onDepartureTimeChange,
-                        onClearFilters = viewModel::clearFilters
-                    )
-                }
+                        when {
+                            state.isLoading -> {
+                                item {
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(vertical = 40.dp),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Column(
+                                            horizontalAlignment = Alignment.CenterHorizontally
+                                        ) {
+                                            CircularProgressIndicator(color = Color.White)
+                                            Spacer(modifier = Modifier.height(8.dp))
+                                            Text(
+                                                text = "Cargando viajes...",
+                                                color = Color.LightGray,
+                                                style = MaterialTheme.typography.bodyMedium
+                                            )
+                                        }
+                                    }
+                                }
+                            }
 
-                if (state.reservationMessage.isNotEmpty()) {
-                    item {
-                        LaunchedEffect(state.reservationMessage) {
-                            delay(3000)
-                            viewModel.clearReservationMessage()
+                            state.errorMessage.isNotEmpty() -> {
+                                item {
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(vertical = 40.dp),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Text(
+                                            text = state.errorMessage,
+                                            color = Color.Red,
+                                            style = MaterialTheme.typography.bodyMedium
+                                        )
+                                    }
+                                }
+                            }
+
+                            state.rides.isNotEmpty() -> {
+                                items(state.rides) { ride ->
+                                    RideItemCard(
+                                        ride = ride,
+                                        onReserveClick = { viewModel.onReserveClicked(ride.id) },
+                                        isReserveEnabled = !state.hasActiveRiderReservation &&
+                                            !state.hasActiveDriverTrip &&
+                                            ride.availableSlots > 0
+                                    )
+                                }
+                            }
+
+                            else -> {
+                                item {
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(vertical = 40.dp),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Text(
+                                            text = if (state.hasActiveFilters) {
+                                                "No hay viajes para los filtros seleccionados."
+                                            } else {
+                                                "No hay viajes disponibles en este momento."
+                                            },
+                                            color = Color.LightGray,
+                                            style = MaterialTheme.typography.bodyMedium
+                                        )
+                                    }
+                                }
+                            }
                         }
-
-                        val isSuccess = state.reservationMessage.contains("correctamente")
-                        Text(
-                            text = state.reservationMessage,
-                            color = if (isSuccess) Color(0xFF0D9488) else Color(0xFFB45309),
-                            style = MaterialTheme.typography.bodyMedium,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .background(
-                                    if (isSuccess) Color(0xFFE6FFFA) else Color(0xFFFEF3C7),
-                                    RoundedCornerShape(8.dp)
-                                )
-                                .padding(horizontal = 12.dp, vertical = 8.dp)
-                        )
                     }
                 }
+            } else {
+                LazyColumn(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 16.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    item {
+                        HomeHeader(
+                            onLogoutClick = {
+                                viewModel.logout {
+                                    onLogoutClick()
+                                }
+                            }
+                        )
+                    }
 
-                when {
-                    state.isLoading -> {
+                    item {
+                        FilterCard(
+                            selectedZone = state.selectedZone,
+                            zoneOptions = state.zoneOptions,
+                            selectedDay = state.selectedDay,
+                            selectedTripType = state.selectedTripType,
+                            selectedDepartureTime = state.selectedDepartureTime,
+                            departureOptions = state.departureTimeOptions,
+                            hasActiveFilters = state.hasActiveFilters,
+                            activeFilterCount = state.activeFilterCount,
+                            onZoneChange = viewModel::onZoneChange,
+                            onDayChange = viewModel::onDayChange,
+                            onTripTypeChange = viewModel::onTripTypeChange,
+                            onDepartureTimeChange = viewModel::onDepartureTimeChange,
+                            onClearFilters = viewModel::clearFilters
+                        )
+                    }
+
+                    if (state.reservationMessage.isNotEmpty()) {
                         item {
-                            Box(
+                            LaunchedEffect(state.reservationMessage) {
+                                delay(3000)
+                                viewModel.clearReservationMessage()
+                            }
+
+                            val isSuccess = state.reservationMessage.contains("correctamente")
+                            Text(
+                                text = state.reservationMessage,
+                                color = if (isSuccess) Color(0xFF0D9488) else Color(0xFFB45309),
+                                style = MaterialTheme.typography.bodyMedium,
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(vertical = 40.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Column(
-                                    horizontalAlignment = Alignment.CenterHorizontally
+                                    .background(
+                                        if (isSuccess) Color(0xFFE6FFFA) else Color(0xFFFEF3C7),
+                                        RoundedCornerShape(8.dp)
+                                    )
+                                    .padding(horizontal = 12.dp, vertical = 8.dp)
+                            )
+                        }
+                    }
+
+                    when {
+                        state.isLoading -> {
+                            item {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = 40.dp),
+                                    contentAlignment = Alignment.Center
                                 ) {
-                                    CircularProgressIndicator(color = Color.White)
-                                    Spacer(modifier = Modifier.height(8.dp))
+                                    Column(
+                                        horizontalAlignment = Alignment.CenterHorizontally
+                                    ) {
+                                        CircularProgressIndicator(color = Color.White)
+                                        Spacer(modifier = Modifier.height(8.dp))
+                                        Text(
+                                            text = "Cargando viajes...",
+                                            color = Color.LightGray,
+                                            style = MaterialTheme.typography.bodyMedium
+                                        )
+                                    }
+                                }
+                            }
+                        }
+
+                        state.errorMessage.isNotEmpty() -> {
+                            item {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = 40.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
                                     Text(
-                                        text = "Cargando viajes...",
+                                        text = state.errorMessage,
+                                        color = Color.Red,
+                                        style = MaterialTheme.typography.bodyMedium
+                                    )
+                                }
+                            }
+                        }
+
+                        state.rides.isNotEmpty() -> {
+                            items(state.rides) { ride ->
+                                RideItemCard(
+                                    ride = ride,
+                                    onReserveClick = { viewModel.onReserveClicked(ride.id) },
+                                    isReserveEnabled = !state.hasActiveRiderReservation &&
+                                        !state.hasActiveDriverTrip &&
+                                        ride.availableSlots > 0
+                                )
+                            }
+                        }
+
+                        else -> {
+                            item {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = 40.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        text = if (state.hasActiveFilters) {
+                                            "No hay viajes para los filtros seleccionados."
+                                        } else {
+                                            "No hay viajes disponibles en este momento."
+                                        },
                                         color = Color.LightGray,
                                         style = MaterialTheme.typography.bodyMedium
                                     )
@@ -144,60 +348,13 @@ fun HomeScreen(
                             }
                         }
                     }
-
-                    state.errorMessage.isNotEmpty() -> {
-                        item {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(vertical = 40.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(
-                                    text = state.errorMessage,
-                                    color = Color.Red,
-                                    style = MaterialTheme.typography.bodyMedium
-                                )
-                            }
-                        }
-                    }
-
-                    state.rides.isNotEmpty() -> {
-                        items(state.rides) { ride ->
-                            RideItemCard(
-                                ride = ride,
-                                onReserveClick = { viewModel.onReserveClicked(ride.id) },
-                                isReserveEnabled = !state.hasActiveRiderReservation &&
-                                    !state.hasActiveDriverTrip &&
-                                    ride.availableSlots > 0
-                            )
-                        }
-                    }
-
-                    else -> {
-                        item {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(vertical = 40.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(
-                                    text = if (state.hasActiveFilters) {
-                                        "No hay viajes para los filtros seleccionados."
-                                    } else {
-                                        "No hay viajes disponibles en este momento."
-                                    },
-                                    color = Color.LightGray,
-                                    style = MaterialTheme.typography.bodyMedium
-                                )
-                            }
-                        }
-                    }
                 }
             }
 
             BottomNavigationBar(
+                modifier = Modifier
+                    .padding(horizontal = 16.dp, vertical = 8.dp)
+                    .navigationBarsPadding(),
                 selectedTab = selectedBottomTab,
                 onTabClick = {
                     selectedBottomTab = it
@@ -210,7 +367,7 @@ fun HomeScreen(
             ExpandableCreateRideButton(
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
-                    .padding(end = 24.dp, bottom = 84.dp),
+                    .padding(end = 24.dp, bottom = 116.dp),
                 isBlocked = state.hasActiveDriverTrip || state.hasActiveRiderReservation,
                 blockedMessage = when {
                     state.hasActiveDriverTrip && state.hasActiveRiderReservation -> "Ya tienes un viaje o reserva activa"
@@ -469,6 +626,7 @@ fun FilterDropdownField(
 
 @Composable
 fun BottomNavigationBar(
+    modifier: Modifier = Modifier,
     selectedTab: String,
     onTabClick: (String) -> Unit
 ) {
@@ -476,6 +634,7 @@ fun BottomNavigationBar(
 
     Row(
         modifier = Modifier
+            .then(modifier)
             .fillMaxWidth()
             .background(whiteCard, RoundedCornerShape(16.dp))
             .padding(vertical = 10.dp, horizontal = 8.dp),
