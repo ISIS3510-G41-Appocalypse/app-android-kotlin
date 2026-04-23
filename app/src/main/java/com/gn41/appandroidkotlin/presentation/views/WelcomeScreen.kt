@@ -13,6 +13,8 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DirectionsBus
 import androidx.compose.material3.Button
@@ -46,27 +48,47 @@ fun WelcomeScreen(viewModel: WelcomeViewModel){
                 .padding(horizontal = 24.dp, vertical = 24.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
+            if (viewModel.showLoginCard) {
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(end = 24.dp),
+                    verticalArrangement = Arrangement.Center,
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    WelcomeHeader()
+                    Spacer(modifier = Modifier.height(20.dp))
+                }
 
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(end = 24.dp),
-                verticalArrangement = Arrangement.Center,
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                WelcomeHeader()
-                Spacer(modifier = Modifier.height(20.dp))
-                WelcomeMessage()
-            }
-
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.Center,
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                if (viewModel.showLoginCard) {
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.Center,
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
                     LoginCard(viewModel = viewModel, isLandscape = true)
-                } else {
+                }
+            }
+            else{
+                val scrollState = rememberScrollState()
+
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(end = 24.dp)
+                        .verticalScroll(scrollState),
+                    verticalArrangement = Arrangement.Center,
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    WelcomeHeader()
+                    Spacer(modifier = Modifier.height(20.dp))
+                    WelcomeMessage()
+                }
+
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.Center,
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
                     WelcomeButtons(
                         onLoginClick = { viewModel.onLoginClicked() },
                         onRegisterClick = { viewModel.onRegisterClicked() }
@@ -96,7 +118,6 @@ fun WelcomeScreen(viewModel: WelcomeViewModel){
                     LoginCard(viewModel = viewModel, isLandscape = false)
                 }
                 else {
-
                     WelcomeMessage()
                     WelcomeButtons(onLoginClick = {viewModel.onLoginClicked()}, onRegisterClick = {viewModel.onRegisterClicked()})
                 }
