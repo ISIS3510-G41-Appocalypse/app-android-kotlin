@@ -35,10 +35,10 @@ import com.gn41.appandroidkotlin.presentation.viewmodels.RideItemUiModel
 import com.gn41.appandroidkotlin.ui.theme.AutumnEmber
 import com.gn41.appandroidkotlin.ui.theme.BrightSnow
 import com.gn41.appandroidkotlin.ui.theme.CoolSteel
+import com.gn41.appandroidkotlin.ui.theme.DarkCyan
 import com.gn41.appandroidkotlin.ui.theme.PrussianBlue
 
 private val CardDivider = Color(0xFFE2E8F0)
-private val TypeBadgeBg = Color(0xFFFEF3C7)
 
 @Composable
 fun RideItemCard(
@@ -79,6 +79,7 @@ fun RideItemCard(
         RideActionSection(
             vehicleInfo = ride.vehicleInfo,
             totalSlots = ride.totalSlots,
+            availableSlots = ride.availableSlots,
             zoneName = ride.zoneName,
             isReserveEnabled = isReserveEnabled,
             onReserveClick = { if (isReserveEnabled) showDialog = true }
@@ -169,10 +170,12 @@ private fun RideRouteSection(ride: RideItemUiModel) {
 
     Spacer(modifier = Modifier.height(8.dp))
 
+    val (badgeBackground, badgeText) = rideTypeBadgeColors(ride.type)
+
     // tipo de viaje en badge
     Box(
         modifier = Modifier
-            .background(TypeBadgeBg, RoundedCornerShape(6.dp))
+            .background(badgeBackground, RoundedCornerShape(6.dp))
             .padding(horizontal = 8.dp, vertical = 4.dp)
     ) {
         Text(
@@ -181,16 +184,25 @@ private fun RideRouteSection(ride: RideItemUiModel) {
                 append(mapRideTypeLabel(ride.type))
             },
             style = MaterialTheme.typography.bodyMedium,
-            color = AutumnEmber,
+            color = badgeText,
             fontWeight = FontWeight.Medium
         )
+    }
+}
+
+private fun rideTypeBadgeColors(type: String): Pair<Color, Color> {
+    return when (type) {
+        "TO_UNIVERSITY" -> Color(0xFFE6FFFA) to DarkCyan
+        "FROM_UNIVERSITY" -> Color(0xFFFEF3C7) to AutumnEmber
+        else -> Color(0xFFE2E8F0) to PrussianBlue
     }
 }
 
 @Composable
 private fun RideActionSection(
     vehicleInfo: String,
-    totalSlots: String,
+    totalSlots: Int,
+    availableSlots: Int,
     zoneName: String,
     isReserveEnabled: Boolean = true,
     onReserveClick: () -> Unit
@@ -207,9 +219,11 @@ private fun RideActionSection(
                 .padding(end = 12.dp)
         ) {
             LabeledValueText(label = "Vehiculo", value = vehicleInfo, color = PrussianBlue)
-            if (totalSlots.isNotEmpty()) {
+            if (totalSlots > 0) {
                 Spacer(modifier = Modifier.height(2.dp))
-                LabeledValueText(label = "Cupos", value = totalSlots, color = PrussianBlue)
+                LabeledValueText(label = "Cupos totales", value = totalSlots.toString(), color = PrussianBlue)
+                Spacer(modifier = Modifier.height(2.dp))
+                LabeledValueText(label = "Cupos disponibles", value = availableSlots.toString(), color = PrussianBlue)
             }
             if (zoneName.isNotEmpty()) {
                 Spacer(modifier = Modifier.height(2.dp))
