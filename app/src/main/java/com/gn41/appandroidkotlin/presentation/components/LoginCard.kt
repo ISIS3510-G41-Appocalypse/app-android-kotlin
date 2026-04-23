@@ -38,7 +38,7 @@ fun LoginCard(viewModel: WelcomeViewModel, isLandscape: Boolean) {
 
     Box(
         modifier = Modifier
-            .fillMaxWidth(0.9f)
+            .fillMaxWidth()
             .background(color = BrightSnow, shape = RoundedCornerShape(24.dp))
             .padding(16.dp)
     ) {
@@ -113,11 +113,6 @@ fun LoginCard(viewModel: WelcomeViewModel, isLandscape: Boolean) {
                         text = "Contraseña",
                         color = MaterialTheme.colorScheme.background
                     )
-                    //En el futuro esto puede ser un botón... por ahora lo dejaremos como text
-                    Text(
-                        text = "¿Olvidaste tu contraseña?",
-                        color = MaterialTheme.colorScheme.secondary
-                    )
                 }
 
                 Spacer(modifier = Modifier.height(8.dp))
@@ -133,6 +128,19 @@ fun LoginCard(viewModel: WelcomeViewModel, isLandscape: Boolean) {
                     singleLine = true,
                     isError = viewModel.passwordInputError.isNotEmpty()
                 )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    //En el futuro esto puede ser un botón... por ahora lo dejaremos como text
+                    Text(
+                        text = "¿Olvidaste tu contraseña?",
+                        color = MaterialTheme.colorScheme.secondary
+                    )
+                }
 
                 if (viewModel.passwordInputError.isNotEmpty()) {
                     Spacer(modifier = Modifier.height(4.dp))

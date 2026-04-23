@@ -56,7 +56,7 @@ class CreateRideViewModel(
     var zones by mutableStateOf<List<ZoneDto>>(emptyList())
         private set
 
-    var rideTypes = listOf("TO_UNIVERSITY","FROM_UNIVERSITY")
+    var rideTypes = listOf("Hacia la universidad","Desde la universidad")
 
     var isLoadingData by mutableStateOf(true)
         private set
@@ -132,10 +132,6 @@ class CreateRideViewModel(
         formState = formState.copy(date = date)
     }
 
-    fun onDepartureTimeSelected(time: String) {
-        formState = formState.copy(departureTime = time)
-    }
-
     fun createRide() {
         viewModelScope.launch {
             try {
@@ -153,6 +149,14 @@ class CreateRideViewModel(
                     return@launch
                 }
 
+                val type: String
+                if (formState.type == "Hacia la universidad") {
+                    type = "TO_UNIVERSITY"
+                }
+                else{
+                    type = "FROM_UNIVERSITY"
+                }
+
                 val result = rideRepository.createRide(
                     CreateRideRequestDto(
                         vehicleId = vehicleRepository.getVehicleByLicensePlate(formState.vehicleId).id,
@@ -164,7 +168,7 @@ class CreateRideViewModel(
                         date = formState.date,
                         driverId = driverId,
                         state = "OFERTADO",
-                        type = formState.type
+                        type = type
                     )
                 )
 
