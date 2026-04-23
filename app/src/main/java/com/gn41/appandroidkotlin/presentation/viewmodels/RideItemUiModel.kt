@@ -2,6 +2,7 @@ package com.gn41.appandroidkotlin.presentation.viewmodels
 
 import com.gn41.appandroidkotlin.data.dto.rides.RideDto
 import java.util.Locale
+import kotlin.math.roundToInt
 
 data class RideItemUiModel(
     val id: Int,
@@ -16,7 +17,8 @@ data class RideItemUiModel(
     val vehicleInfo: String,
     val totalSlots: Int,
     val availableSlots: Int,
-    val zoneName: String
+    val zoneName: String,
+    val cancellationRiskPercent: Int?
 )
 
 fun mapToRideUiModel(dto: RideDto): RideItemUiModel {
@@ -48,6 +50,11 @@ fun mapToRideUiModel(dto: RideDto): RideItemUiModel {
 
     val zoneName = dto.zones?.name ?: ""
 
+    val cancellationRiskPercent = dto.drivers?.cancellation_odds
+        ?.times(100)
+        ?.roundToInt()
+        ?.coerceIn(0, 100)
+
     // se formatea precio con 2 decimales
     val price = dto.price?.let {
         String.format(Locale.getDefault(), "$%.2f", it)
@@ -66,6 +73,7 @@ fun mapToRideUiModel(dto: RideDto): RideItemUiModel {
         vehicleInfo = vehicleInfo,
         totalSlots = totalSlots,
         availableSlots = availableSlots,
-        zoneName = zoneName
+        zoneName = zoneName,
+        cancellationRiskPercent = cancellationRiskPercent
     )
 }
