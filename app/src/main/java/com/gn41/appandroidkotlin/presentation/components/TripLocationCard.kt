@@ -3,11 +3,13 @@ package com.gn41.appandroidkotlin.presentation.components
 import android.annotation.SuppressLint
 import android.content.res.Configuration
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -26,18 +28,18 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.unit.dp
 import com.gn41.appandroidkotlin.domain.UserSharedLocation
-import com.google.android.gms.maps.model.CameraPosition
-import com.google.android.gms.maps.model.LatLng
-import com.google.maps.android.compose.GoogleMap
-import com.google.maps.android.compose.Marker
-import com.google.maps.android.compose.MarkerState
-import com.google.maps.android.compose.rememberCameraPositionState
+import com.mapbox.geojson.Point
+import com.mapbox.maps.CameraOptions
+import com.mapbox.maps.MapboxExperimental
+import com.mapbox.maps.extension.compose.MapboxMap
+import com.mapbox.maps.extension.compose.animation.viewport.rememberMapViewportState
 
 private val TripLocationCardBackground = Color(0xFF3A3946)
 private val TripLocationPrimaryText = Color(0xFFD6D6E0)
 private val TripLocationSecondaryText = Color(0xFFB8B8C7)
 
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
+@OptIn(MapboxExperimental::class)
 @Composable
 fun TripLocationCard(
     isDriver: Boolean,
@@ -72,19 +74,28 @@ fun TripLocationCard(
     val roleSpacing = if (isLandscape) 10.dp else 18.dp
     val lineSpacing = if (isLandscape) 2.dp else 4.dp
 
-    val cameraPositionState = rememberCameraPositionState()
-
-    val userLocation = if (currentLatitude != null && currentLongitude != null) {
-        LatLng(currentLatitude, currentLongitude)
+    val userPoint = if (currentLatitude != null && currentLongitude != null) {
+        Point.fromLngLat(currentLongitude, currentLatitude)
     } else {
         null
     }
 
-    LaunchedEffect(userLocation) {
-        userLocation?.let {
-            cameraPositionState.position = CameraPosition.fromLatLngZoom(it, 15f)
+    val mapViewportState = rememberMapViewportState()
+
+    LaunchedEffect(userPoint, isLocationSharingEnabled) {
+        if (userPoint != null && isLocationSharingEnabled) {
+            mapViewportState.setCameraOptions {
+                center(userPoint)
+                zoom(16.0)
+            }
         }
     }
+
+    val latestLocations = rideLocations
+        .filter { it.isSharingEnabled }
+        .groupBy { it.userId }
+        .mapNotNull { (_, locations) -> locations.maxByOrNull { it.timestamp } }
+        .filter { it.userId != currentUserId }
 
     Card(
         shape = RoundedCornerShape(18.dp),
@@ -110,31 +121,46 @@ fun TripLocationCard(
                     .height(mapHeight)
                     .clip(RoundedCornerShape(16.dp))
             ) {
-                GoogleMap(
-                    modifier = Modifier.fillMaxWidth(),
-                    cameraPositionState = cameraPositionState
+                MapboxMap(
+                    modifier = Modifier.fillMaxSize(),
+                    mapViewportState = mapViewportState
+                )
+
+                Column(
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    userLocation?.let {
-                        Marker(
-                            state = MarkerState(position = it),
-                            title = "Tu ubicación"
-                        )
-                    }
-
-                    rideLocations
-                        .filter { it.isSharingEnabled }
-                        .groupBy { it.userId }
-                        .mapNotNull { (_, locations) -> locations.maxByOrNull { it.timestamp } }
-                        .forEach { location ->
-                            if (location.userId != currentUserId) {
-                                val position = LatLng(location.latitude, location.longitude)
-
-                                Marker(
-                                    state = MarkerState(position = position),
-                                    title = "Usuario ${location.userId}"
+                    Text(
+                        text = "+",
+                        color = Color.Black,
+                        modifier = Modifier
+                            .background(Color.White, RoundedCornerShape(8.dp))
+                            .clickable {
+                                mapViewportState.easeTo(
+                                    CameraOptions.Builder()
+                                        .zoom(mapViewportState.cameraState?.zoom?.plus(1.0) ?: 16.0)
+                                        .build()
                                 )
                             }
-                        }
+                            .padding(horizontal = 12.dp, vertical = 6.dp)
+                    )
+
+                    Text(
+                        text = "-",
+                        color = Color.Black,
+                        modifier = Modifier
+                            .background(Color.White, RoundedCornerShape(8.dp))
+                            .clickable {
+                                mapViewportState.easeTo(
+                                    CameraOptions.Builder()
+                                        .zoom(mapViewportState.cameraState?.zoom?.minus(1.0) ?: 14.0)
+                                        .build()
+                                )
+                            }
+                            .padding(horizontal = 14.dp, vertical = 6.dp)
+                    )
                 }
             }
 
@@ -179,11 +205,7 @@ fun TripLocationCard(
             Spacer(modifier = Modifier.height(6.dp))
 
             Text(
-                text = if (hasLocationPermission) {
-                    "Permiso: concedido"
-                } else {
-                    "Permiso: no concedido"
-                },
+                text = if (hasLocationPermission) "Permiso: concedido" else "Permiso: no concedido",
                 style = MaterialTheme.typography.bodySmall,
                 color = Color.LightGray
             )
