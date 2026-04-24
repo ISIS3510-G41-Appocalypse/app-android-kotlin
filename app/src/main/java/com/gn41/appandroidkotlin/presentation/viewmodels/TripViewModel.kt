@@ -431,7 +431,9 @@ private fun changeReservationState(
                 )
 
                 uiState = uiState.copy(
-                    rideLocations = locations
+                    rideLocations = locations.locations,
+                    isUsingCachedLocations = locations.isFromCache,
+                    cachedLocationMessage = locations.message
                 )
             } catch (e: Exception) {
                 Log.e("TripViewModel", "loadLocationsForCurrentRide exception", e)

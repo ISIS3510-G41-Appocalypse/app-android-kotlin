@@ -62,7 +62,7 @@ class MainActivity : ComponentActivity() {
                 val ridesService = RidesService()
                 val ridesRepository = RidesRepositoryImpl(ridesService)
                 val locationService = LocationService()
-                val locationRepository = LocationRepositoryImpl(locationService)
+                val locationRepository = LocationRepositoryImpl(locationService,sessionManager)
 
                 val tripViewModelFactory = TripViewModelFactory(
                     tripRepository = tripRepository,

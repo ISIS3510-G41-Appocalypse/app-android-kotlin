@@ -50,6 +50,8 @@ data class TripUiState(
 
     val currentUserId: Int? = null,
     val currentRideId: Int? = null,
-    val rideLocations: List<UserSharedLocation> = emptyList()
+    val rideLocations: List<UserSharedLocation> = emptyList(),
+    val isUsingCachedLocations: Boolean = false,
+    val cachedLocationMessage: String = ""
 )
 

@@ -32,6 +32,7 @@ import com.google.maps.android.compose.GoogleMap
 import com.google.maps.android.compose.Marker
 import com.google.maps.android.compose.MarkerState
 import com.google.maps.android.compose.rememberCameraPositionState
+import androidx.compose.material3.Button
 
 private val TripLocationCardBackground = Color(0xFF3A3946)
 private val TripLocationPrimaryText = Color(0xFFD6D6E0)
@@ -49,7 +50,10 @@ fun TripLocationCard(
     sharedUsersCount: Int,
     totalUsersInRide: Int,
     rideLocations: List<UserSharedLocation>,
-    currentUserId: Int
+    currentUserId: Int,
+    isUsingCachedLocations: Boolean,
+    cachedLocationMessage: String,
+    onRefreshLocations: () -> Unit
 ) {
     val configuration = LocalConfiguration.current
     val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
