@@ -33,6 +33,11 @@ import com.mapbox.maps.CameraOptions
 import com.mapbox.maps.MapboxExperimental
 import com.mapbox.maps.extension.compose.MapboxMap
 import com.mapbox.maps.extension.compose.animation.viewport.rememberMapViewportState
+import com.mapbox.maps.extension.compose.annotation.ViewAnnotation
+import com.mapbox.maps.viewannotation.annotationAnchor
+import com.mapbox.maps.extension.compose.annotation.ViewAnnotation
+import com.mapbox.maps.viewannotation.viewAnnotationOptions
+import com.mapbox.maps.viewannotation.geometry
 
 private val TripLocationCardBackground = Color(0xFF3A3946)
 private val TripLocationPrimaryText = Color(0xFFD6D6E0)
@@ -124,7 +129,44 @@ fun TripLocationCard(
                 MapboxMap(
                     modifier = Modifier.fillMaxSize(),
                     mapViewportState = mapViewportState
-                )
+                ) {
+
+                    userPoint?.let {
+                        ViewAnnotation(
+                            options = viewAnnotationOptions {
+                                geometry(it)
+                                allowOverlap(true)
+                            }
+                        ) {
+                            Text(
+                                text = "Tú",
+                                color = Color.White,
+                                modifier = Modifier
+                                    .background(Color(0xFF0D9488), RoundedCornerShape(50))
+                                    .padding(horizontal = 10.dp, vertical = 6.dp)
+                            )
+                        }
+                    }
+
+                    latestLocations.forEach { location ->
+                        val otherUserPoint = Point.fromLngLat(location.longitude, location.latitude)
+
+                        ViewAnnotation(
+                            options = viewAnnotationOptions {
+                                geometry(otherUserPoint)
+                                allowOverlap(true)
+                            }
+                        ) {
+                            Text(
+                                text = if (isDriver) "Rider ${location.userId}" else "Conductor",
+                                color = Color.White,
+                                modifier = Modifier
+                                    .background(Color(0xFFB45309), RoundedCornerShape(50))
+                                    .padding(horizontal = 10.dp, vertical = 6.dp)
+                            )
+                        }
+                    }
+                }
 
                 Column(
                     modifier = Modifier
@@ -161,6 +203,8 @@ fun TripLocationCard(
                             }
                             .padding(horizontal = 14.dp, vertical = 6.dp)
                     )
+
+
                 }
             }
 
