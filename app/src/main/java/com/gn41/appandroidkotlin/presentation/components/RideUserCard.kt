@@ -42,7 +42,7 @@ fun RideUserCard(
     Card(
         modifier = modifier
             .fillMaxWidth()
-            .padding(vertical = 6.dp, horizontal = 12.dp),
+            .padding(vertical = 6.dp, horizontal = 10.dp),
         shape = RoundedCornerShape(14.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.onPrimary
@@ -70,7 +70,7 @@ fun RideUserCard(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "Cancelación: ",
+                        text = "Probabilidad de cancelar: ",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.background
                     )

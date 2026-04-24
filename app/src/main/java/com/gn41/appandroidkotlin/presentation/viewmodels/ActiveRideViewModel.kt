@@ -24,12 +24,15 @@ class ActiveRideViewModel(
     var rideUsers by mutableStateOf<List<RideUserDto>?>(null)
         private set
 
+    var selectedRole by mutableStateOf<String?>(null)
+        private set
 
     init{
         loadingData()
     }
 
     private fun loadingData(){
+        selectedRole = ""
         viewModelScope.launch {
             ride = rideRepository.getActiveRide()
 
@@ -45,5 +48,9 @@ class ActiveRideViewModel(
             rideRepository.cancelRide(id)
 
         }
+    }
+
+    fun onSelectedRole(role: String?){
+        selectedRole = role
     }
 }

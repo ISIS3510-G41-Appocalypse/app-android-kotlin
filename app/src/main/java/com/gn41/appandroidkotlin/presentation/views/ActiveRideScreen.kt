@@ -123,26 +123,71 @@ fun ActiveRideScreen(
                     lineHeight = 18.sp
                 )
 
+                Spacer(modifier = Modifier.height(8.dp))
+
+                RoleSelector(
+                    selectedRole = viewModel.selectedRole,
+                    onRoleSelected = { viewModel.onSelectedRole(it) }
+                )
+
                 Spacer(modifier = Modifier.height(16.dp))
 
-                if (viewModel.ride == null)
-                {
-                    Text(
-                        text = "No hay viajes activos",
-                        color = MaterialTheme.colorScheme.onPrimary,
-                        fontSize = 16.sp
-                    )
-                }
-                else{
-                    RideCard(ride = viewModel.ride!!,
-                        onCancelClick = { id ->
-                            viewModel.onCancelarViaje(id)
-                        })
-                    Spacer(modifier = Modifier.height(16.dp))
-                    if (viewModel.rideUsers != null){
-                        RideUserList(users = viewModel.rideUsers!!,
-                            onAccept = {},
-                            onReject = {})
+                when(viewModel.selectedRole){
+                    "Conductor" -> {
+                        if (viewModel.ride == null)
+                        {
+                            Text(
+                                text = "No hay viajes activos",
+                                color = MaterialTheme.colorScheme.onPrimary,
+                                fontSize = 16.sp
+                            )
+                        }
+                        else{
+                            RideCard(ride = viewModel.ride!!,
+                                onCancelClick = { id ->
+                                    viewModel.onCancelarViaje(id)
+                                })
+                            Spacer(modifier = Modifier.height(16.dp))
+
+                            Text(text="Reservas aprobadas",
+                                color = MaterialTheme.colorScheme.onPrimary,
+                                fontSize = 20.sp,
+                                textAlign = TextAlign.Start,
+                                fontWeight = FontWeight.Bold
+                            )
+
+                            Spacer(modifier = Modifier.height(6.dp))
+
+                            Text(text="Solicitudes de reservas",
+                                color = MaterialTheme.colorScheme.onPrimary,
+                                fontSize = 20.sp,
+                                textAlign = TextAlign.Start,
+                                fontWeight = FontWeight.Bold
+                            )
+
+                            Spacer(modifier = Modifier.height(6.dp))
+
+                            if (viewModel.rideUsers != null){
+                                RideUserList(users = viewModel.rideUsers!!,
+                                    onAccept = {},
+                                    onReject = {})
+                            }
+                            else
+                            {
+                                Text(
+                                    text = "No hay solicitudes de reserva",
+                                    color = MaterialTheme.colorScheme.onPrimary,
+                                    fontSize = 10.sp
+                                )
+                            }
+                        }
+                    }
+
+                    "Pasajero" ->{
+                        Text("...",color = MaterialTheme.colorScheme.secondary)
+                    }
+                    "" -> {
+                        Text("......", color=MaterialTheme.colorScheme.secondary)
                     }
                 }
             }
@@ -274,6 +319,65 @@ fun RideUserList(
                 onAccept = onAccept,
                 onReject = onReject
             )
+        }
+    }
+}
+
+@Composable
+fun RoleSelector(
+    selectedRole: String?,
+    onRoleSelected: (String) -> Unit
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+
+        RoleButton(
+            text = "Conductor",
+            selected = selectedRole == "Conductor",
+            onClick = { onRoleSelected("Conductor") },
+            modifier = Modifier.weight(1f)
+        )
+
+        RoleButton(
+            text = "Pasajero",
+            selected = selectedRole == "Pasajero",
+            onClick = { onRoleSelected("Pasajero") },
+            modifier = Modifier.weight(1f)
+        )
+    }
+}
+
+@Composable
+fun RoleButton(
+    text: String,
+    selected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val colors = if (selected) {
+        ButtonDefaults.buttonColors(
+            containerColor = MaterialTheme.colorScheme.primary
+        )
+    } else {
+        ButtonDefaults.outlinedButtonColors()
+    }
+
+    if (selected) {
+        Button(
+            onClick = onClick,
+            modifier = modifier,
+            colors = colors
+        ) {
+            Text(text)
+        }
+    } else {
+        OutlinedButton(
+            onClick = onClick,
+            modifier = modifier
+        ) {
+            Text(text)
         }
     }
 }
