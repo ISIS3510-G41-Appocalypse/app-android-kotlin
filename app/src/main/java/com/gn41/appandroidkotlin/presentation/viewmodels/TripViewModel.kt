@@ -438,4 +438,59 @@ private fun changeReservationState(
             }
         }
     }
+
+
+
+
+    fun getMapMarkers(): List<MapUserMarkerUiState> {
+
+        val markers = mutableListOf<MapUserMarkerUiState>()
+        val currentUserId = uiState.currentUserId ?: return emptyList()
+
+
+        val userNames = mutableMapOf<Int, String>()
+
+        uiState.activeDriverTrip?.reservations?.forEach { reservation ->
+            userNames[reservation.id] = reservation.riderName
+        }
+
+        if (uiState.currentLatitude != null && uiState.currentLongitude != null) {
+            markers.add(
+                MapUserMarkerUiState(
+                    userId = currentUserId,
+                    initials = "Tú",
+                    latitude = uiState.currentLatitude!!,
+                    longitude = uiState.currentLongitude!!,
+                    isCurrentUser = true,
+                    isDriver = uiState.activeDriverTrip != null
+                )
+            )
+        }
+
+        val latestLocations = uiState.rideLocations
+            .filter { it.isSharingEnabled }
+            .groupBy { it.userId }
+            .mapNotNull { (_, list) -> list.maxByOrNull { it.timestamp } }
+
+        latestLocations.forEach { location ->
+
+            if (location.userId == currentUserId) return@forEach
+
+            val name = userNames[location.userId] ?: "Usuario"
+
+            markers.add(
+                MapUserMarkerUiState(
+                    userId = location.userId,
+                    initials = buildInitials(name),
+                    latitude = location.latitude,
+                    longitude = location.longitude,
+                    isCurrentUser = false,
+                    isDriver = false
+                )
+            )
+        }
+
+        return markers
+    }
+
 }
