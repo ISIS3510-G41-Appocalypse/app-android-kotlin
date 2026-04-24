@@ -145,7 +145,7 @@ fun TripLocationCard(
                             }
                         ) {
                             Text(
-                                text = marker.initials,
+                                text = if (marker.isCurrentUser) "Tú" else "U${marker.userId}",
                                 color = Color.White,
                                 modifier = Modifier
                                     .background(
