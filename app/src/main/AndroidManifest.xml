@@ -20,7 +20,8 @@
             android:name=".presentation.views.MainActivity"
             android:exported="true"
             android:launchMode="singleTask"
-            android:theme="@style/Theme.AppAndroidKotlin">
+            android:theme="@style/Theme.AppAndroidKotlin"
+            android:screenOrientation="portrait">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 

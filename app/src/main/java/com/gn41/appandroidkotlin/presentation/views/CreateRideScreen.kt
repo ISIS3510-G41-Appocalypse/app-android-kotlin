@@ -189,240 +189,275 @@ fun CreateRideScreen(
 
                 Spacer(modifier = Modifier.height(20.dp))
 
-                Card(
-                    modifier = Modifier.fillMaxWidth()
-                        .pointerInput(Unit){
-                            detectTapGestures(onTap = {
-                                focusManager.clearFocus()
-                            })
-                        },
-                    shape = RoundedCornerShape(18.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.onPrimary),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
-                ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(18.dp)
+                if (!viewModel.connectivity) {
+                    Text( text = "No tienes conexión a internet. Intenta de nuevo más tarde.",
+                        color = MaterialTheme.colorScheme.onPrimary,
+                        fontSize = 14.sp,
+                        textAlign = TextAlign.Center
+                    )
+                }
+                else {
+                    Card(
+                        modifier = Modifier.fillMaxWidth()
+                            .pointerInput(Unit) {
+                                detectTapGestures(onTap = {
+                                    focusManager.clearFocus()
+                                })
+                            },
+                        shape = RoundedCornerShape(18.dp),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.onPrimary),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
                     ) {
-                        SectionLabel("VEHÍCULO")
-                        Box {
-                            SelectionField(
-                                text = viewModel.vehicles
-                                    .find { it.licensePlate == viewModel.formState.vehicleId }
-                                    ?.licensePlate ?: "Selecciona tu vehículo",
-                                leadingIcon = {
-                                    Icon(Icons.Default.DirectionsCar, null, tint = MaterialTheme.colorScheme.onSurface)
-                                },
-                                onClick = { expandedVehicle = true }
-                            )
-
-                            DropdownMenu(
-                                expanded = expandedVehicle,
-                                onDismissRequest = { expandedVehicle = false }
-                            ) {
-                                viewModel.vehicles.forEach { vehicle ->
-                                    DropdownMenuItem(
-                                        text = { Text(vehicle.licensePlate) },
-                                        onClick = {
-                                            viewModel.onVehicleSelected(vehicle.licensePlate)
-                                            expandedVehicle = false
-                                        }
-                                    )
-                                }
-                            }
-                        }
-
-                        Spacer(modifier = Modifier.height(14.dp))
-
-                        SectionLabel("ZONA")
-                        Box {
-                            SelectionField(
-                                text = viewModel.zones
-                                    .find { it.name == viewModel.formState.zoneId }
-                                    ?.name ?: "Selecciona tu zona",
-                                leadingIcon = {
-                                    Icon(Icons.Default.Place, null, tint = MaterialTheme.colorScheme.onSurface)
-                                },
-                                onClick = { expandedZone = true }
-                            )
-
-                            DropdownMenu(
-                                expanded = expandedZone,
-                                onDismissRequest = { expandedZone = false }
-                            ) {
-                                viewModel.zones.forEach { zone ->
-                                    DropdownMenuItem(
-                                        text = { Text(zone.name) },
-                                        onClick = {
-                                            viewModel.onZoneSelected(zone.name)
-                                            expandedZone = false
-                                        }
-                                    )
-                                }
-                            }
-                        }
-
-                        Spacer(modifier = Modifier.height(14.dp))
-
-                        SectionLabel("TIPO")
-                        Box {
-                            SelectionField(
-                                text = viewModel.formState.type.ifEmpty { "Selecciona tipo" },
-                                leadingIcon = {
-                                    Icon(Icons.Default.Sell, null, tint = MaterialTheme.colorScheme.onSurface)
-                                },
-                                onClick = { expandedType = true }
-                            )
-
-                            DropdownMenu(
-                                expanded = expandedType,
-                                onDismissRequest = { expandedType = false }
-                            ) {
-                                viewModel.rideTypes.asSequence().forEach { type ->
-                                    DropdownMenuItem(
-                                        text = { Text(type) },
-                                        onClick = {
-                                            viewModel.onTypeSelected(type)
-                                            expandedType = false
-                                        }
-                                    )
-                                }
-                            }
-                        }
-
-                        Spacer(modifier = Modifier.height(14.dp))
-
-                        SectionLabel("INICIO")
-                        CustomOutlinedField(
-                            value = formState.source,
-                            onValueChange = {
-                                viewModel.onSourceChanged(it)
-                            },
-                            placeholder = "Punto de salida",
-                            leadingIcon = {
-                                Icon(Icons.Default.LocationOn, null, tint = MaterialTheme.colorScheme.primary)
-                            }
-                        )
-
-                        Spacer(modifier = Modifier.height(12.dp))
-
-                        SectionLabel("DESTINO")
-                        CustomOutlinedField(
-                            value = formState.destination,
-                            onValueChange = {
-                                viewModel.onDestinationChanged(it)
-                            },
-                            placeholder = "Destino final",
-                            leadingIcon = {
-                                Icon(Icons.Default.Flag, null, tint = MaterialTheme.colorScheme.secondary)
-                            }
-                        )
-
-                        Spacer(modifier = Modifier.height(12.dp))
-
-                        SectionLabel("PRECIO")
-                        CustomOutlinedField(
-                            value = formState.price,
-                            onValueChange = {
-                                viewModel.onPriceChanged(it)
-                            },
-                            placeholder = "Precio por pasajero",
-                            leadingIcon = {
-                                Icon(Icons.Default.AttachMoney, null, tint = MaterialTheme.colorScheme.onSurface)
-                            }
-                        )
-
-                        Spacer(modifier = Modifier.height(12.dp))
-
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(10.dp)
-                        ) {
-                            Column(modifier = Modifier.weight(1f)) {
-                                SectionLabel("FECHA")
-                                SmallSelectionField(
-                                    text = formState.date.ifEmpty { "Selecciona" },
-                                    icon = Icons.Default.DateRange,
-                                    onClick = {
-                                        showDatePicker = true
-                                    },
-                                    enabled = { true }
-                                )
-                            }
-
-                            Column(modifier = Modifier.weight(1f)) {
-                                SectionLabel("HORA DE SALIDA")
-                                SmallSelectionField(
-                                    text = formState.departureTime.ifEmpty { "Selecciona" },
-                                    icon = Icons.Default.AccessTime,
-                                    onClick = {
-                                        viewModel.clearTimeValidationMessage()
-                                        showTimePicker = true
-                                    },
-                                    enabled = {
-                                        if (formState.date.isEmpty()){
-                                            false
-                                        }
-                                        else{
-                                            true
-                                        }
-                                    }
-                                )
-                            }
-                        }
-
-                        if (viewModel.timeValidationMessage.isNotEmpty()) {
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Text(
-                                text = viewModel.timeValidationMessage,
-                                color = Color.Red,
-                                fontSize = 12.sp
-                            )
-                            showTimePicker = false
-                        }
-
-                        Spacer(modifier = Modifier.height(18.dp))
-
-                        Button(
-                            onClick = {
-                                viewModel.createRide()
-                            },
+                        Column(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(54.dp),
-                            shape = RoundedCornerShape(14.dp),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = MaterialTheme.colorScheme.primary,
-                                contentColor = Color.White
-                            )
+                                .padding(18.dp)
                         ) {
-                            Text(
-                                text = "Publicar viaje",
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 16.sp
+                            SectionLabel("VEHÍCULO")
+                            Box {
+                                SelectionField(
+                                    text = viewModel.vehicles
+                                        .find { it.licensePlate == viewModel.formState.vehicleId }
+                                        ?.licensePlate ?: "Selecciona tu vehículo",
+                                    leadingIcon = {
+                                        Icon(
+                                            Icons.Default.DirectionsCar,
+                                            null,
+                                            tint = MaterialTheme.colorScheme.onSurface
+                                        )
+                                    },
+                                    onClick = { expandedVehicle = true }
+                                )
+
+                                DropdownMenu(
+                                    expanded = expandedVehicle,
+                                    onDismissRequest = { expandedVehicle = false }
+                                ) {
+                                    viewModel.vehicles.forEach { vehicle ->
+                                        DropdownMenuItem(
+                                            text = { Text(vehicle.licensePlate) },
+                                            onClick = {
+                                                viewModel.onVehicleSelected(vehicle.licensePlate)
+                                                expandedVehicle = false
+                                            }
+                                        )
+                                    }
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(14.dp))
+
+                            SectionLabel("ZONA")
+                            Box {
+                                SelectionField(
+                                    text = viewModel.zones
+                                        .find { it.name == viewModel.formState.zoneId }
+                                        ?.name ?: "Selecciona tu zona",
+                                    leadingIcon = {
+                                        Icon(
+                                            Icons.Default.Place,
+                                            null,
+                                            tint = MaterialTheme.colorScheme.onSurface
+                                        )
+                                    },
+                                    onClick = { expandedZone = true }
+                                )
+
+                                DropdownMenu(
+                                    expanded = expandedZone,
+                                    onDismissRequest = { expandedZone = false }
+                                ) {
+                                    viewModel.zones.forEach { zone ->
+                                        DropdownMenuItem(
+                                            text = { Text(zone.name) },
+                                            onClick = {
+                                                viewModel.onZoneSelected(zone.name)
+                                                expandedZone = false
+                                            }
+                                        )
+                                    }
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(14.dp))
+
+                            SectionLabel("TIPO")
+                            Box {
+                                SelectionField(
+                                    text = viewModel.formState.type.ifEmpty { "Selecciona tipo" },
+                                    leadingIcon = {
+                                        Icon(
+                                            Icons.Default.Sell,
+                                            null,
+                                            tint = MaterialTheme.colorScheme.onSurface
+                                        )
+                                    },
+                                    onClick = { expandedType = true }
+                                )
+
+                                DropdownMenu(
+                                    expanded = expandedType,
+                                    onDismissRequest = { expandedType = false }
+                                ) {
+                                    viewModel.rideTypes.asSequence().forEach { type ->
+                                        DropdownMenuItem(
+                                            text = { Text(type) },
+                                            onClick = {
+                                                viewModel.onTypeSelected(type)
+                                                expandedType = false
+                                            }
+                                        )
+                                    }
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(14.dp))
+
+                            SectionLabel("INICIO")
+                            CustomOutlinedField(
+                                value = formState.source,
+                                onValueChange = {
+                                    viewModel.onSourceChanged(it)
+                                },
+                                placeholder = "Punto de salida",
+                                leadingIcon = {
+                                    Icon(
+                                        Icons.Default.LocationOn,
+                                        null,
+                                        tint = MaterialTheme.colorScheme.primary
+                                    )
+                                }
                             )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Icon(
-                                imageVector = Icons.Default.ArrowForward,
-                                contentDescription = null
+
+                            Spacer(modifier = Modifier.height(12.dp))
+
+                            SectionLabel("DESTINO")
+                            CustomOutlinedField(
+                                value = formState.destination,
+                                onValueChange = {
+                                    viewModel.onDestinationChanged(it)
+                                },
+                                placeholder = "Destino final",
+                                leadingIcon = {
+                                    Icon(
+                                        Icons.Default.Flag,
+                                        null,
+                                        tint = MaterialTheme.colorScheme.secondary
+                                    )
+                                }
                             )
-                        }
 
-                        when (uiState) {
-                            is CreateRideUiState.Loading -> {
-                                CircularProgressIndicator()
+                            Spacer(modifier = Modifier.height(12.dp))
+
+                            SectionLabel("PRECIO")
+                            CustomOutlinedField(
+                                value = formState.price,
+                                onValueChange = {
+                                    viewModel.onPriceChanged(it)
+                                },
+                                placeholder = "Precio por pasajero",
+                                leadingIcon = {
+                                    Icon(
+                                        Icons.Default.AttachMoney,
+                                        null,
+                                        tint = MaterialTheme.colorScheme.onSurface
+                                    )
+                                }
+                            )
+
+                            Spacer(modifier = Modifier.height(12.dp))
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    SectionLabel("FECHA")
+                                    SmallSelectionField(
+                                        text = formState.date.ifEmpty { "Selecciona" },
+                                        icon = Icons.Default.DateRange,
+                                        onClick = {
+                                            showDatePicker = true
+                                        },
+                                        enabled = { true }
+                                    )
+                                }
+
+                                Column(modifier = Modifier.weight(1f)) {
+                                    SectionLabel("HORA DE SALIDA")
+                                    SmallSelectionField(
+                                        text = formState.departureTime.ifEmpty { "Selecciona" },
+                                        icon = Icons.Default.AccessTime,
+                                        onClick = {
+                                            viewModel.clearTimeValidationMessage()
+                                            showTimePicker = true
+                                        },
+                                        enabled = {
+                                            if (formState.date.isEmpty()) {
+                                                false
+                                            } else {
+                                                true
+                                            }
+                                        }
+                                    )
+                                }
                             }
 
-                            is CreateRideUiState.Error -> {
-                                Text(uiState.message, color = Color.Red)
+                            if (viewModel.timeValidationMessage.isNotEmpty()) {
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Text(
+                                    text = viewModel.timeValidationMessage,
+                                    color = Color.Red,
+                                    fontSize = 12.sp
+                                )
+                                showTimePicker = false
                             }
 
-                            is CreateRideUiState.Success -> {
-                                Text("Viaje publicado", color = MaterialTheme.colorScheme.secondary)
+                            Spacer(modifier = Modifier.height(18.dp))
+
+                            Button(
+                                onClick = {
+                                    viewModel.createRide()
+                                },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(54.dp),
+                                shape = RoundedCornerShape(14.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = MaterialTheme.colorScheme.primary,
+                                    contentColor = Color.White
+                                )
+                            ) {
+                                Text(
+                                    text = "Publicar viaje",
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 16.sp
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Icon(
+                                    imageVector = Icons.Default.ArrowForward,
+                                    contentDescription = null
+                                )
                             }
 
-                            else -> {}
+                            when (uiState) {
+                                is CreateRideUiState.Loading -> {
+                                    CircularProgressIndicator()
+                                }
+
+                                is CreateRideUiState.Error -> {
+                                    Text(uiState.message, color = Color.Red)
+                                }
+
+                                is CreateRideUiState.Success -> {
+                                    Text(
+                                        "Viaje publicado",
+                                        color = MaterialTheme.colorScheme.secondary
+                                    )
+                                }
+
+                                else -> {}
+                            }
                         }
                     }
                 }
