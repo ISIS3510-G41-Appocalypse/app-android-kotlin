@@ -132,7 +132,7 @@ class WelcomeViewModel(
             isLoading = true
             loginError = ""
 
-            val loginResult = withTimeoutOrNull(8000) {
+            val loginResult = withTimeoutOrNull(15000) {
                 authRepository.login(cleanEmail, cleanPassword)
             }
 
@@ -152,7 +152,12 @@ class WelcomeViewModel(
             } else {
                 sessionToken = ""
                 isLoggedIn = false
-                loginError = "La solicitud tardó demasiado o no se pudo completar. Intenta nuevamente"
+
+                loginError = if (networkHelper.isInternetAvailable()) {
+                    "Correo o contraseña incorrectos."
+                } else {
+                    "Revisa tu conexión a internet y vuelve a intentar."
+                }
             }
 
             isLoading = false

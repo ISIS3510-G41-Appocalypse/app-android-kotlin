@@ -50,7 +50,9 @@ data class TripUiState(
 
     val currentUserId: Int? = null,
     val currentRideId: Int? = null,
-    val rideLocations: List<UserSharedLocation> = emptyList()
+    val rideLocations: List<UserSharedLocation> = emptyList(),
+    val isUsingCachedLocations: Boolean = false,
+    val cachedLocationMessage: String = ""
 )
 
 
@@ -60,7 +62,8 @@ data class MapUserMarkerUiState(
     val latitude: Double,
     val longitude: Double,
     val isCurrentUser: Boolean,
-    val isDriver: Boolean
+    val isDriver: Boolean,
+    val distanceMeters: Int? = null
 )
 
 
@@ -74,3 +77,5 @@ fun buildInitials(fullName: String): String {
         .joinToString("")
         .ifBlank { "U" }
 }
+
+

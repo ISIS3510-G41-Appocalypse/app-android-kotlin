@@ -38,25 +38,16 @@ class LocationService {
         rideId: Int,
         token: String
     ): List<UserSharedLocationDto> {
-        return try {
-            val response = locationApi.getLocationsByRide(
-                token = "Bearer $token",
-                apiKey = BuildConfig.SUPABASE_KEY,
-                rideId = "eq.$rideId"
-            )
+        val response = locationApi.getLocationsByRide(
+            token = "Bearer $token",
+            apiKey = BuildConfig.SUPABASE_KEY,
+            rideId = "eq.$rideId"
+        )
 
-            if (response.isSuccessful) {
-                response.body() ?: emptyList()
-            } else {
-                Log.e(
-                    "LocationService",
-                    "getLocationsByRide error=${response.code()} ${response.errorBody()?.string()}"
-                )
-                emptyList()
-            }
-        } catch (e: Exception) {
-            Log.e("LocationService", "getLocationsByRide exception", e)
-            emptyList()
+        if (response.isSuccessful) {
+            return response.body() ?: emptyList()
         }
+
+        throw Exception("No se pudieron cargar las ubicaciones del ride.")
     }
 }

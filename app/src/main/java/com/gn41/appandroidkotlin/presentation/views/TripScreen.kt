@@ -359,6 +359,9 @@ private fun LandscapeTripsContent(
                         totalUsersInRide = totalUsersInRide,
                         rideLocations = state.rideLocations,
                         currentUserId = state.currentUserId ?: -1,
+                        isUsingCachedLocations = state.isUsingCachedLocations,
+                        cachedLocationMessage = state.cachedLocationMessage,
+                        onRefreshLocations = viewModel::loadLocationsForCurrentRide,
                         mapMarkers = viewModel.getMapMarkers()
                     )
                 } else {
@@ -378,7 +381,11 @@ private fun LandscapeTripsContent(
                         totalUsersInRide = totalUsersInRide,
                         rideLocations = state.rideLocations,
                         currentUserId = state.currentUserId ?: -1,
+                        isUsingCachedLocations = state.isUsingCachedLocations,
+                        cachedLocationMessage = state.cachedLocationMessage,
+                        onRefreshLocations = viewModel::loadLocationsForCurrentRide,
                         mapMarkers = viewModel.getMapMarkers()
+
                     )
                 } else {
                     EmptyStateCard(message = "No hay una reserva activa para mostrar en el mapa.")
@@ -474,7 +481,11 @@ private fun RiderSection(
                     totalUsersInRide = totalUsersInRide,
                     rideLocations = state.rideLocations,
                     currentUserId = state.currentUserId ?: -1,
+                    isUsingCachedLocations = state.isUsingCachedLocations,
+                    cachedLocationMessage = state.cachedLocationMessage,
+                    onRefreshLocations = viewModel::loadLocationsForCurrentRide,
                     mapMarkers = viewModel.getMapMarkers()
+
                 )
             }
         }
@@ -610,6 +621,9 @@ private fun DriverSection(
                     totalUsersInRide = totalUsersInRide,
                     rideLocations = state.rideLocations,
                     currentUserId = state.currentUserId ?: -1,
+                    isUsingCachedLocations = state.isUsingCachedLocations,
+                    cachedLocationMessage = state.cachedLocationMessage,
+                    onRefreshLocations = viewModel::loadLocationsForCurrentRide,
                     mapMarkers = viewModel.getMapMarkers()
                 )
             }
