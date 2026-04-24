@@ -364,7 +364,11 @@ private fun LandscapeTripsContent(
                         sharedUsersCount = sharedUsersCount,
                         totalUsersInRide = totalUsersInRide,
                         rideLocations = state.rideLocations,
-                        currentUserId = state.currentUserId ?: -1
+                        currentUserId = state.currentUserId ?: -1,
+                        isUsingCachedLocations = state.isUsingCachedLocations,
+                        cachedLocationMessage = state.cachedLocationMessage,
+                        onRefreshLocations = viewModel::loadLocationsForCurrentRide,
+                        mapMarkers = viewModel.getMapMarkers()
                     )
                 } else {
                     EmptyStateCard(message = "No hay un viaje activo para mostrar en el mapa.")
@@ -382,7 +386,12 @@ private fun LandscapeTripsContent(
                         sharedUsersCount = sharedUsersCount,
                         totalUsersInRide = totalUsersInRide,
                         rideLocations = state.rideLocations,
-                        currentUserId = state.currentUserId ?: -1
+                        currentUserId = state.currentUserId ?: -1,
+                        isUsingCachedLocations = state.isUsingCachedLocations,
+                        cachedLocationMessage = state.cachedLocationMessage,
+                        onRefreshLocations = viewModel::loadLocationsForCurrentRide,
+                        mapMarkers = viewModel.getMapMarkers()
+
                     )
                 } else {
                     EmptyStateCard(message = "No hay una reserva activa para mostrar en el mapa.")
@@ -477,7 +486,12 @@ private fun RiderSection(
                     sharedUsersCount = sharedUsersCount,
                     totalUsersInRide = totalUsersInRide,
                     rideLocations = state.rideLocations,
-                    currentUserId = state.currentUserId ?: -1
+                    currentUserId = state.currentUserId ?: -1,
+                    isUsingCachedLocations = state.isUsingCachedLocations,
+                    cachedLocationMessage = state.cachedLocationMessage,
+                    onRefreshLocations = viewModel::loadLocationsForCurrentRide,
+                    mapMarkers = viewModel.getMapMarkers()
+
                 )
             }
         }
@@ -612,7 +626,11 @@ private fun DriverSection(
                     sharedUsersCount = sharedUsersCount,
                     totalUsersInRide = totalUsersInRide,
                     rideLocations = state.rideLocations,
-                    currentUserId = state.currentUserId ?: -1
+                    currentUserId = state.currentUserId ?: -1,
+                    isUsingCachedLocations = state.isUsingCachedLocations,
+                    cachedLocationMessage = state.cachedLocationMessage,
+                    onRefreshLocations = viewModel::loadLocationsForCurrentRide,
+                    mapMarkers = viewModel.getMapMarkers()
                 )
             }
         }

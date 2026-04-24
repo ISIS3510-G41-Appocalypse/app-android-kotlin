@@ -418,14 +418,14 @@ class HomeViewModel(
                     Log.e("HomeViewModel", "Rides result is null")
                     uiState = uiState.copy(
                         isLoading = false,
-                        errorMessage = "No se pudieron cargar los viajes. Intenta de nuevo."
+                        errorMessage = "Para reservar o publicar un viaje necesitas conexión a internet, revisa tu conexión. Si ya tienes una reserva activa, puedes verla en la pestaña Viajes."
                     )
                 }
             } catch (e: Exception) {
                 Log.e("HomeViewModel", "Exception loading rides", e)
                 uiState = uiState.copy(
                     isLoading = false,
-                    errorMessage = "No se pudieron cargar los viajes. Intenta de nuevo."
+                    errorMessage = "Para reservar o publicar un viaje necesitas conexión a internet, revisa tu conexión. Si ya tienes una reserva activa, puedes verla en la pestaña Viajes."
                 )
             }
         }

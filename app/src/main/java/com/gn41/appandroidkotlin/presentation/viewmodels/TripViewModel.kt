@@ -431,11 +431,93 @@ private fun changeReservationState(
                 )
 
                 uiState = uiState.copy(
-                    rideLocations = locations
+                    rideLocations = locations.locations,
+                    isUsingCachedLocations = locations.isFromCache,
+                    cachedLocationMessage = locations.message
                 )
             } catch (e: Exception) {
                 Log.e("TripViewModel", "loadLocationsForCurrentRide exception", e)
             }
         }
+    }
+
+
+
+
+    fun getMapMarkers(): List<MapUserMarkerUiState> {
+        val markers = mutableListOf<MapUserMarkerUiState>()
+        val currentUserId = uiState.currentUserId ?: return emptyList()
+
+        val currentLat = uiState.currentLatitude
+        val currentLng = uiState.currentLongitude
+
+        if (currentLat != null && currentLng != null) {
+            markers.add(
+                MapUserMarkerUiState(
+                    userId = currentUserId,
+                    initials = "Tú",
+                    latitude = currentLat,
+                    longitude = currentLng,
+                    isCurrentUser = true,
+                    isDriver = uiState.activeDriverTrip != null,
+                    distanceMeters = null
+                )
+            )
+        }
+
+        val userNames = mutableMapOf<Int, String>()
+
+        uiState.activeDriverTrip?.reservations?.forEach { reservation ->
+            userNames[reservation.id] = reservation.riderName
+        }
+
+        val latestLocations = uiState.rideLocations
+            .filter { it.isSharingEnabled }
+            .groupBy { it.userId }
+            .mapNotNull { (_, list) -> list.maxByOrNull { it.timestamp } }
+
+        latestLocations.forEach { location ->
+            if (location.userId == currentUserId) return@forEach
+
+            val name = userNames[location.userId] ?: "Usuario"
+
+            val distance = if (currentLat != null && currentLng != null) {
+                calculateDistanceMeters(
+                    lat1 = currentLat,
+                    lon1 = currentLng,
+                    lat2 = location.latitude,
+                    lon2 = location.longitude
+                )
+            } else {
+                null
+            }
+
+            markers.add(
+                MapUserMarkerUiState(
+                    userId = location.userId,
+                    initials = buildInitials(name),
+                    latitude = location.latitude,
+                    longitude = location.longitude,
+                    isCurrentUser = false,
+                    isDriver = false,
+                    distanceMeters = distance
+                )
+            )
+        }
+
+        return markers
+    }
+
+
+
+    private fun calculateDistanceMeters(
+        lat1: Double,
+        lon1: Double,
+        lat2: Double,
+        lon2: Double
+    ): Int {
+        val results = FloatArray(1)
+        android.location.Location.distanceBetween(lat1, lon1, lat2, lon2, results)
+        return results[0].toInt()
     }
 }

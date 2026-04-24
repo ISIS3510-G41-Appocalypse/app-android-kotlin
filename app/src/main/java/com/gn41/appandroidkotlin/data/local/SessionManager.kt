@@ -62,4 +62,15 @@ class SessionManager(context: Context) {
     fun isLocationSharingEnabled(): Boolean {
         return sharedPreferences.getBoolean("location_sharing_enabled", false)
     }
+
+
+    fun saveCachedRideLocations(rideId: Int, locationsJson: String) {
+        sharedPreferences.edit()
+            .putString("cached_ride_locations_$rideId", locationsJson)
+            .apply()
+    }
+
+    fun getCachedRideLocations(rideId: Int): String {
+        return sharedPreferences.getString("cached_ride_locations_$rideId", "") ?: ""
+    }
 }
