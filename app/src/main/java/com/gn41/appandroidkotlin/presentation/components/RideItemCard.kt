@@ -81,8 +81,6 @@ fun RideItemCard(
 
         // vehiculo, cupos y boton
         RideActionSection(
-            vehicleInfo = ride.vehicleInfo,
-            totalSlots = ride.totalSlots,
             availableSlots = ride.availableSlots,
             zoneName = ride.zoneName,
             isReserveEnabled = isReserveEnabled,
@@ -120,7 +118,12 @@ private fun DriverInfoSection(
     rating: String?,
     cancellationRiskPercent: Int?
 ) {
-    val ratingValue = rating ?: "Sin calificacion"
+    val ratingNumber = rating?.toDoubleOrNull()
+    val ratingValue = if (ratingNumber != null) {
+        String.format("%.1f⭐", ratingNumber)
+    } else {
+        "Sin calificacion"
+    }
     val ratingColor = ratingSemaphoreColor(rating)
     val riskValue = cancellationRiskPercent?.let { "${it}%" } ?: "Sin viajes"
     val riskColor = cancellationRiskSemaphoreColor(cancellationRiskPercent)
@@ -140,7 +143,7 @@ private fun DriverInfoSection(
         )
         Spacer(modifier = Modifier.height(2.dp))
         LabeledValueText(
-            label = "Riesgo de cancelación",
+            label = "Riesgo de cancelacion",
             value = riskValue,
             color = PrussianBlue,
             valueColor = riskColor
@@ -223,8 +226,6 @@ private fun rideTypeBadgeColors(type: String): Pair<Color, Color> {
 
 @Composable
 private fun RideActionSection(
-    vehicleInfo: String,
-    totalSlots: Int,
     availableSlots: Int,
     zoneName: String,
     isReserveEnabled: Boolean = true,
@@ -241,13 +242,7 @@ private fun RideActionSection(
                 .weight(1f)
                 .padding(end = 12.dp)
         ) {
-            LabeledValueText(label = "Vehiculo", value = vehicleInfo, color = PrussianBlue)
-            if (totalSlots > 0) {
-                Spacer(modifier = Modifier.height(2.dp))
-                LabeledValueText(label = "Cupos totales", value = totalSlots.toString(), color = PrussianBlue)
-                Spacer(modifier = Modifier.height(2.dp))
-                LabeledValueText(label = "Cupos disponibles", value = availableSlots.toString(), color = PrussianBlue)
-            }
+            LabeledValueText(label = "Cupos disponibles", value = availableSlots.toString(), color = PrussianBlue)
             if (zoneName.isNotEmpty()) {
                 Spacer(modifier = Modifier.height(2.dp))
                 LabeledValueText(label = "Zona", value = zoneName, color = PrussianBlue)
@@ -315,18 +310,22 @@ private fun LabeledValueText(
 private fun ratingSemaphoreColor(rating: String?): Color {
     val ratingNumber = rating?.toDoubleOrNull() ?: return CoolSteel
     return when {
-        ratingNumber >= 4.5 -> DarkCyan
-        ratingNumber >= 3.5 -> AutumnEmber
-        else -> Color(0xFFDC2626)
+        ratingNumber in 1.0..<2.0 -> Color(0xFFDC2626)
+        ratingNumber in 2.0..<3.0 -> Color(0xFFF97316)
+        ratingNumber in 3.0..<4.0 -> Color(0xFFEAB308)
+        ratingNumber in 4.0..5.0 -> Color(0xFF16A34A)
+        else -> CoolSteel
     }
 }
 
 private fun cancellationRiskSemaphoreColor(riskPercent: Int?): Color {
     val risk = riskPercent ?: return CoolSteel
     return when {
-        risk <= 20 -> DarkCyan
-        risk <= 50 -> AutumnEmber
-        else -> Color(0xFFDC2626)
+        risk in 0..24 -> Color(0xFF16A34A)
+        risk in 25..49 -> Color(0xFFEAB308)
+        risk in 50..74 -> Color(0xFFF97316)
+        risk in 75..100 -> Color(0xFFDC2626)
+        else -> CoolSteel
     }
 }
 

@@ -44,6 +44,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.gn41.appandroidkotlin.presentation.components.RideItemCard
 import com.gn41.appandroidkotlin.presentation.viewmodels.HomeViewModel
+import com.gn41.appandroidkotlin.ui.theme.PrussianBlue
 import kotlinx.coroutines.delay
 
 val darkBlue = Color(0xFF0B1E3B)
@@ -525,7 +526,9 @@ fun FilterCard(
                     label = "Dia",
                     selectedValue = selectedDay,
                     options = dayOptions,
-                    onValueSelected = onDayChange
+                    onValueSelected = onDayChange,
+                    useSelectionHighlight = false,
+                    neutralLabelColor = PrussianBlue
                 )
             }
 
@@ -582,16 +585,18 @@ fun FilterDropdownField(
     label: String,
     selectedValue: String,
     options: List<String>,
-    onValueSelected: (String) -> Unit
+    onValueSelected: (String) -> Unit,
+    useSelectionHighlight: Boolean = true,
+    neutralLabelColor: Color = Color.Unspecified
 ) {
     var expanded by remember { mutableStateOf(false) }
-    val isActive = selectedValue != "Todos" && selectedValue != "Todas"
+    val isActive = useSelectionHighlight && selectedValue != "Todos" && selectedValue != "Todas"
     val backgroundColor = if (isActive) Color(0xFFDDEAFE) else Color(0xFFE5E7EB)
     val borderColor = if (isActive) Color(0xFF93C5FD) else Color.Transparent
 
     Text(
         text = label,
-        color = if (isActive) Color(0xFF1E3A8A) else Color.Unspecified,
+        color = if (isActive) Color(0xFF1E3A8A) else neutralLabelColor,
         style = MaterialTheme.typography.titleMedium
     )
 
