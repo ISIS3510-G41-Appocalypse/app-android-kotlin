@@ -24,6 +24,9 @@ class ActiveRideViewModel(
     var rideUsers by mutableStateOf<List<RideUserDto>?>(null)
         private set
 
+    var riders by mutableStateOf<List<RideUserDto>?>(null)
+        private set
+
     var selectedRole by mutableStateOf<String?>(null)
         private set
 
@@ -37,8 +40,8 @@ class ActiveRideViewModel(
             ride = rideRepository.getActiveRide()
 
             if (ride != null){
-                rideUsers = rideRepository.getRideUsers(ride!!.id)
-                Log.d("rideUsers", rideUsers.toString())
+                rideUsers = rideRepository.getRideUsers(ride!!.id, state = "PENDIENTE")
+                riders = rideRepository.getRideUsers(ride!!.id, state = "ACEPTADA")
             }
         }
     }
@@ -46,7 +49,7 @@ class ActiveRideViewModel(
     fun onCancelarViaje(id: Int){
         viewModelScope.launch {
             rideRepository.cancelRide(id)
-
+            ride = null
         }
     }
 

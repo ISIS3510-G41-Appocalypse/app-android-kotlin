@@ -45,6 +45,7 @@ import androidx.compose.ui.unit.sp
 import com.gn41.appandroidkotlin.data.dto.createRide.ActiveRideDto
 import com.gn41.appandroidkotlin.data.dto.createRide.RideUserDto
 import com.gn41.appandroidkotlin.presentation.components.RideUserCard
+import com.gn41.appandroidkotlin.presentation.components.RiderCard
 import com.gn41.appandroidkotlin.presentation.viewmodels.ActiveRideViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -134,60 +135,77 @@ fun ActiveRideScreen(
 
                 when(viewModel.selectedRole){
                     "Conductor" -> {
-                        if (viewModel.ride == null)
-                        {
-                            Text(
-                                text = "No hay viajes activos",
-                                color = MaterialTheme.colorScheme.onPrimary,
-                                fontSize = 16.sp
-                            )
-                        }
-                        else{
-                            RideCard(ride = viewModel.ride!!,
-                                onCancelClick = { id ->
-                                    viewModel.onCancelarViaje(id)
-                                })
-                            Spacer(modifier = Modifier.height(16.dp))
+                        LazyColumn(
+                            modifier = Modifier.fillMaxSize()
+                        ) {
+                            item {
+                                if (viewModel.ride == null) {
+                                    Text(
+                                        text = "No hay viajes activos",
+                                        color = MaterialTheme.colorScheme.onPrimary,
+                                        fontSize = 16.sp
+                                    )
+                                } else {
+                                    RideCard(
+                                        ride = viewModel.ride!!,
+                                        onCancelClick = { id ->
+                                            viewModel.onCancelarViaje(id)
+                                        })
+                                    Spacer(modifier = Modifier.height(16.dp))
 
-                            Text(text="Reservas aprobadas",
-                                color = MaterialTheme.colorScheme.onPrimary,
-                                fontSize = 20.sp,
-                                textAlign = TextAlign.Start,
-                                fontWeight = FontWeight.Bold
-                            )
+                                    Text(
+                                        text = "Reservas aprobadas",
+                                        color = MaterialTheme.colorScheme.onPrimary,
+                                        fontSize = 20.sp,
+                                        textAlign = TextAlign.Start,
+                                        fontWeight = FontWeight.Bold
+                                    )
 
-                            Spacer(modifier = Modifier.height(6.dp))
+                                    Spacer(modifier = Modifier.height(6.dp))
 
-                            Text(text="Solicitudes de reservas",
-                                color = MaterialTheme.colorScheme.onPrimary,
-                                fontSize = 20.sp,
-                                textAlign = TextAlign.Start,
-                                fontWeight = FontWeight.Bold
-                            )
+                                    if (viewModel.riders != null) {
+                                        RidersList(users = viewModel.riders!!)
+                                    } else {
+                                        Text(
+                                            text = "No hay reservas aprobadas",
+                                            color = MaterialTheme.colorScheme.onPrimary,
+                                            fontSize = 10.sp
+                                        )
+                                    }
 
-                            Spacer(modifier = Modifier.height(6.dp))
+                                    Spacer(modifier = Modifier.height(16.dp))
 
-                            if (viewModel.rideUsers != null){
-                                RideUserList(users = viewModel.rideUsers!!,
-                                    onAccept = {},
-                                    onReject = {})
-                            }
-                            else
-                            {
-                                Text(
-                                    text = "No hay solicitudes de reserva",
-                                    color = MaterialTheme.colorScheme.onPrimary,
-                                    fontSize = 10.sp
-                                )
+                                    Text(
+                                        text = "Solicitudes de reservas",
+                                        color = MaterialTheme.colorScheme.onPrimary,
+                                        fontSize = 20.sp,
+                                        textAlign = TextAlign.Start,
+                                        fontWeight = FontWeight.Bold
+                                    )
+
+                                    Spacer(modifier = Modifier.height(6.dp))
+
+                                    if (viewModel.rideUsers != null) {
+                                        RideUserList(
+                                            users = viewModel.rideUsers!!,
+                                            onAccept = {},
+                                            onReject = {})
+                                    } else {
+                                        Text(
+                                            text = "No hay solicitudes de reserva",
+                                            color = MaterialTheme.colorScheme.onPrimary,
+                                            fontSize = 10.sp
+                                        )
+                                    }
+                                }
                             }
                         }
                     }
-
                     "Pasajero" ->{
                         Text("...",color = MaterialTheme.colorScheme.secondary)
                     }
                     "" -> {
-                        Text("......", color=MaterialTheme.colorScheme.secondary)
+                        Text("Selecciona tu rol", color=MaterialTheme.colorScheme.secondary)
                     }
                 }
             }
@@ -311,8 +329,8 @@ fun RideUserList(
     onAccept: () -> Unit,
     onReject: () -> Unit
 ) {
-    LazyColumn{
-        items(users) { user ->
+
+        users.forEach { user ->
             RideUserCard(
                 user = user,
                 modifier = Modifier.padding(vertical = 6.dp, horizontal = 12.dp),
@@ -320,7 +338,18 @@ fun RideUserList(
                 onReject = onReject
             )
         }
-    }
+}
+
+@Composable
+fun RidersList(
+    users: List<RideUserDto>
+) {
+        users.forEach { user ->
+            RiderCard(
+                user = user,
+                modifier = Modifier.padding(vertical = 6.dp, horizontal = 12.dp)
+            )
+        }
 }
 
 @Composable

@@ -18,8 +18,8 @@ class RideRepositoryImpl(private val rideService: RideService) : RideRepository 
         return rideService.getActiveRide()
     }
 
-    override suspend fun getRideUsers(id: Int): List<RideUserDto>? {
-        return rideService.getRideUsers(id)
+    override suspend fun getRideUsers(id: Int, state: String): List<RideUserDto>? {
+        return rideService.getRideUsers(id, state)
     }
 
 }

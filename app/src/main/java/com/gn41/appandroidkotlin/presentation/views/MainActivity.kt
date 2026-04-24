@@ -120,7 +120,7 @@ class MainActivity : ComponentActivity() {
                     welcomeViewModel = welcomeViewModel,
                     homeViewModelFactory = homeFactory,
                     createRideViewModelFactory = createRideViewModelFactory,
-                    activeRideViewModelFactory = activeRideViewModelFactory
+                    tripViewModelFactory = tripViewModelFactory
                 )
             }
         }

@@ -27,7 +27,7 @@ fun AppNavigation(
     welcomeViewModel: WelcomeViewModel,
     homeViewModelFactory: HomeViewModelFactory,
     createRideViewModelFactory: CreateRideViewModelFactory,
-    activeRideViewModelFactory: ActiveRideViewModelFactory
+    tripViewModelFactory: TripViewModelFactory
 ) {
     NavHost(
         navController = navController,
@@ -65,10 +65,10 @@ fun AppNavigation(
         }
 
         composable("trips") {
-            val activeRideViewModel: ActiveRideViewModel = viewModel(factory = activeRideViewModelFactory)
-            ActiveRideScreen(
-                viewModel = activeRideViewModel,
-                onBackClick = {
+            val tripViewModel: TripViewModel = viewModel(factory = tripViewModelFactory)
+            TripScreen(
+                viewModel = tripViewModel,
+                onHomeClick = {
                     navController.navigate("home") {
                         launchSingleTop = true
                     }

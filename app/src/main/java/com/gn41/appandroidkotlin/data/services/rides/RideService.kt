@@ -80,7 +80,7 @@ class RideService(
         return ride
     }
 
-    suspend fun getRideUsers(id: Int): List<RideUserDto>? {
+    suspend fun getRideUsers(id: Int, state:String): List<RideUserDto>? {
         try {
             val token = sessionManager.getToken()
 
@@ -91,7 +91,8 @@ class RideService(
             val rideUsersId = rideApi.getRideUsersId(
                 authorization = "Bearer $token",
                 apiKey = BuildConfig.SUPABASE_KEY,
-                rideId = "eq.$id"
+                rideId = "eq.$id",
+                state = "eq.$state"
             )
 
             if (rideUsersId.isEmpty()) {

@@ -38,7 +38,8 @@ interface RideApi {
     suspend fun getRideUsersId(@Header("apiKey") apiKey: String,
                              @Header("Authorization") authorization: String,
                              @Query("select") select: String = "rider_id",
-                             @Query("ride_id") rideId: String
+                             @Query("ride_id") rideId: String,
+                               @Query("state") state: String
     ) : List<RiderIdDto>
 
     @GET("rest/v1/riders")
