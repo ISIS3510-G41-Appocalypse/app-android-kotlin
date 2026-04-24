@@ -7,6 +7,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.LaunchedEffect
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.rememberNavController
+import com.gn41.appandroidkotlin.core.connectivity.NetworkHelper
 import com.gn41.appandroidkotlin.data.local.SessionManager
 import com.gn41.appandroidkotlin.data.repositories.AuthRepositoryImpl
 import com.gn41.appandroidkotlin.data.repositories.ReservationsRepositoryImpl
@@ -86,7 +87,8 @@ class MainActivity : ComponentActivity() {
                     reservationsRepository = reservationsRepository,
                     sessionManager = sessionManager,
                     tripRepository = tripRepository,
-                    vehicleRepository = vehicleRepository
+                    vehicleRepository = vehicleRepository,
+                    networkHelper = NetworkHelper(this)
                 )
 
 

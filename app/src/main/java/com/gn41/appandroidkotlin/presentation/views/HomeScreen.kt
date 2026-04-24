@@ -15,18 +15,18 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeDrawingPadding
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Logout
 import androidx.compose.material.icons.filled.DirectionsCar
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.LocalTaxi
+import androidx.compose.material.icons.filled.Logout
+import androidx.compose.material.icons.filled.SearchOff
+import androidx.compose.material.icons.filled.WifiOff
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -43,24 +43,110 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.gn41.appandroidkotlin.presentation.components.RideItemCard
 import com.gn41.appandroidkotlin.presentation.viewmodels.HomeViewModel
-import com.gn41.appandroidkotlin.ui.theme.PrussianBlue
 import com.gn41.appandroidkotlin.ui.theme.AutumnEmber
-import com.gn41.appandroidkotlin.ui.theme.CoolSteel
 import com.gn41.appandroidkotlin.ui.theme.BrightSnow
+import com.gn41.appandroidkotlin.ui.theme.CoolSteel
 import com.gn41.appandroidkotlin.ui.theme.DarkCyan
+import com.gn41.appandroidkotlin.ui.theme.PrussianBlue
 import kotlinx.coroutines.delay
-import androidx.compose.material.icons.filled.DirectionsCar
 
 val darkBlue = Color(0xFF0B1E3B)
 val headerBlue = Color(0xFF1A2744)
 val whiteCard = BrightSnow
 val selectedBottomItemColor = AutumnEmber
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Estados visuales para la zona de rides
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** FASE 3 — Vista offline: reemplaza solo la zona de rides */
+@Composable
+private fun OfflineStateView() {
+    EmptyStateCard(
+        icon = Icons.Default.WifiOff,
+        iconTint = AutumnEmber,
+        title = "Sin conexión a internet",
+        message = "No podemos cargar los viajes ahora mismo.\nRevisa tu conexión e intenta de nuevo."
+    )
+}
+
+/** FASE 6 caso A — Hay internet pero no hay rides ofertados en absoluto */
+@Composable
+private fun EmptyRidesStateView() {
+    EmptyStateCard(
+        icon = Icons.Default.DirectionsCar,
+        iconTint = CoolSteel,
+        title = "Sin viajes disponibles",
+        message = "No hay viajes disponibles en este momento."
+    )
+}
+
+/** FASE 6 caso B — Hay internet, hay rides, pero los filtros no devuelven resultados */
+@Composable
+private fun EmptyFilteredStateView() {
+    EmptyStateCard(
+        icon = Icons.Default.SearchOff,
+        iconTint = CoolSteel,
+        title = "Sin resultados",
+        message = "Intenta cambiar los filtros para encontrar más viajes."
+    )
+}
+
+/** Card reutilizable para cualquier estado vacío */
+@Composable
+private fun EmptyStateCard(
+    icon: ImageVector,
+    iconTint: Color,
+    title: String,
+    message: String
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 32.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier
+                .background(headerBlue, RoundedCornerShape(16.dp))
+                .padding(horizontal = 24.dp, vertical = 28.dp)
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = iconTint,
+                modifier = Modifier.size(48.dp)
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = title,
+                color = Color.White,
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Center
+            )
+            Text(
+                text = message,
+                color = CoolSteel,
+                style = MaterialTheme.typography.bodySmall,
+                textAlign = TextAlign.Center
+            )
+        }
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// HomeScreen principal
+// ─────────────────────────────────────────────────────────────────────────────
 
 @Composable
 fun HomeScreen(
@@ -73,24 +159,16 @@ fun HomeScreen(
     var selectedBottomTab by remember { mutableStateOf("Inicio") }
     val configuration = LocalConfiguration.current
     val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
-    val navigationBottomPadding = 32.dp
 
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(PrussianBlue)
     ) {
-        Column(
-            modifier = Modifier.fillMaxSize()
-        ) {
+        Column(modifier = Modifier.fillMaxSize()) {
+
             if (isLandscape) {
-                HomeHeader(
-                    onLogoutClick = {
-                        viewModel.logout {
-                            onLogoutClick()
-                        }
-                    }
-                )
+                HomeHeader(onLogoutClick = { viewModel.logout { onLogoutClick() } })
 
                 Row(
                     modifier = Modifier
@@ -99,16 +177,12 @@ fun HomeScreen(
                         .padding(horizontal = 16.dp, vertical = 16.dp),
                     horizontalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
+                    // Columna izquierda: titulo + filtros
                     LazyColumn(
-                        modifier = Modifier
-                            .weight(0.4f)
-                            .fillMaxHeight(),
+                        modifier = Modifier.weight(0.4f).fillMaxHeight(),
                         verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
-                        item {
-                            OfertaViajestitle()
-                        }
-
+                        item { OfertaViajestitle() }
                         item {
                             FilterCard(
                                 selectedZone = state.selectedZone,
@@ -128,81 +202,32 @@ fun HomeScreen(
                         }
                     }
 
+                    // Columna derecha: rides / estados
                     LazyColumn(
-                        modifier = Modifier
-                            .weight(0.6f)
-                            .fillMaxHeight(),
+                        modifier = Modifier.weight(0.6f).fillMaxHeight(),
                         verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
+                        // Mensaje de reserva con auto-dismiss
                         if (state.reservationMessage.isNotEmpty()) {
                             item {
-                                LaunchedEffect(state.reservationMessage) {
-                                    delay(3000)
-                                    viewModel.clearReservationMessage()
-                                }
-
-                            val isSuccess = state.reservationMessage.contains("correctamente")
-                            Text(
-                                text = state.reservationMessage,
-                                color = if (isSuccess) DarkCyan else AutumnEmber,
-                                style = MaterialTheme.typography.bodyMedium,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .background(
-                                        if (isSuccess) Color(0xFFE6FFFA) else Color(0xFFFEF3C7),
-                                        RoundedCornerShape(8.dp)
-                                    )
-                                    .padding(horizontal = 12.dp, vertical = 8.dp)
-                            )
-                        }
-                    }
-
-                    when {
-                            state.isLoading -> {
-                                item {
-                                    Box(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .padding(vertical = 40.dp),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        Column(
-                                            horizontalAlignment = Alignment.CenterHorizontally
-                                        ) {
-                                            CircularProgressIndicator(color = Color.White)
-                                            Spacer(modifier = Modifier.height(8.dp))
-                                            Text(
-                                                text = "Cargando viajes...",
-                                                color = Color.LightGray,
-                                                style = MaterialTheme.typography.bodyMedium
-                                            )
-                                        }
-                                    }
-                                }
+                                ReservationMessageBanner(
+                                    message = state.reservationMessage,
+                                    onDismiss = viewModel::clearReservationMessage
+                                )
                             }
+                        }
 
-                            state.errorMessage.isNotEmpty() -> {
-                                item {
-                                    Box(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .padding(vertical = 40.dp),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        Text(
-                                            text = state.errorMessage,
-                                            color = Color.Red,
-                                            style = MaterialTheme.typography.bodyMedium
-                                        )
-                                    }
-                                }
+                        when {
+                            state.isOffline -> item { OfflineStateView() }
+
+                            state.isLoading -> item { LoadingView() }
+
+                            state.errorMessage.isNotEmpty() -> item {
+                                ErrorView(message = state.errorMessage)
                             }
 
                             state.rides.isNotEmpty() -> {
-                                items(
-                                    items = state.rides,
-                                    key = { it.id }
-                                ) { ride ->
+                                items(items = state.rides, key = { it.id }) { ride ->
                                     RideItemCard(
                                         ride = ride,
                                         onReserveClick = { viewModel.onReserveClicked(ride.id) },
@@ -213,30 +238,15 @@ fun HomeScreen(
                                 }
                             }
 
-                            else -> {
-                                item {
-                                    Box(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .padding(vertical = 40.dp),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        Text(
-                                            text = if (state.hasActiveFilters) {
-                                                "No hay viajes para los filtros seleccionados."
-                                            } else {
-                                                "No hay viajes disponibles en este momento."
-                                            },
-                                            color = Color.Red,
-                                            style = MaterialTheme.typography.bodyMedium
-                                        )
-                                    }
-                                }
-                            }
+                            state.hasActiveFilters -> item { EmptyFilteredStateView() }
+
+                            else -> item { EmptyRidesStateView() }
                         }
                     }
                 }
+
             } else {
+                // Portrait
                 LazyColumn(
                     modifier = Modifier
                         .weight(1f)
@@ -244,20 +254,8 @@ fun HomeScreen(
                         .padding(horizontal = 16.dp, vertical = 16.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    item {
-                        HomeHeader(
-                            onLogoutClick = {
-                                viewModel.logout {
-                                    onLogoutClick()
-                                }
-                            }
-                        )
-                    }
-
-                    item {
-                        OfertaViajestitle()
-                    }
-
+                    item { HomeHeader(onLogoutClick = { viewModel.logout { onLogoutClick() } }) }
+                    item { OfertaViajestitle() }
                     item {
                         FilterCard(
                             selectedZone = state.selectedZone,
@@ -278,73 +276,24 @@ fun HomeScreen(
 
                     if (state.reservationMessage.isNotEmpty()) {
                         item {
-                            LaunchedEffect(state.reservationMessage) {
-                                delay(3000)
-                                viewModel.clearReservationMessage()
-                            }
-
-                            val isSuccess = state.reservationMessage.contains("correctamente")
-                            Text(
-                                text = state.reservationMessage,
-                                color = if (isSuccess) DarkCyan else AutumnEmber,
-                                style = MaterialTheme.typography.bodyMedium,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .background(
-                                        if (isSuccess) Color(0xFFE6FFFA) else Color(0xFFFEF3C7),
-                                        RoundedCornerShape(8.dp)
-                                    )
-                                    .padding(horizontal = 12.dp, vertical = 8.dp)
+                            ReservationMessageBanner(
+                                message = state.reservationMessage,
+                                onDismiss = viewModel::clearReservationMessage
                             )
                         }
                     }
 
                     when {
-                        state.isLoading -> {
-                            item {
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(vertical = 40.dp),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Column(
-                                        horizontalAlignment = Alignment.CenterHorizontally
-                                    ) {
-                                        CircularProgressIndicator(color = Color.White)
-                                        Spacer(modifier = Modifier.height(8.dp))
-                                        Text(
-                                            text = "Cargando viajes...",
-                                            color = Color.LightGray,
-                                            style = MaterialTheme.typography.bodyMedium
-                                        )
-                                    }
-                                }
-                            }
-                        }
+                        state.isOffline -> item { OfflineStateView() }
 
-                        state.errorMessage.isNotEmpty() -> {
-                            item {
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(vertical = 40.dp),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Text(
-                                        text = state.errorMessage,
-                                        color = Color.Red,
-                                        style = MaterialTheme.typography.bodyMedium
-                                    )
-                                }
-                            }
+                        state.isLoading -> item { LoadingView() }
+
+                        state.errorMessage.isNotEmpty() -> item {
+                            ErrorView(message = state.errorMessage)
                         }
 
                         state.rides.isNotEmpty() -> {
-                            items(
-                                items = state.rides,
-                                key = { it.id }
-                            ) { ride ->
+                            items(items = state.rides, key = { it.id }) { ride ->
                                 RideItemCard(
                                     ride = ride,
                                     onReserveClick = { viewModel.onReserveClicked(ride.id) },
@@ -355,26 +304,9 @@ fun HomeScreen(
                             }
                         }
 
-                        else -> {
-                            item {
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(vertical = 40.dp),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Text(
-                                        text = if (state.hasActiveFilters) {
-                                            "No hay viajes para los filtros seleccionados."
-                                        } else {
-                                            "No hay viajes disponibles en este momento."
-                                        },
-                                        color = Color.Red,
-                                        style = MaterialTheme.typography.bodyMedium
-                                    )
-                                }
-                            }
-                        }
+                        state.hasActiveFilters -> item { EmptyFilteredStateView() }
+
+                        else -> item { EmptyRidesStateView() }
                     }
                 }
             }
@@ -391,13 +323,15 @@ fun HomeScreen(
             )
         }
 
+        // Botón crear viaje (solo conductores)
         if (state.isDriver) {
             ExpandableCreateRideButton(
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
                     .padding(end = 24.dp, bottom = 116.dp),
-                isBlocked = state.hasActiveDriverTrip || state.hasActiveRiderReservation,
+                isBlocked = state.hasActiveDriverTrip || state.hasActiveRiderReservation || state.isOffline,
                 blockedMessage = when {
+                    state.isOffline -> "Necesitas internet para crear un viaje"
                     state.hasActiveDriverTrip && state.hasActiveRiderReservation -> "Ya tienes un viaje o reserva activa"
                     state.hasActiveDriverTrip -> "Ya tienes un viaje activo"
                     state.hasActiveRiderReservation -> "Ya tienes una reserva activa"
@@ -409,6 +343,71 @@ fun HomeScreen(
     }
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Composables de apoyo reutilizables
+// ─────────────────────────────────────────────────────────────────────────────
+
+@Composable
+private fun ReservationMessageBanner(message: String, onDismiss: () -> Unit) {
+    LaunchedEffect(message) {
+        delay(3000)
+        onDismiss()
+    }
+    val isSuccess = message.contains("correctamente")
+    Text(
+        text = message,
+        color = if (isSuccess) DarkCyan else Color(0xFFEF4444),
+        style = MaterialTheme.typography.bodyMedium,
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(
+                if (isSuccess) Color(0xFFE6FFFA) else Color(0xFFFFEDED),
+                RoundedCornerShape(8.dp)
+            )
+            .padding(horizontal = 12.dp, vertical = 8.dp)
+    )
+}
+
+@Composable
+private fun LoadingView() {
+    Box(
+        modifier = Modifier.fillMaxWidth().padding(vertical = 40.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            CircularProgressIndicator(color = Color.White)
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "Cargando viajes...",
+                color = Color.LightGray,
+                style = MaterialTheme.typography.bodyMedium
+            )
+        }
+    }
+}
+
+@Composable
+private fun ErrorView(message: String) {
+    Box(
+        modifier = Modifier.fillMaxWidth().padding(vertical = 40.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = message,
+            color = Color(0xFFEF4444),
+            style = MaterialTheme.typography.bodyMedium,
+            textAlign = TextAlign.Center,
+            modifier = Modifier
+                .background(Color(0xFFFFEDED), RoundedCornerShape(12.dp))
+                .padding(horizontal = 16.dp, vertical = 12.dp)
+        )
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ExpandableCreateRideButton
+// ─────────────────────────────────────────────────────────────────────────────
+
 @Composable
 fun ExpandableCreateRideButton(
     modifier: Modifier = Modifier,
@@ -418,10 +417,7 @@ fun ExpandableCreateRideButton(
 ) {
     var expanded by remember { mutableStateOf(false) }
 
-    Column(
-        modifier = modifier,
-        horizontalAlignment = Alignment.End
-    ) {
+    Column(modifier = modifier, horizontalAlignment = Alignment.End) {
         if (expanded) {
             Box(
                 modifier = Modifier
@@ -438,7 +434,6 @@ fun ExpandableCreateRideButton(
                     style = MaterialTheme.typography.bodyMedium
                 )
             }
-
             Spacer(modifier = Modifier.height(8.dp))
         }
 
@@ -460,6 +455,10 @@ fun ExpandableCreateRideButton(
     }
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// HomeHeader
+// ─────────────────────────────────────────────────────────────────────────────
+
 @Composable
 fun HomeHeader(onLogoutClick: () -> Unit) {
     Box(
@@ -469,9 +468,7 @@ fun HomeHeader(onLogoutClick: () -> Unit) {
             .padding(horizontal = 16.dp, vertical = 12.dp)
     ) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .align(Alignment.Center),
+            modifier = Modifier.fillMaxWidth().align(Alignment.Center),
             horizontalArrangement = Arrangement.Center,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -489,11 +486,7 @@ fun HomeHeader(onLogoutClick: () -> Unit) {
                 fontWeight = FontWeight.Bold
             )
         }
-
-        IconButton(
-            onClick = onLogoutClick,
-            modifier = Modifier.align(Alignment.CenterEnd)
-        ) {
+        IconButton(onClick = onLogoutClick, modifier = Modifier.align(Alignment.CenterEnd)) {
             Icon(
                 imageVector = Icons.Default.Logout,
                 contentDescription = "Cerrar sesión",
@@ -503,6 +496,10 @@ fun HomeHeader(onLogoutClick: () -> Unit) {
         }
     }
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// OfertaViajestitle
+// ─────────────────────────────────────────────────────────────────────────────
 
 @Composable
 fun OfertaViajestitle() {
@@ -529,6 +526,10 @@ fun OfertaViajestitle() {
     }
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// FilterCard y FilterDropdownField
+// ─────────────────────────────────────────────────────────────────────────────
+
 @Composable
 fun FilterCard(
     selectedZone: String,
@@ -554,19 +555,10 @@ fun FilterCard(
             .background(BrightSnow, shape = RoundedCornerShape(16.dp))
             .padding(16.dp)
     ) {
-        FilterDropdownField(
-            label = "Zona",
-            selectedValue = selectedZone,
-            options = zoneOptions,
-            onValueSelected = onZoneChange
-        )
-
+        FilterDropdownField(label = "Zona", selectedValue = selectedZone, options = zoneOptions, onValueSelected = onZoneChange)
         Spacer(modifier = Modifier.height(8.dp))
-
         Row(modifier = Modifier.fillMaxWidth()) {
-            Column(
-                modifier = Modifier.weight(1f)
-            ) {
+            Column(modifier = Modifier.weight(1f)) {
                 FilterDropdownField(
                     label = "Dia",
                     selectedValue = selectedDay,
@@ -576,32 +568,14 @@ fun FilterCard(
                     neutralLabelColor = PrussianBlue
                 )
             }
-
             Spacer(modifier = Modifier.width(8.dp))
-
-            Column(
-                modifier = Modifier.weight(1f)
-            ) {
-                FilterDropdownField(
-                    label = "Tipo de viaje",
-                    selectedValue = selectedTripType,
-                    options = tripTypeOptions,
-                    onValueSelected = onTripTypeChange
-                )
+            Column(modifier = Modifier.weight(1f)) {
+                FilterDropdownField(label = "Tipo de viaje", selectedValue = selectedTripType, options = tripTypeOptions, onValueSelected = onTripTypeChange)
             }
         }
-
         Spacer(modifier = Modifier.height(8.dp))
-
-        FilterDropdownField(
-            label = "Hora de salida",
-            selectedValue = selectedDepartureTime,
-            options = departureOptions,
-            onValueSelected = onDepartureTimeChange
-        )
-
+        FilterDropdownField(label = "Hora de salida", selectedValue = selectedDepartureTime, options = departureOptions, onValueSelected = onDepartureTimeChange)
         Spacer(modifier = Modifier.height(10.dp))
-
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -612,7 +586,6 @@ fun FilterCard(
                 color = if (hasActiveFilters) DarkCyan else CoolSteel,
                 style = MaterialTheme.typography.bodyMedium
             )
-
             if (hasActiveFilters) {
                 Text(
                     text = "Limpiar",
@@ -635,9 +608,7 @@ fun FilterDropdownField(
     neutralLabelColor: Color = Color.Unspecified
 ) {
     var expanded by remember { mutableStateOf(false) }
-    val isActive = useSelectionHighlight && selectedValue != "Todos" && selectedValue != "Todas"
     val backgroundColor = Color(0xFFF0F4F8)
-    val borderColor = Color.Transparent
 
     Text(
         text = label,
@@ -645,44 +616,30 @@ fun FilterDropdownField(
         style = MaterialTheme.typography.titleSmall,
         fontWeight = FontWeight.SemiBold
     )
-
     Spacer(modifier = Modifier.height(4.dp))
-
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .border(1.dp, borderColor, RoundedCornerShape(8.dp))
+            .border(1.dp, Color.Transparent, RoundedCornerShape(8.dp))
             .background(backgroundColor, RoundedCornerShape(8.dp))
             .clickable { expanded = true }
             .padding(horizontal = 10.dp, vertical = 10.dp)
     ) {
-        Text(
-            text = selectedValue,
-            style = MaterialTheme.typography.bodyMedium,
-            color = PrussianBlue
-        )
-
-        DropdownMenu(
-            expanded = expanded,
-            onDismissRequest = { expanded = false }
-        ) {
+        Text(text = selectedValue, style = MaterialTheme.typography.bodyMedium, color = PrussianBlue)
+        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
             options.forEach { option ->
                 DropdownMenuItem(
-                    text = {
-                        Text(
-                            text = option,
-                            style = MaterialTheme.typography.bodyMedium
-                        )
-                    },
-                    onClick = {
-                        onValueSelected(option)
-                        expanded = false
-                    }
+                    text = { Text(text = option, style = MaterialTheme.typography.bodyMedium) },
+                    onClick = { onValueSelected(option); expanded = false }
                 )
             }
         }
     }
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// BottomNavigationBar
+// ─────────────────────────────────────────────────────────────────────────────
 
 @Composable
 fun BottomNavigationBar(
@@ -699,15 +656,13 @@ fun BottomNavigationBar(
             .fillMaxWidth()
             .background(headerBlue, RoundedCornerShape(16.dp))
             .padding(vertical = 12.dp, horizontal = 16.dp),
-        horizontalArrangement = Arrangement.Center,
+        horizontalArrangement = Arrangement.Center
     ) {
         items.forEachIndexed { index, item ->
             val isSelected = item == selectedTab
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier
-                    .clickable { onTabClick(item) }
-                    .padding(horizontal = 16.dp)
+                modifier = Modifier.clickable { onTabClick(item) }.padding(horizontal = 16.dp)
             ) {
                 Icon(
                     imageVector = icons[index],
