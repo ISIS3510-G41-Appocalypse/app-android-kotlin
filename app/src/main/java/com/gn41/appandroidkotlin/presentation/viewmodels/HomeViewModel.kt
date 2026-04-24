@@ -192,6 +192,8 @@ class HomeViewModel(
         val today = dateFormatter.format(now)
 
         val filteredRides = allRides.filter { ride ->
+            val isOfferedRide = isRideOffered(ride.state)
+
             val isUpcomingRide = isRideUpcoming(
                 ride = ride,
                 now = now,
@@ -235,7 +237,7 @@ class HomeViewModel(
                 )
             }
 
-            isUpcomingRide && isNotOwnRide && matchesZone && matchesTripType && matchesDay && matchesDepartureTime
+            isOfferedRide && isUpcomingRide && isNotOwnRide && matchesZone && matchesTripType && matchesDay && matchesDepartureTime
         }
 
         val activeFilterCount = countActiveFilters(
@@ -293,6 +295,10 @@ class HomeViewModel(
         val rideHour = rideTime.split(":").firstOrNull()?.toIntOrNull() ?: return false
         val slotHour = selectedSlot.split(":").firstOrNull()?.toIntOrNull() ?: return false
         return rideHour == slotHour
+    }
+
+    private fun isRideOffered(state: String?): Boolean {
+        return state?.trim()?.equals("OFERTADO", ignoreCase = true) == true
     }
 
     private fun isRideUpcoming(
@@ -404,13 +410,15 @@ class HomeViewModel(
                 val result = ridesRepository.getRides(token)
 
                 if (result != null) {
+                    val offeredRides = result.filter { ride -> isRideOffered(ride.state) }
                     Log.d("HomeViewModel", "Rides loaded: ${result.size}")
+                    Log.d("HomeViewModel", "[FILTRO] OFERTADO rides: ${offeredRides.size}")
                     Log.d("HomeViewModel", "[FILTRO] Resolved userId: $currentResolvedUserId, driverId: $currentResolvedDriverId")
-                    allRides = result
+                    allRides = offeredRides
                     uiState = uiState.copy(
                         isLoading = false,
                         errorMessage = "",
-                        zoneOptions = buildZoneOptions(result)
+                        zoneOptions = buildZoneOptions(offeredRides)
                     )
                     applyFilters()
                     checkBlockingStates()
