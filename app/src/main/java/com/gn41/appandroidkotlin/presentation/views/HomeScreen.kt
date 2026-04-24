@@ -227,7 +227,7 @@ fun HomeScreen(
                                             } else {
                                                 "No hay viajes disponibles en este momento."
                                             },
-                                            color = Color.LightGray,
+                                            color = Color.Red,
                                             style = MaterialTheme.typography.bodyMedium
                                         )
                                     }
@@ -369,7 +369,7 @@ fun HomeScreen(
                                         } else {
                                             "No hay viajes disponibles en este momento."
                                         },
-                                        color = Color.LightGray,
+                                        color = Color.Red,
                                         style = MaterialTheme.typography.bodyMedium
                                     )
                                 }
