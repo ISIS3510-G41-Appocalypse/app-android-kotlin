@@ -18,11 +18,15 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Logout
+import androidx.compose.material.icons.filled.DirectionsCar
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.LocalTaxi
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -40,16 +44,23 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.gn41.appandroidkotlin.presentation.components.RideItemCard
 import com.gn41.appandroidkotlin.presentation.viewmodels.HomeViewModel
 import com.gn41.appandroidkotlin.ui.theme.PrussianBlue
+import com.gn41.appandroidkotlin.ui.theme.AutumnEmber
+import com.gn41.appandroidkotlin.ui.theme.CoolSteel
+import com.gn41.appandroidkotlin.ui.theme.BrightSnow
+import com.gn41.appandroidkotlin.ui.theme.DarkCyan
 import kotlinx.coroutines.delay
+import androidx.compose.material.icons.filled.DirectionsCar
 
 val darkBlue = Color(0xFF0B1E3B)
-val whiteCard = Color(0xFFF5F7FA)
-val selectedBottomItemColor = Color(0xFF0D9488)
+val headerBlue = Color(0xFF1A2744)
+val whiteCard = BrightSnow
+val selectedBottomItemColor = AutumnEmber
 
 @Composable
 fun HomeScreen(
@@ -67,7 +78,7 @@ fun HomeScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(darkBlue)
+            .background(PrussianBlue)
     ) {
         Column(
             modifier = Modifier.fillMaxSize()
@@ -94,6 +105,10 @@ fun HomeScreen(
                             .fillMaxHeight(),
                         verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
+                        item {
+                            OfertaViajestitle()
+                        }
+
                         item {
                             FilterCard(
                                 selectedZone = state.selectedZone,
@@ -126,23 +141,23 @@ fun HomeScreen(
                                     viewModel.clearReservationMessage()
                                 }
 
-                                val isSuccess = state.reservationMessage.contains("correctamente")
-                                Text(
-                                    text = state.reservationMessage,
-                                    color = if (isSuccess) Color(0xFF0D9488) else Color(0xFFB45309),
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .background(
-                                            if (isSuccess) Color(0xFFE6FFFA) else Color(0xFFFEF3C7),
-                                            RoundedCornerShape(8.dp)
-                                        )
-                                        .padding(horizontal = 12.dp, vertical = 8.dp)
-                                )
-                            }
+                            val isSuccess = state.reservationMessage.contains("correctamente")
+                            Text(
+                                text = state.reservationMessage,
+                                color = if (isSuccess) DarkCyan else AutumnEmber,
+                                style = MaterialTheme.typography.bodyMedium,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .background(
+                                        if (isSuccess) Color(0xFFE6FFFA) else Color(0xFFFEF3C7),
+                                        RoundedCornerShape(8.dp)
+                                    )
+                                    .padding(horizontal = 12.dp, vertical = 8.dp)
+                            )
                         }
+                    }
 
-                        when {
+                    when {
                             state.isLoading -> {
                                 item {
                                     Box(
@@ -240,6 +255,10 @@ fun HomeScreen(
                     }
 
                     item {
+                        OfertaViajestitle()
+                    }
+
+                    item {
                         FilterCard(
                             selectedZone = state.selectedZone,
                             zoneOptions = state.zoneOptions,
@@ -267,7 +286,7 @@ fun HomeScreen(
                             val isSuccess = state.reservationMessage.contains("correctamente")
                             Text(
                                 text = state.reservationMessage,
-                                color = if (isSuccess) Color(0xFF0D9488) else Color(0xFFB45309),
+                                color = if (isSuccess) DarkCyan else AutumnEmber,
                                 style = MaterialTheme.typography.bodyMedium,
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -443,44 +462,70 @@ fun ExpandableCreateRideButton(
 
 @Composable
 fun HomeHeader(onLogoutClick: () -> Unit) {
-    Box(modifier = Modifier.fillMaxWidth()) {
-        Column(
-            modifier = Modifier.fillMaxWidth(),horizontalAlignment = Alignment.CenterHorizontally
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(headerBlue)
+            .padding(horizontal = 16.dp, vertical = 12.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .align(Alignment.Center),
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically
         ) {
+            Icon(
+                imageVector = Icons.Default.DirectionsCar,
+                contentDescription = "HappyRide",
+                tint = AutumnEmber,
+                modifier = Modifier.size(24.dp)
+            )
+            Spacer(modifier = Modifier.width(8.dp))
             Text(
                 text = "HappyRide",
                 color = Color.White,
-                style = MaterialTheme.typography.titleLarge,
-                textAlign = TextAlign.Center
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Text(
-                text = "Oferta de viajes",
-                color = Color.White,
-                style = MaterialTheme.typography.titleLarge,
-                textAlign = TextAlign.Center
-            )
-
-            Text(
-                text = "Encuentra el viaje perfecto para tu trayecto.",
-                color = Color.LightGray,
-                style = MaterialTheme.typography.bodyMedium,
-                textAlign = TextAlign.Center
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold
             )
         }
 
         IconButton(
             onClick = onLogoutClick,
-            modifier = Modifier.align(Alignment.TopEnd)
+            modifier = Modifier.align(Alignment.CenterEnd)
         ) {
             Icon(
                 imageVector = Icons.Default.Logout,
                 contentDescription = "Cerrar sesión",
-                tint = Color.White
+                tint = Color.White,
+                modifier = Modifier.size(20.dp)
             )
         }
+    }
+}
+
+@Composable
+fun OfertaViajestitle() {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(PrussianBlue, shape = RoundedCornerShape(16.dp))
+            .padding(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(
+            text = "Oferta de viajes",
+            color = Color.White,
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold
+        )
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(
+            text = "Encuentra el viaje perfecto para tu trayecto.",
+            color = Color.White,
+            style = MaterialTheme.typography.bodySmall,
+            textAlign = TextAlign.Center
+        )
     }
 }
 
@@ -506,7 +551,7 @@ fun FilterCard(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .background(whiteCard, shape = RoundedCornerShape(16.dp))
+            .background(BrightSnow, shape = RoundedCornerShape(16.dp))
             .padding(16.dp)
     ) {
         FilterDropdownField(
@@ -564,14 +609,14 @@ fun FilterCard(
         ) {
             Text(
                 text = if (hasActiveFilters) "$activeFilterCount filtros aplicados" else "Sin filtros aplicados",
-                color = if (hasActiveFilters) Color(0xFF0D9488) else Color.Gray,
+                color = if (hasActiveFilters) DarkCyan else CoolSteel,
                 style = MaterialTheme.typography.bodyMedium
             )
 
             if (hasActiveFilters) {
                 Text(
                     text = "Limpiar",
-                    color = Color(0xFF0D9488),
+                    color = DarkCyan,
                     style = MaterialTheme.typography.bodyMedium,
                     modifier = Modifier.clickable { onClearFilters() }
                 )
@@ -591,13 +636,14 @@ fun FilterDropdownField(
 ) {
     var expanded by remember { mutableStateOf(false) }
     val isActive = useSelectionHighlight && selectedValue != "Todos" && selectedValue != "Todas"
-    val backgroundColor = if (isActive) Color(0xFFDDEAFE) else Color(0xFFE5E7EB)
-    val borderColor = if (isActive) Color(0xFF93C5FD) else Color.Transparent
+    val backgroundColor = Color(0xFFF0F4F8)
+    val borderColor = Color.Transparent
 
     Text(
         text = label,
-        color = if (isActive) Color(0xFF1E3A8A) else neutralLabelColor,
-        style = MaterialTheme.typography.titleMedium
+        color = PrussianBlue,
+        style = MaterialTheme.typography.titleSmall,
+        fontWeight = FontWeight.SemiBold
     )
 
     Spacer(modifier = Modifier.height(4.dp))
@@ -612,7 +658,8 @@ fun FilterDropdownField(
     ) {
         Text(
             text = selectedValue,
-            style = MaterialTheme.typography.bodyMedium
+            style = MaterialTheme.typography.bodyMedium,
+            color = PrussianBlue
         )
 
         DropdownMenu(
@@ -644,29 +691,37 @@ fun BottomNavigationBar(
     onTabClick: (String) -> Unit
 ) {
     val items = listOf("Inicio", "Viajes")
+    val icons = listOf(Icons.Default.Home, Icons.Default.LocalTaxi)
 
     Row(
         modifier = Modifier
             .then(modifier)
             .fillMaxWidth()
-            .background(whiteCard, RoundedCornerShape(16.dp))
-            .padding(vertical = 10.dp, horizontal = 8.dp),
-        horizontalArrangement = Arrangement.spacedBy(24.dp, Alignment.CenterHorizontally)
+            .background(headerBlue, RoundedCornerShape(16.dp))
+            .padding(vertical = 12.dp, horizontal = 16.dp),
+        horizontalArrangement = Arrangement.Center,
     ) {
-        items.forEach { item ->
+        items.forEachIndexed { index, item ->
             val isSelected = item == selectedTab
-            Text(
-                text = item,
-                color = if (isSelected) selectedBottomItemColor else Color.Gray,
-                style = MaterialTheme.typography.bodyMedium,
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
                 modifier = Modifier
                     .clickable { onTabClick(item) }
-                    .background(
-                        if (isSelected) Color(0xFFE6FFFA) else Color.Transparent,
-                        RoundedCornerShape(10.dp)
-                    )
-                    .padding(horizontal = 8.dp, vertical = 6.dp)
-            )
+                    .padding(horizontal = 16.dp)
+            ) {
+                Icon(
+                    imageVector = icons[index],
+                    contentDescription = item,
+                    tint = if (isSelected) AutumnEmber else CoolSteel,
+                    modifier = Modifier.size(24.dp)
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = item,
+                    color = if (isSelected) AutumnEmber else CoolSteel,
+                    style = MaterialTheme.typography.labelSmall
+                )
+            }
         }
     }
 }
