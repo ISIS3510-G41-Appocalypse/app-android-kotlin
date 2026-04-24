@@ -62,7 +62,8 @@ data class MapUserMarkerUiState(
     val latitude: Double,
     val longitude: Double,
     val isCurrentUser: Boolean,
-    val isDriver: Boolean
+    val isDriver: Boolean,
+    val distanceMeters: Int? = null
 )
 
 
@@ -76,3 +77,5 @@ fun buildInitials(fullName: String): String {
         .joinToString("")
         .ifBlank { "U" }
 }
+
+

@@ -132,7 +132,7 @@ class WelcomeViewModel(
             isLoading = true
             loginError = ""
 
-            val loginResult = withTimeoutOrNull(8000) {
+            val loginResult = withTimeoutOrNull(15000) {
                 authRepository.login(cleanEmail, cleanPassword)
             }
 

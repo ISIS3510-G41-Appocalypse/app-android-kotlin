@@ -146,7 +146,13 @@ fun TripLocationCard(
                                 }
                             ) {
                                 Text(
-                                    text = if (marker.isCurrentUser) "Tú" else "U${marker.userId}",
+                                    text = if (marker.isCurrentUser) {
+                                        "Tú"
+                                    } else if (marker.distanceMeters != null) {
+                                        "U${marker.userId} · ${marker.distanceMeters} m"
+                                    } else {
+                                        "U${marker.userId}"
+                                    },
                                     color = Color.White,
                                     modifier = Modifier
                                         .background(
