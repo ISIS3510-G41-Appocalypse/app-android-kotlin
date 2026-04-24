@@ -53,3 +53,24 @@ data class TripUiState(
     val rideLocations: List<UserSharedLocation> = emptyList()
 )
 
+
+data class MapUserMarkerUiState(
+    val userId: Int,
+    val initials: String,
+    val latitude: Double,
+    val longitude: Double,
+    val isCurrentUser: Boolean,
+    val isDriver: Boolean
+)
+
+
+fun buildInitials(fullName: String): String {
+    return fullName
+        .trim()
+        .split(" ")
+        .filter { it.isNotBlank() }
+        .take(2)
+        .map { it.first().uppercaseChar() }
+        .joinToString("")
+        .ifBlank { "U" }
+}

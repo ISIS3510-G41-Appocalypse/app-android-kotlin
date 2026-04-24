@@ -28,6 +28,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.unit.dp
 import com.gn41.appandroidkotlin.domain.UserSharedLocation
+import com.gn41.appandroidkotlin.presentation.viewmodels.MapUserMarkerUiState
 import com.mapbox.geojson.Point
 import com.mapbox.maps.CameraOptions
 import com.mapbox.maps.MapboxExperimental
@@ -56,7 +57,8 @@ fun TripLocationCard(
     sharedUsersCount: Int,
     totalUsersInRide: Int,
     rideLocations: List<UserSharedLocation>,
-    currentUserId: Int
+    currentUserId: Int,
+    mapMarkers: List<MapUserMarkerUiState>
 ) {
     val configuration = LocalConfiguration.current
     val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
@@ -131,37 +133,33 @@ fun TripLocationCard(
                     mapViewportState = mapViewportState
                 ) {
 
-                    userPoint?.let {
+
+
+                    mapMarkers.forEach { marker ->
+                        val markerPoint = Point.fromLngLat(marker.longitude, marker.latitude)
+
                         ViewAnnotation(
                             options = viewAnnotationOptions {
-                                geometry(it)
+                                geometry(markerPoint)
                                 allowOverlap(true)
                             }
                         ) {
                             Text(
-                                text = "Tú",
+                                text = marker.initials,
                                 color = Color.White,
                                 modifier = Modifier
-                                    .background(Color(0xFF0D9488), RoundedCornerShape(50))
-                                    .padding(horizontal = 10.dp, vertical = 6.dp)
-                            )
-                        }
-                    }
-
-                    latestLocations.forEach { location ->
-                        val otherUserPoint = Point.fromLngLat(location.longitude, location.latitude)
-
-                        ViewAnnotation(
-                            options = viewAnnotationOptions {
-                                geometry(otherUserPoint)
-                                allowOverlap(true)
-                            }
-                        ) {
-                            Text(
-                                text = if (isDriver) "Rider ${location.userId}" else "Conductor",
-                                color = Color.White,
-                                modifier = Modifier
-                                    .background(Color(0xFFB45309), RoundedCornerShape(50))
+                                    .background(
+                                        if (marker.isCurrentUser) Color(0xFF0D9488) else Color(0xFFB45309),
+                                        RoundedCornerShape(50)
+                                    )
+                                    .clickable {
+                                        mapViewportState.easeTo(
+                                            CameraOptions.Builder()
+                                                .center(markerPoint)
+                                                .zoom(16.0)
+                                                .build()
+                                        )
+                                    }
                                     .padding(horizontal = 10.dp, vertical = 6.dp)
                             )
                         }
