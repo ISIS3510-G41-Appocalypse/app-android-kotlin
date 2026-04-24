@@ -32,12 +32,14 @@ import com.gn41.appandroidkotlin.presentation.viewmodels.WelcomeViewModelFactory
 import com.gn41.appandroidkotlin.ui.theme.AppAndroidKotlinTheme
 import com.gn41.appandroidkotlin.data.services.location.LocationService
 import com.gn41.appandroidkotlin.data.repositories.LocationRepositoryImpl
+import com.mapbox.common.MapboxOptions
+import com.gn41.appandroidkotlin.BuildConfig
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-
+        MapboxOptions.accessToken = BuildConfig.MAPBOX_ACCESS_TOKEN
         setContent {
             AppAndroidKotlinTheme {
                 val sessionManager = SessionManager(this)

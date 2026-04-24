@@ -3,16 +3,19 @@ package com.gn41.appandroidkotlin.presentation.components
 import android.annotation.SuppressLint
 import android.content.res.Configuration
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Switch
@@ -26,19 +29,22 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.unit.dp
 import com.gn41.appandroidkotlin.domain.UserSharedLocation
-import com.google.android.gms.maps.model.CameraPosition
-import com.google.android.gms.maps.model.LatLng
-import com.google.maps.android.compose.GoogleMap
-import com.google.maps.android.compose.Marker
-import com.google.maps.android.compose.MarkerState
-import com.google.maps.android.compose.rememberCameraPositionState
-import androidx.compose.material3.Button
+import com.gn41.appandroidkotlin.presentation.viewmodels.MapUserMarkerUiState
+import com.mapbox.geojson.Point
+import com.mapbox.maps.CameraOptions
+import com.mapbox.maps.MapboxExperimental
+import com.mapbox.maps.extension.compose.MapboxMap
+import com.mapbox.maps.extension.compose.animation.viewport.rememberMapViewportState
+import com.mapbox.maps.extension.compose.annotation.ViewAnnotation
+import com.mapbox.maps.viewannotation.geometry
+import com.mapbox.maps.viewannotation.viewAnnotationOptions
 
 private val TripLocationCardBackground = Color(0xFF3A3946)
 private val TripLocationPrimaryText = Color(0xFFD6D6E0)
 private val TripLocationSecondaryText = Color(0xFFB8B8C7)
 
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
+@OptIn(MapboxExperimental::class)
 @Composable
 fun TripLocationCard(
     isDriver: Boolean,
@@ -53,7 +59,8 @@ fun TripLocationCard(
     currentUserId: Int,
     isUsingCachedLocations: Boolean,
     cachedLocationMessage: String,
-    onRefreshLocations: () -> Unit
+    onRefreshLocations: () -> Unit,
+    mapMarkers: List<MapUserMarkerUiState>
 ) {
     val configuration = LocalConfiguration.current
     val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
@@ -76,17 +83,20 @@ fun TripLocationCard(
     val roleSpacing = if (isLandscape) 10.dp else 18.dp
     val lineSpacing = if (isLandscape) 2.dp else 4.dp
 
-    val cameraPositionState = rememberCameraPositionState()
-
-    val userLocation = if (currentLatitude != null && currentLongitude != null) {
-        LatLng(currentLatitude, currentLongitude)
+    val userPoint = if (currentLatitude != null && currentLongitude != null) {
+        Point.fromLngLat(currentLongitude, currentLatitude)
     } else {
         null
     }
 
-    LaunchedEffect(userLocation) {
-        userLocation?.let {
-            cameraPositionState.position = CameraPosition.fromLatLngZoom(it, 15f)
+    val mapViewportState = rememberMapViewportState()
+
+    LaunchedEffect(userPoint, isLocationSharingEnabled) {
+        if (userPoint != null && isLocationSharingEnabled) {
+            mapViewportState.setCameraOptions {
+                center(userPoint)
+                zoom(16.0)
+            }
         }
     }
 
@@ -114,31 +124,85 @@ fun TripLocationCard(
                     .height(mapHeight)
                     .clip(RoundedCornerShape(16.dp))
             ) {
-                GoogleMap(
-                    modifier = Modifier.fillMaxWidth(),
-                    cameraPositionState = cameraPositionState
-                ) {
-                    userLocation?.let {
-                        Marker(
-                            state = MarkerState(position = it),
-                            title = "Tu ubicación"
-                        )
-                    }
+                if (isUsingCachedLocations) {
+                    CachedLocationFallback(
+                        message = cachedLocationMessage,
+                        rideLocations = rideLocations,
+                        currentUserId = currentUserId,
+                        onRefreshLocations = onRefreshLocations
+                    )
+                } else {
+                    MapboxMap(
+                        modifier = Modifier.fillMaxSize(),
+                        mapViewportState = mapViewportState
+                    ) {
+                        mapMarkers.forEach { marker ->
+                            val markerPoint = Point.fromLngLat(marker.longitude, marker.latitude)
 
-                    rideLocations
-                        .filter { it.isSharingEnabled }
-                        .groupBy { it.userId }
-                        .mapNotNull { (_, locations) -> locations.maxByOrNull { it.timestamp } }
-                        .forEach { location ->
-                            if (location.userId != currentUserId) {
-                                val position = LatLng(location.latitude, location.longitude)
-
-                                Marker(
-                                    state = MarkerState(position = position),
-                                    title = "Usuario ${location.userId}"
+                            ViewAnnotation(
+                                options = viewAnnotationOptions {
+                                    geometry(markerPoint)
+                                    allowOverlap(true)
+                                }
+                            ) {
+                                Text(
+                                    text = if (marker.isCurrentUser) "Tú" else "U${marker.userId}",
+                                    color = Color.White,
+                                    modifier = Modifier
+                                        .background(
+                                            if (marker.isCurrentUser) Color(0xFF0D9488) else Color(0xFFB45309),
+                                            RoundedCornerShape(50)
+                                        )
+                                        .clickable {
+                                            mapViewportState.easeTo(
+                                                CameraOptions.Builder()
+                                                    .center(markerPoint)
+                                                    .zoom(16.0)
+                                                    .build()
+                                            )
+                                        }
+                                        .padding(horizontal = 10.dp, vertical = 6.dp)
                                 )
                             }
                         }
+                    }
+
+                    Column(
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .padding(12.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Text(
+                            text = "+",
+                            color = Color.Black,
+                            modifier = Modifier
+                                .background(Color.White, RoundedCornerShape(8.dp))
+                                .clickable {
+                                    mapViewportState.easeTo(
+                                        CameraOptions.Builder()
+                                            .zoom(mapViewportState.cameraState?.zoom?.plus(1.0) ?: 16.0)
+                                            .build()
+                                    )
+                                }
+                                .padding(horizontal = 12.dp, vertical = 6.dp)
+                        )
+
+                        Text(
+                            text = "-",
+                            color = Color.Black,
+                            modifier = Modifier
+                                .background(Color.White, RoundedCornerShape(8.dp))
+                                .clickable {
+                                    mapViewportState.easeTo(
+                                        CameraOptions.Builder()
+                                            .zoom(mapViewportState.cameraState?.zoom?.minus(1.0) ?: 14.0)
+                                            .build()
+                                    )
+                                }
+                                .padding(horizontal = 14.dp, vertical = 6.dp)
+                        )
+                    }
                 }
             }
 
@@ -183,11 +247,7 @@ fun TripLocationCard(
             Spacer(modifier = Modifier.height(6.dp))
 
             Text(
-                text = if (hasLocationPermission) {
-                    "Permiso: concedido"
-                } else {
-                    "Permiso: no concedido"
-                },
+                text = if (hasLocationPermission) "Permiso: concedido" else "Permiso: no concedido",
                 style = MaterialTheme.typography.bodySmall,
                 color = Color.LightGray
             )
@@ -219,6 +279,49 @@ fun TripLocationCard(
                 style = MaterialTheme.typography.bodySmall,
                 color = Color.LightGray
             )
+        }
+    }
+}
+
+@Composable
+private fun CachedLocationFallback(
+    message: String,
+    rideLocations: List<UserSharedLocation>,
+    currentUserId: Int,
+    onRefreshLocations: () -> Unit
+) {
+    val latestLocations = rideLocations
+        .filter { it.isSharingEnabled }
+        .groupBy { it.userId }
+        .mapNotNull { (_, locations) -> locations.maxByOrNull { it.timestamp } }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color(0xFF1F2937), RoundedCornerShape(16.dp))
+            .padding(14.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Text(
+            text = message.ifBlank {
+                "No pudimos actualizar el mapa. Mostramos la última ubicación conocida."
+            },
+            style = MaterialTheme.typography.bodyMedium,
+            color = Color.White
+        )
+
+        latestLocations
+            .filter { it.userId != currentUserId }
+            .forEach { location ->
+                Text(
+                    text = "U${location.userId}: última ubicación conocida",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Color.LightGray
+                )
+            }
+
+        Button(onClick = onRefreshLocations) {
+            Text("Reintentar")
         }
     }
 }
