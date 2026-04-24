@@ -74,6 +74,7 @@ dependencies {
     implementation(libs.firebase.sessions)
     implementation("com.google.maps.android:maps-compose:8.3.0")
     implementation(libs.androidx.compose.foundation)
+    implementation(libs.androidx.compose.runtime)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

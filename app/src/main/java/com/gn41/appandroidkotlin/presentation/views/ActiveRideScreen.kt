@@ -1,5 +1,6 @@
 package com.gn41.appandroidkotlin.presentation.views
 
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -13,6 +14,8 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -40,6 +43,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.gn41.appandroidkotlin.data.dto.createRide.ActiveRideDto
+import com.gn41.appandroidkotlin.data.dto.createRide.RideUserDto
+import com.gn41.appandroidkotlin.presentation.components.RideUserCard
 import com.gn41.appandroidkotlin.presentation.viewmodels.ActiveRideViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -96,7 +101,6 @@ fun ActiveRideScreen(
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .verticalScroll(rememberScrollState())
                     .padding(horizontal = 14.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ){
@@ -134,6 +138,12 @@ fun ActiveRideScreen(
                         onCancelClick = { id ->
                             viewModel.onCancelarViaje(id)
                         })
+                    Spacer(modifier = Modifier.height(16.dp))
+                    if (viewModel.rideUsers != null){
+                        RideUserList(users = viewModel.rideUsers!!,
+                            onAccept = {},
+                            onReject = {})
+                    }
                 }
             }
         }
@@ -153,7 +163,7 @@ fun RideCard(
             .padding(12.dp),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
+            containerColor = MaterialTheme.colorScheme.onPrimary
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
     ) {
@@ -162,76 +172,108 @@ fun RideCard(
                 .padding(16.dp)
         ) {
 
-            Text(
-                text = "${ride.source} → ${ride.destination}",
-                style = MaterialTheme.typography.titleLarge,
-                color = MaterialTheme.colorScheme.onSurface
-            )
+                Text(
+                    text = "${ride.source} → ${ride.destination}",
+                    style = MaterialTheme.typography.titleLarge,
+                    color = MaterialTheme.colorScheme.background,
+                    textAlign = TextAlign.Center
+                )
 
-            Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(8.dp))
 
-            Text(
-                text = "Fecha: ${ride.date}",
-                style = MaterialTheme.typography.bodyMedium
-            )
+                Text(
+                    text = "Fecha: ${ride.date}",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.background
+                )
 
-            Text(
-                text = "Hora salida: ${ride.departureTime}",
-                style = MaterialTheme.typography.bodyMedium
-            )
+                Text(
+                    text = "Hora salida: ${ride.departureTime}",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.background
+                )
 
-            Text(
-                text = "Precio: $${ride.price}",
-                style = MaterialTheme.typography.bodyMedium
-            )
+                Text(
+                    text = "Precio: $${ride.price}",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.background
+                )
 
-            Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(8.dp))
 
-            // 🔹 Info secundaria
-            Text(
-                text = "Estado: ${ride.state}",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.tertiary
-            )
+                Text(
+                    text = "Estado: ${ride.state}",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.tertiary
+                )
 
-            Text(
-                text = "Tipo: ${ride.type}",
-                style = MaterialTheme.typography.bodyMedium
-            )
+                Text(
+                    text = {
+                        if (ride.type=="FROM_UNIVERSITY")
+                        {
+                            "Tipo: Desde la universidad"
+                        }
+                        else
+                        {
+                            "Tipo: Hacia la universidad"
+                        }
+                    }(),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.background
+                )
 
-            Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(16.dp))
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-
-                OutlinedButton(
-                    onClick = { onCancelClick(ride.id) },
-                    modifier = Modifier.weight(1f)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Text(
-                        text = "Cancelar",
-                        style = MaterialTheme.typography.bodyLarge
-                    )
-                }
 
-                Spacer(modifier = Modifier.width(12.dp))
+                    OutlinedButton(
+                        onClick = { onCancelClick(ride.id) },
+                        modifier = Modifier.weight(1f),
+                    ) {
+                        Text(
+                            text = "Cancelar",
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.background
+                        )
+                    }
 
-                Button(
-                    onClick = { onStartClick(ride) },
-                    modifier = Modifier.weight(1f),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.primary
-                    )
-                ) {
-                    Text(
-                        text = "Iniciar",
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onPrimary
-                    )
-                }
+                    Spacer(modifier = Modifier.width(12.dp))
+
+                    Button(
+                        onClick = { onStartClick(ride) },
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primary
+                        )
+                    ) {
+                        Text(
+                            text = "Iniciar",
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onPrimary
+                        )
+                    }
             }
+        }
+    }
+}
+
+@Composable
+fun RideUserList(
+    users: List<RideUserDto>,
+    onAccept: () -> Unit,
+    onReject: () -> Unit
+) {
+    LazyColumn{
+        items(users) { user ->
+            RideUserCard(
+                user = user,
+                modifier = Modifier.padding(vertical = 6.dp, horizontal = 12.dp),
+                onAccept = onAccept,
+                onReject = onReject
+            )
         }
     }
 }

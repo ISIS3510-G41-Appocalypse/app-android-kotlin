@@ -26,6 +26,36 @@ data class ActiveRideDto(
     val type: String,
 )
 
-data class RidePatchDto(
-    val state: String
+data class RideUserDto(
+    @SerializedName("rider_id")
+    val riderId: Int,
+
+    val name: String,
+
+    @SerializedName("last_name")
+    val lastName: String,
+
+    @SerializedName("cancellation_odds")
+    val cancellationOdds: Double
+)
+
+data class RiderCancellationOddsDto(
+    @SerializedName("cancellation_odds")
+    val cancellationOdds: Double,
+
+    @SerializedName("user_id")
+    val userId: Int
+)
+
+data class RiderUserInfoDto(
+    @SerializedName("first_name")
+    val firstName: String,
+
+    @SerializedName("last_name")
+    val lastName: String
+)
+
+data class RiderIdDto(
+    @SerializedName("rider_id")
+    val riderId: Int
 )
