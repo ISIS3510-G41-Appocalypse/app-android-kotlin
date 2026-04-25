@@ -30,21 +30,21 @@ class NetworkHelper(private val context: Context) {
 
         val callback = object : ConnectivityManager.NetworkCallback() {
             override fun onAvailable(network: Network) {
-                trySend(true)
+                // onAvailable no garantiza internet validado todavía.
+                trySend(isInternetAvailable())
             }
 
             override fun onLost(network: Network) {
-                trySend(false)
+                // Solo debe ser false si realmente ya no hay red validada activa.
+                trySend(isInternetAvailable())
             }
 
             override fun onCapabilitiesChanged(
                 network: Network,
                 networkCapabilities: NetworkCapabilities
             ) {
-                val hasInternet =
-                    networkCapabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) &&
-                    networkCapabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
-                trySend(hasInternet)
+                // Confirmar estado real final de conectividad validada.
+                trySend(isInternetAvailable())
             }
         }
 

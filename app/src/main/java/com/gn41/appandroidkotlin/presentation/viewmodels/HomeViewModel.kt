@@ -283,11 +283,15 @@ class HomeViewModel(
                 Log.d("HomeViewModel", "[NETWORK] isOnline: $hasInternet")
                 if (!hasInternet) {
                     allRides = emptyList()
+                    // Preservar isDriver usando SessionManager como fuente local
+                    // para que el botón Create Ride siga visible aunque no haya internet
+                    val driverKnownLocally = uiState.isDriver || sessionManager.getDriverId() > 0
                     uiState = uiState.copy(
                         isOffline = true,
                         isLoading = false,
                         rides = emptyList(),
-                        errorMessage = ""
+                        errorMessage = "",
+                        isDriver = driverKnownLocally
                     )
                     lastConnectionState = false
                     return@collect
@@ -439,11 +443,14 @@ class HomeViewModel(
     private fun loadRides() {
         if (!networkHelper.isInternetAvailable()) {
             allRides = emptyList()
+            // Preservar isDriver con datos locales para no perder el botón Create Ride
+            val driverKnownLocally = uiState.isDriver || sessionManager.getDriverId() > 0
             uiState = uiState.copy(
                 isOffline = true,
                 isLoading = false,
                 rides = emptyList(),
-                errorMessage = ""
+                errorMessage = "",
+                isDriver = driverKnownLocally
             )
             return
         }
