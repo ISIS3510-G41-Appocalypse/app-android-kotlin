@@ -1,5 +1,6 @@
 package com.gn41.appandroidkotlin.data.repositories
 
+import com.gn41.appandroidkotlin.core.connectivity.NetworkHelper
 import com.gn41.appandroidkotlin.data.dto.trips.TripDriverDto
 import com.gn41.appandroidkotlin.data.dto.trips.TripReservationDto
 import com.gn41.appandroidkotlin.data.dto.trips.TripRideDto
@@ -8,7 +9,8 @@ import com.gn41.appandroidkotlin.data.dto.trips.TripUserDto
 import com.gn41.appandroidkotlin.data.services.trips.TripService
 
 class TripRepositoryImpl(
-    private val tripService: TripService
+    private val tripService: TripService,
+    private val networkHelper: NetworkHelper
 ) : TripRepository {
 
     override suspend fun getUserByAuthId(authId: String, token: String): TripUserDto? {
@@ -41,6 +43,10 @@ class TripRepositoryImpl(
 
     override suspend fun updateRideState(rideId: Int, newState: String, token: String): Boolean {
         return tripService.updateRideState(rideId, newState, token)
+    }
+
+    override fun availableConnection(): Boolean {
+        return networkHelper.isInternetAvailable()
     }
 }
 

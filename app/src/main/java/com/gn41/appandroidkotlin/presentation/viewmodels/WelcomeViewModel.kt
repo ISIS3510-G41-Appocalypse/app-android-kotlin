@@ -11,12 +11,20 @@ import com.gn41.appandroidkotlin.data.repositories.TripRepository
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.launch
 import com.gn41.appandroidkotlin.data.local.SessionManager
+import com.gn41.appandroidkotlin.core.connectivity.NetworkHelper
+import kotlinx.coroutines.withTimeoutOrNull
 
 class WelcomeViewModel(
     private val authRepository: AuthRepository,
     private val sessionManager: SessionManager,
-    private val tripRepository: TripRepository
+    private val tripRepository: TripRepository,
+    private val networkHelper: NetworkHelper
 ) : ViewModel() {
+
+    companion object {
+        private const val MAX_EMAIL_LENGTH = 50
+        private const val MAX_PASSWORD_LENGTH = 30
+    }
 
     //Para ayudarnnos a decidi si mostramos o on el card de login.
     var showLoginCard by mutableStateOf(value = false)
@@ -24,6 +32,11 @@ class WelcomeViewModel(
     var email by mutableStateOf(value = "")
         private set
     var password by mutableStateOf(value = "")
+        private set
+
+    var emailInputError by mutableStateOf(value = "")
+        private set
+    var passwordInputError by mutableStateOf(value = "")
         private set
 
     var loginError by mutableStateOf(value = "")
@@ -35,6 +48,9 @@ class WelcomeViewModel(
         private set
 
     var sessionUserId by mutableStateOf(value = "")
+        private set
+
+    var isLoading by mutableStateOf(value = false)
         private set
 
 
@@ -53,7 +69,7 @@ class WelcomeViewModel(
     //Metodos
 
     fun onLoginClicked() {
-        showLoginCard = true;
+        showLoginCard = true
     }
     //esta la vamos a implementar despues.... pero se puede reutilizar en el logi card... on en el botón de registro del home.
     fun onRegisterClicked() {
@@ -61,16 +77,64 @@ class WelcomeViewModel(
     }
 
     fun onEmailInput(newEmail: String) {
-        email = newEmail
+        if (newEmail.length > MAX_EMAIL_LENGTH) {
+            email = newEmail.take(MAX_EMAIL_LENGTH)
+            emailInputError = "Solo puedes escribir $MAX_EMAIL_LENGTH caracteres"
+        } else {
+            email = newEmail
+
+            if (newEmail.length < MAX_EMAIL_LENGTH) {
+                emailInputError = ""
+            }
+        }
+
+        if (loginError.isNotEmpty()) {
+            loginError = ""
+        }
     }
 
     fun onPasswordInput(newPassword: String) {
-        password = newPassword
-    }
+        if (newPassword.length > MAX_PASSWORD_LENGTH) {
+            password = newPassword.take(MAX_PASSWORD_LENGTH)
+            passwordInputError = "Solo puedes escribir $MAX_PASSWORD_LENGTH caracteres"
+        } else {
+            password = newPassword
 
+            if (newPassword.length < MAX_PASSWORD_LENGTH) {
+                passwordInputError = ""
+            }
+        }
+
+        if (loginError.isNotEmpty()) {
+            loginError = ""
+        }
+    }
     fun onLoginSubmit() {
+        val cleanEmail = email.trim().lowercase()
+        val cleanPassword = password.trim()
+
+        if (cleanEmail.isEmpty() || cleanPassword.isEmpty()) {
+            loginError = "Completa el correo y la contraseña"
+            return
+        }
+
+        if (!cleanEmail.endsWith("@uniandes.edu.co")) {
+            loginError = "Solo se permite correo institucional @uniandes.edu.co"
+            return
+        }
+
+        if (!networkHelper.isInternetAvailable()) {
+            loginError = "Revisa tu conexión a internet y vuelve a intentar"
+            return
+        }
+
         viewModelScope.launch {
-            val loginResult = authRepository.login(email, password)
+            isLoading = true
+            loginError = ""
+
+            val loginResult = withTimeoutOrNull(15000) {
+                authRepository.login(cleanEmail, cleanPassword)
+            }
 
             if (loginResult != null) {
                 sessionToken = loginResult.access_token
@@ -81,14 +145,22 @@ class WelcomeViewModel(
 
                 obtenerDriverId(loginResult.access_token)
 
+                email = cleanEmail
+                password = cleanPassword
                 isLoggedIn = true
                 loginError = ""
             } else {
                 sessionToken = ""
                 isLoggedIn = false
-                loginError = "Correo o contraseña inválidos"
+
+                loginError = if (networkHelper.isInternetAvailable()) {
+                    "Correo o contraseña incorrectos."
+                } else {
+                    "Revisa tu conexión a internet y vuelve a intentar."
+                }
             }
 
+            isLoading = false
             Log.d("WelcomeVM", "Token: $sessionToken")
         }
     }
@@ -144,6 +216,9 @@ class WelcomeViewModel(
         sessionUserId = ""
         email = ""
         password = ""
+        emailInputError = ""
+        passwordInputError = ""
         showLoginCard = false
+        isLoading = false
     }
 }

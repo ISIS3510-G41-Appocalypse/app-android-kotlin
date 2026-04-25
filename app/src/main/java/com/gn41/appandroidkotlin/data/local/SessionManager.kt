@@ -49,9 +49,38 @@ class SessionManager(context: Context) {
         return sharedPreferences.getInt("session_driver_id", -1)
     }
 
+    fun saveCurrentRideId(id: Int) {
+        sharedPreferences.edit()
+            .putInt("session_current_ride_id", id)
+            .apply()
+    }
+
+    fun getCurrentRideId(): Int {
+        return sharedPreferences.getInt("session_current_ride_id", -1)
+    }
+
     fun clearDriverId() {
         sharedPreferences.edit()
             .remove("session_driver_id")
             .apply()
+    }
+
+    fun saveLocationSharingEnabled(enabled: Boolean) {
+        sharedPreferences.edit().putBoolean("location_sharing_enabled", enabled).apply()
+    }
+
+    fun isLocationSharingEnabled(): Boolean {
+        return sharedPreferences.getBoolean("location_sharing_enabled", false)
+    }
+
+
+    fun saveCachedRideLocations(rideId: Int, locationsJson: String) {
+        sharedPreferences.edit()
+            .putString("cached_ride_locations_$rideId", locationsJson)
+            .apply()
+    }
+
+    fun getCachedRideLocations(rideId: Int): String {
+        return sharedPreferences.getString("cached_ride_locations_$rideId", "") ?: ""
     }
 }

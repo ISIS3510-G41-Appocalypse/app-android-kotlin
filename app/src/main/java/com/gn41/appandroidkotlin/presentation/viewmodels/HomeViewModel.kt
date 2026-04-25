@@ -7,6 +7,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.gn41.appandroidkotlin.core.connectivity.NetworkHelper
 import com.gn41.appandroidkotlin.data.dto.rides.RideDto
 import com.gn41.appandroidkotlin.data.local.SessionManager
 import com.gn41.appandroidkotlin.data.repositories.ReservationsRepository
@@ -26,14 +27,16 @@ data class HomeUiState(
     val selectedZone: String = "Todos",
     val zoneOptions: List<String> = listOf("Todos"),
     val selectedTripType: String = "Todos",
-    val selectedDay: String = "Todos",
+    val selectedDay: String = "Hoy",
     val selectedDepartureTime: String = "Todas",
     val departureTimeOptions: List<String> = buildDepartureTimeOptions(),
     val hasActiveFilters: Boolean = false,
     val activeFilterCount: Int = 0,
     val hasActiveRiderReservation: Boolean = false,
     val hasActiveDriverTrip: Boolean = false,
-    val isDriver: Boolean = false
+    val isDriver: Boolean = false,
+    // Estado de conectividad — separado de errorMessage
+    val isOffline: Boolean = false
 )
 
 private fun buildDepartureTimeOptions(): List<String> {
@@ -48,16 +51,22 @@ class HomeViewModel(
     private val sessionManager: SessionManager,
     private val reservationsRepository: ReservationsRepository? = null,
     private val tripRepository: TripRepository? = null,
-    private val vehicleRepository: VehicleRepository
+    private val vehicleRepository: VehicleRepository,
+    private val networkHelper: NetworkHelper
 ) : ViewModel() {
 
     private var allRides: List<RideDto> = emptyList()
+    private var lastConnectionState: Boolean? = null
+    
+    // IDs resueltos confiably desde el token (no desde SessionManager directo)
+    private var currentResolvedUserId: Int? = null
+    private var currentResolvedDriverId: Int? = null
 
     var uiState by mutableStateOf(HomeUiState())
         private set
 
     init {
-        loadRides()
+        observeNetworkChanges()
     }
 
     fun onTripTypeChange(value: String) {
@@ -81,6 +90,12 @@ class HomeViewModel(
     }
 
     fun onReserveClicked(rideId: Int) {
+        // FASE 5: bloquear reserva sin internet
+        if (uiState.isOffline) {
+            uiState = uiState.copy(reservationMessage = "Necesitas conexión a internet para reservar un viaje.")
+            return
+        }
+
         val token = sessionManager.getToken()
 
         if (token.isEmpty()) {
@@ -164,13 +179,17 @@ class HomeViewModel(
     }
 
     fun refreshHomeData() {
-        loadRides()
+        refreshNetworkState()
+    }
+
+    fun refreshNetworkState() {
+        handleNetworkState(networkHelper.isInternetAvailable())
     }
 
     fun clearFilters() {
         uiState = uiState.copy(
             selectedZone = "Todos",
-            selectedDay = "Todos",
+            selectedDay = "Hoy",
             selectedTripType = "Todos",
             selectedDepartureTime = "Todas"
         )
@@ -178,10 +197,31 @@ class HomeViewModel(
     }
 
     fun applyFilters() {
-        val formatter = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
-        val today = formatter.format(Date())
+        val dateFormatter = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).apply {
+            isLenient = false
+        }
+        val dateTimeFormatter = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault()).apply {
+            isLenient = false
+        }
+        val now = Date()
+        val today = dateFormatter.format(now)
 
         val filteredRides = allRides.filter { ride ->
+            val isOfferedRide = isRideOffered(ride.state)
+
+            val isUpcomingRide = isRideUpcoming(
+                ride = ride,
+                now = now,
+                dateFormatter = dateFormatter,
+                dateTimeFormatter = dateTimeFormatter
+            )
+
+            val isNotOwnRide = !isRideCreatedByCurrentUser(
+                ride = ride,
+                currentUserId = currentResolvedUserId,
+                currentDriverId = currentResolvedDriverId
+            )
+
             val matchesZone = when (uiState.selectedZone) {
                 "Todos" -> true
                 else -> ride.zones?.name == uiState.selectedZone
@@ -195,8 +235,12 @@ class HomeViewModel(
             }
 
             val matchesDay = when (uiState.selectedDay) {
-                "Todos" -> true
                 "Hoy" -> ride.date == today
+                "Próximos viajes" -> {
+                    val rideDate = dateFormatter.parse(ride.date)
+                    val todayDate = dateFormatter.parse(today)
+                    rideDate != null && todayDate != null && rideDate.after(todayDate)
+                }
                 else -> true
             }
 
@@ -208,7 +252,7 @@ class HomeViewModel(
                 )
             }
 
-            matchesZone && matchesTripType && matchesDay && matchesDepartureTime
+            isOfferedRide && isUpcomingRide && isNotOwnRide && matchesZone && matchesTripType && matchesDay && matchesDepartureTime
         }
 
         val activeFilterCount = countActiveFilters(
@@ -227,9 +271,53 @@ class HomeViewModel(
         )
     }
 
+    // FASE 4: validar si el conductor puede crear viaje (necesita internet)
+    fun onCreateRideRequested(onNavigate: () -> Unit) {
+        if (uiState.isOffline) {
+            uiState = uiState.copy(reservationMessage = "Necesitas conexión a internet para crear un viaje.")
+            return
+        }
+        onNavigate()
+    }
+
+    // FASE 1: observar la red de forma reactiva usando NetworkCallback
+    private fun observeNetworkChanges() {
+        viewModelScope.launch {
+            networkHelper.observeNetworkChanges().collect { hasInternet ->
+                Log.d("HomeViewModel", "[NETWORK] isOnline: $hasInternet")
+                handleNetworkState(hasInternet)
+            }
+        }
+    }
+
+    private fun handleNetworkState(hasInternet: Boolean) {
+        if (!hasInternet) {
+            applyOfflineState()
+            lastConnectionState = false
+            return
+        }
+
+        if (uiState.isOffline || lastConnectionState != true) {
+            uiState = uiState.copy(
+                isOffline = false,
+                errorMessage = ""
+            )
+            lastConnectionState = true
+            loadRides()
+        } else {
+            uiState = uiState.copy(
+                isOffline = false,
+                errorMessage = ""
+            )
+        }
+    }
+
     fun logout(onNavigateToLogin: () -> Unit) {
         sessionManager.clearToken()
         sessionManager.clearUserId()
+        sessionManager.clearDriverId()
+        currentResolvedUserId = null
+        currentResolvedDriverId = null
         onNavigateToLogin()
     }
 
@@ -252,7 +340,7 @@ class HomeViewModel(
     ): Int {
         var count = 0
         if (zone != "Todos") count++
-        if (day != "Todos") count++
+        if (day != "Hoy") count++
         if (tripType != "Todos") count++
         if (departureTime != "Todas") count++
         return count
@@ -263,6 +351,47 @@ class HomeViewModel(
         val rideHour = rideTime.split(":").firstOrNull()?.toIntOrNull() ?: return false
         val slotHour = selectedSlot.split(":").firstOrNull()?.toIntOrNull() ?: return false
         return rideHour == slotHour
+    }
+
+    private fun isRideOffered(state: String?): Boolean {
+        return state?.trim()?.equals("OFERTADO", ignoreCase = true) == true
+    }
+
+    private fun isRideUpcoming(
+        ride: RideDto,
+        now: Date,
+        dateFormatter: SimpleDateFormat,
+        dateTimeFormatter: SimpleDateFormat
+    ): Boolean {
+        val rideDate = dateFormatter.parse(ride.date) ?: return false
+        val todayDate = dateFormatter.parse(dateFormatter.format(now)) ?: return false
+
+        if (rideDate.before(todayDate)) return false
+        if (rideDate.after(todayDate)) return true
+
+        val normalizedTime = normalizeRideTime(ride.departure_time) ?: return false
+        val rideDateTime = dateTimeFormatter.parse("${ride.date} $normalizedTime") ?: return false
+        return !rideDateTime.before(now)
+    }
+
+    private fun isRideCreatedByCurrentUser(
+        ride: RideDto,
+        currentUserId: Int?,
+        currentDriverId: Int?
+    ): Boolean {
+        if (currentDriverId != null && ride.driver_id == currentDriverId) return true
+        if (currentUserId != null && ride.drivers?.user_id == currentUserId) return true
+        return false
+    }
+
+    private fun normalizeRideTime(rideTime: String): String? {
+        val parts = rideTime.split(":")
+        if (parts.size < 2) return null
+
+        val hour = parts[0].toIntOrNull() ?: return null
+        val minute = parts[1].toIntOrNull() ?: return null
+
+        return String.format(Locale.getDefault(), "%02d:%02d", hour, minute)
     }
 
     private fun extractAuthIdFromToken(token: String): String? {
@@ -280,7 +409,55 @@ class HomeViewModel(
         }
     }
 
+    private suspend fun resolveCurrentUserFromToken(token: String) {
+        try {
+            val authId = extractAuthIdFromToken(token) ?: return
+            val resRepo = reservationsRepository ?: return
+
+            val user = resRepo.getUserByAuthId(authId, token)
+            if (user != null) {
+                currentResolvedUserId = user.id
+                Log.d("HomeViewModel", "[RESOLVE] currentUserId set to: ${user.id}")
+
+                // Resolver driver si existe
+                val driver = tripRepository?.getDriverByUserId(user.id, token)
+                if (driver != null) {
+                    currentResolvedDriverId = driver.id
+                    Log.d("HomeViewModel", "[RESOLVE] currentDriverId set to: ${driver.id}")
+                } else {
+                    currentResolvedDriverId = null
+                    Log.d("HomeViewModel", "[RESOLVE] No driver found for this user")
+                }
+            } else {
+                Log.w("HomeViewModel", "[RESOLVE] Could not resolve user from token")
+                currentResolvedUserId = null
+                currentResolvedDriverId = null
+            }
+        } catch (e: Exception) {
+            Log.e("HomeViewModel", "[RESOLVE] Exception resolving current user", e)
+            currentResolvedUserId = null
+            currentResolvedDriverId = null
+        }
+    }
+
+    private fun applyOfflineState() {
+        allRides = emptyList()
+        val driverKnownLocally = uiState.isDriver || sessionManager.getDriverId() > 0
+        uiState = uiState.copy(
+            isOffline = true,
+            isLoading = false,
+            rides = emptyList(),
+            errorMessage = "",
+            isDriver = driverKnownLocally
+        )
+    }
+
     private fun loadRides() {
+        if (!networkHelper.isInternetAvailable()) {
+            applyOfflineState()
+            return
+        }
+
         val token = sessionManager.getToken()
 
         if (token.isEmpty()) {
@@ -300,15 +477,21 @@ class HomeViewModel(
 
                 uiState = uiState.copy(isDriver = isDriver)
 
+                // Resolver usuario actual confiably desde el token
+                resolveCurrentUserFromToken(token)
+
                 val result = ridesRepository.getRides(token)
 
                 if (result != null) {
+                    val offeredRides = result.filter { ride -> isRideOffered(ride.state) }
                     Log.d("HomeViewModel", "Rides loaded: ${result.size}")
-                    allRides = result
+                    Log.d("HomeViewModel", "[FILTRO] OFERTADO rides: ${offeredRides.size}")
+                    Log.d("HomeViewModel", "[FILTRO] Resolved userId: $currentResolvedUserId, driverId: $currentResolvedDriverId")
+                    allRides = offeredRides
                     uiState = uiState.copy(
                         isLoading = false,
                         errorMessage = "",
-                        zoneOptions = buildZoneOptions(result)
+                        zoneOptions = buildZoneOptions(offeredRides)
                     )
                     applyFilters()
                     checkBlockingStates()
@@ -316,14 +499,14 @@ class HomeViewModel(
                     Log.e("HomeViewModel", "Rides result is null")
                     uiState = uiState.copy(
                         isLoading = false,
-                        errorMessage = "No se pudieron cargar los viajes. Intenta de nuevo."
+                        errorMessage = "Para reservar o publicar un viaje necesitas conexión a internet, revisa tu conexión. Si ya tienes una reserva activa, puedes verla en la pestaña Viajes."
                     )
                 }
             } catch (e: Exception) {
                 Log.e("HomeViewModel", "Exception loading rides", e)
                 uiState = uiState.copy(
                     isLoading = false,
-                    errorMessage = "No se pudieron cargar los viajes. Intenta de nuevo."
+                    errorMessage = "Para reservar o publicar un viaje necesitas conexión a internet, revisa tu conexión. Si ya tienes una reserva activa, puedes verla en la pestaña Viajes."
                 )
             }
         }

@@ -2,113 +2,216 @@ package com.gn41.appandroidkotlin.presentation.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
-import com.gn41.appandroidkotlin.ui.theme.BrightSnow
-import com.gn41.appandroidkotlin.ui.theme.CoolSteel
-// imports para poder escribir teclado y contraseñas
-
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.unit.dp
 import com.gn41.appandroidkotlin.presentation.viewmodels.WelcomeViewModel
 import com.gn41.appandroidkotlin.ui.theme.AutumnEmber
-
+import com.gn41.appandroidkotlin.ui.theme.BrightSnow
+import com.gn41.appandroidkotlin.ui.theme.CoolSteel
+import androidx.compose.material3.CircularProgressIndicator
 
 @Composable
-fun LoginCard(viewModel: WelcomeViewModel)
-{
-    Column(
-        modifier = Modifier.fillMaxWidth()
-            .background(color = BrightSnow, shape = RoundedCornerShape(24.dp)).padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
+fun LoginCard(viewModel: WelcomeViewModel, isLandscape: Boolean) {
+    val scrollState = rememberScrollState()
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(color = BrightSnow, shape = RoundedCornerShape(24.dp))
+            .padding(16.dp)
     ) {
-        Text( text = "Iniciar sesión", style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.background)
-        Spacer(modifier = Modifier.height(8.dp))
 
-        Text(text = "Bienvenido de nuevo", style = MaterialTheme.typography.bodyLarge, color = CoolSteel)
-        Spacer(modifier = Modifier.height(20.dp))
-
-        Column(modifier = Modifier.fillMaxWidth()) {
-            Text(text = "Correo electrónico", color = MaterialTheme.colorScheme.background)
-            Spacer(modifier = Modifier.height(8.dp))
-
-           //aqui va el textfield del correo
-            OutlinedTextField(
-                value = viewModel.email,
-                onValueChange = {viewModel.onEmailInput(it)},
-                modifier = Modifier.fillMaxWidth(),
-                placeholder = { Text("ejemplo@uniandes.edu.co") },
-                shape = RoundedCornerShape(16.dp)
+        Column(
+            modifier = Modifier
+                .padding(end = if (isLandscape) 12.dp else 0.dp)
+                .verticalScroll(scrollState),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                text = "Iniciar sesión",
+                style = MaterialTheme.typography.titleLarge,
+                color = MaterialTheme.colorScheme.background
             )
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text(text = "Contraseña", color = MaterialTheme.colorScheme.background)
-                //En el futuro esto puede ser un botón... por ahora lo dejaremos como text
-                Text(text = "¿Olvidaste tu contraseña?", color = MaterialTheme.colorScheme.secondary)
+            Text(
+                text = "Bienvenido de nuevo",
+                style = MaterialTheme.typography.bodyLarge,
+                color = CoolSteel
+            )
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            if (isLandscape) {
+                Text(
+                    text = "Desliza para ver más",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = CoolSteel
+                )
+
+                Spacer(modifier = Modifier.height(12.dp))
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Column(modifier = Modifier.fillMaxWidth()) {
+                Text(
+                    text = "Correo electrónico",
+                    color = MaterialTheme.colorScheme.background
+                )
 
-            //aqui va el textfield de la contraseña
-            OutlinedTextField(
-                value = viewModel.password,
-                onValueChange = { viewModel.onPasswordInput(it) },
+                Spacer(modifier = Modifier.height(8.dp))
+
+                //aqui va el textfield del correo
+                OutlinedTextField(
+                    value = viewModel.email,
+                    onValueChange = { viewModel.onEmailInput(it) },
+                    modifier = Modifier.fillMaxWidth(),
+                    placeholder = { Text("ejemplo@uniandes.edu.co") },
+                    shape = RoundedCornerShape(16.dp),
+                    singleLine = true,
+                    isError = viewModel.emailInputError.isNotEmpty()
+                )
+
+                if (viewModel.emailInputError.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = viewModel.emailInputError,
+                        color = AutumnEmber,
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        text = "Contraseña",
+                        color = MaterialTheme.colorScheme.background
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                //aqui va el textfield de la contraseña
+                OutlinedTextField(
+                    value = viewModel.password,
+                    onValueChange = { viewModel.onPasswordInput(it) },
+                    modifier = Modifier.fillMaxWidth(),
+                    placeholder = { Text("••••••••", color = CoolSteel) },
+                    visualTransformation = PasswordVisualTransformation(),
+                    shape = RoundedCornerShape(16.dp),
+                    singleLine = true,
+                    isError = viewModel.passwordInputError.isNotEmpty()
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    //En el futuro esto puede ser un botón... por ahora lo dejaremos como text
+                    Text(
+                        text = "¿Olvidaste tu contraseña?",
+                        color = MaterialTheme.colorScheme.secondary
+                    )
+                }
+
+                if (viewModel.passwordInputError.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = viewModel.passwordInputError,
+                        color = AutumnEmber,
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Button(
+                onClick = { viewModel.onLoginSubmit() },
                 modifier = Modifier.fillMaxWidth(),
-                placeholder = { Text("••••••••", color = CoolSteel) },
-                visualTransformation = PasswordVisualTransformation(),
-                shape = RoundedCornerShape(16.dp)
-            )
+                enabled = !viewModel.isLoading,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary
+                )
+            ) {
+                if (viewModel.isLoading) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.height(18.dp),
+                        strokeWidth = 2.dp,
+                        color = MaterialTheme.colorScheme.onPrimary
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(text = "Iniciando...")
+                } else {
+                    Text(text = "Iniciar sesión")
+                }
+            }
 
+            // Error message aquí
+            if (viewModel.loginError.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(12.dp))
+                Text(
+                    text = viewModel.loginError,
+                    color = AutumnEmber,
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            }
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            Row {
+                Text(
+                    text = "¿No tienes cuenta? ",
+                    color = MaterialTheme.colorScheme.background
+                )
+                Text(
+                    text = "Regístrate",
+                    color = MaterialTheme.colorScheme.secondary,
+                    fontWeight = FontWeight.Bold
+                )
+            }
         }
 
-        Spacer(modifier = Modifier.height(24.dp))
-
-        Button(
-            onClick = { viewModel.onLoginSubmit() },
-            modifier = Modifier.fillMaxWidth(),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary
+        if (isLandscape) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.CenterEnd)
+                    .fillMaxHeight()
+                    .width(4.dp)
+                    .background(
+                        color = Color.LightGray.copy(alpha = 0.5f),
+                        shape = RoundedCornerShape(50)
+                    )
             )
-        ) {
-            Text(text = "Iniciar sesión")
-        }
-
-        // Error message aquí
-        if (viewModel.loginError.isNotEmpty()) {
-            Spacer(modifier = Modifier.height(12.dp))
-            Text(
-                text = viewModel.loginError,
-                color = AutumnEmber,
-                style = MaterialTheme.typography.bodyMedium
-            )
-        }
-
-        Spacer(modifier = Modifier.height(20.dp))
-
-        Row {
-            Text(text = "¿No tienes cuenta? ", color = MaterialTheme.colorScheme.background)
-            Text(text = "Regístrate", color = MaterialTheme.colorScheme.secondary, fontWeight = FontWeight.Bold)
         }
     }
 }
-
-
-
-

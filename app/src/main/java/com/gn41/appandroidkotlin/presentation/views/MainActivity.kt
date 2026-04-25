@@ -7,6 +7,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.LaunchedEffect
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.rememberNavController
+import com.gn41.appandroidkotlin.core.connectivity.NetworkHelper
 import com.gn41.appandroidkotlin.data.local.SessionManager
 import com.gn41.appandroidkotlin.data.repositories.AuthRepositoryImpl
 import com.gn41.appandroidkotlin.data.repositories.ReservationsRepositoryImpl
@@ -30,23 +31,37 @@ import com.gn41.appandroidkotlin.presentation.viewmodels.TripViewModelFactory
 import com.gn41.appandroidkotlin.presentation.viewmodels.WelcomeViewModel
 import com.gn41.appandroidkotlin.presentation.viewmodels.WelcomeViewModelFactory
 import com.gn41.appandroidkotlin.ui.theme.AppAndroidKotlinTheme
+import com.gn41.appandroidkotlin.data.services.location.LocationService
+import com.gn41.appandroidkotlin.data.repositories.LocationRepositoryImpl
+import com.gn41.appandroidkotlin.presentation.viewmodels.ActiveRideViewModelFactory
+import com.mapbox.common.MapboxOptions
+import com.gn41.appandroidkotlin.BuildConfig
+import com.gn41.appandroidkotlin.localStorage.LocalStorageManager
+
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-
+        MapboxOptions.accessToken = BuildConfig.MAPBOX_ACCESS_TOKEN
         setContent {
             AppAndroidKotlinTheme {
                 val sessionManager = SessionManager(this)
+                val networkHelper = NetworkHelper(this)
+                val localStorageManager = LocalStorageManager(this)
 
                 val authService = AuthService()
                 val authRepository = AuthRepositoryImpl(authService)
 
                 val tripService = TripService()
-                val tripRepository = TripRepositoryImpl(tripService)
+                val tripRepository = TripRepositoryImpl(tripService, networkHelper)
 
-                val welcomeFactory = WelcomeViewModelFactory(authRepository, sessionManager, tripRepository)
+                val welcomeFactory = WelcomeViewModelFactory(
+                    context = this,
+                    authRepository = authRepository,
+                    sessionManager = sessionManager,
+                    tripRepository = tripRepository
+                )
                 val welcomeViewModel: WelcomeViewModel = viewModel(factory = welcomeFactory)
 
                 val reservationsService = ReservationsService()
@@ -54,10 +69,13 @@ class MainActivity : ComponentActivity() {
 
                 val ridesService = RidesService()
                 val ridesRepository = RidesRepositoryImpl(ridesService)
+                val locationService = LocationService()
+                val locationRepository = LocationRepositoryImpl(locationService,sessionManager)
 
                 val tripViewModelFactory = TripViewModelFactory(
                     tripRepository = tripRepository,
-                    sessionManager = sessionManager
+                    sessionManager = sessionManager,
+                    locationRepository = locationRepository
                 )
 
                 val userIdService = UserIdService(sessionManager)
@@ -65,7 +83,7 @@ class MainActivity : ComponentActivity() {
                 val vehicleService = VehicleService(sessionManager, userIdService)
                 val zoneService = ZoneService(sessionManager)
 
-                val rideRepository = RideRepositoryImpl(rideService)
+                val rideRepository = RideRepositoryImpl(rideService, networkHelper, localStorageManager)
                 val vehicleRepository = VehicleRepositoryImpl(vehicleService)
                 val zoneRepository = ZoneRepositoryImpl(zoneService)
 
@@ -74,7 +92,8 @@ class MainActivity : ComponentActivity() {
                     reservationsRepository = reservationsRepository,
                     sessionManager = sessionManager,
                     tripRepository = tripRepository,
-                    vehicleRepository = vehicleRepository
+                    vehicleRepository = vehicleRepository,
+                    networkHelper = networkHelper
                 )
 
 
@@ -83,6 +102,10 @@ class MainActivity : ComponentActivity() {
                     vehicleRepository = vehicleRepository,
                     zoneRepository = zoneRepository,
                     sessionManager = sessionManager
+                )
+
+                val activeRideViewModelFactory = ActiveRideViewModelFactory(
+                    rideRepository = rideRepository
                 )
 
                 val navController = rememberNavController()
@@ -105,6 +128,7 @@ class MainActivity : ComponentActivity() {
                     welcomeViewModel = welcomeViewModel,
                     homeViewModelFactory = homeFactory,
                     createRideViewModelFactory = createRideViewModelFactory,
+                    /*activeRideViewModelFactory = activeRideViewModelFactory*/
                     tripViewModelFactory = tripViewModelFactory
                 )
             }
