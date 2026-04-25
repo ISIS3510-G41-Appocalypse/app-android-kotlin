@@ -4,6 +4,8 @@ import com.gn41.appandroidkotlin.data.dto.createRide.ActiveRideDto
 import com.gn41.appandroidkotlin.core.connectivity.NetworkHelper
 import com.gn41.appandroidkotlin.data.dto.createRide.CreateRideRequestDto
 import com.gn41.appandroidkotlin.data.dto.createRide.RideUserDto
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 interface RideRepository {
     suspend fun createRide(request: CreateRideRequestDto): Result<Unit>
@@ -12,4 +14,8 @@ interface RideRepository {
     suspend fun getRideUsers(id: Int, state: String): List<RideUserDto>?
 
     fun availableConnection(): Boolean
+
+    suspend fun saveCache()
+    suspend fun readLocalStorage():String
+    suspend fun clearLocalStorage()
 }

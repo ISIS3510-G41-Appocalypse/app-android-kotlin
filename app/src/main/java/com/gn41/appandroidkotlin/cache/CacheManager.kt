@@ -20,4 +20,14 @@ object CacheManager {
     fun clearFormState() {
         cacheFormState.clear()
     }
+
+    fun getForm(): ArrayMap<String,String>? {
+        return cacheFormState
+    }
+
+    fun setForm(form: ArrayMap<String,String>) {
+        cacheFormState.clear()
+        cacheFormState.putAll(form)
+    }
+
 }
