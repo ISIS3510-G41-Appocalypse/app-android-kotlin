@@ -1,11 +1,14 @@
 package com.gn41.appandroidkotlin.presentation.viewmodels
 
+import android.util.ArrayMap
 import android.util.Log
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.gn41.appandroidkotlin.cache.CacheManager
+import com.gn41.appandroidkotlin.core.connectivity.NetworkHelper
 import com.gn41.appandroidkotlin.data.dto.createRide.CreateRideRequestDto
 import com.gn41.appandroidkotlin.data.dto.vehicle.VehicleDto
 import com.gn41.appandroidkotlin.data.dto.zone.ZoneDto
@@ -14,9 +17,6 @@ import com.gn41.appandroidkotlin.data.repositories.RideRepository
 import com.gn41.appandroidkotlin.data.repositories.VehicleRepository
 import com.gn41.appandroidkotlin.data.repositories.ZoneRepository
 import kotlinx.coroutines.launch
-import java.time.LocalDate
-import java.time.LocalTime
-import java.time.format.DateTimeFormatter
 
 
 data class CreateRideFormState(
@@ -43,6 +43,8 @@ class CreateRideViewModel(
         object Success : CreateRideUiState()
         data class Error(val message: String) : CreateRideUiState()
     }
+    var connectivity by mutableStateOf<Boolean>(false)
+        private set
 
     var formState by mutableStateOf(CreateRideFormState())
         private set
@@ -58,7 +60,7 @@ class CreateRideViewModel(
 
     var rideTypes = listOf("Hacia la universidad","Desde la universidad")
 
-    var isLoadingData by mutableStateOf(true)
+    var isLoadingData by mutableStateOf(false)
         private set
 
     var loadErrorMessage by mutableStateOf("")
@@ -78,46 +80,79 @@ class CreateRideViewModel(
     }
 
     private fun loadInitialData() {
-        viewModelScope.launch {
-            try {
-                isLoadingData = true
-                loadErrorMessage = ""
+        connectivity = rideRepository.availableConnection()
+        if (connectivity) {
+            viewModelScope.launch {
+                try {
+                    if (CacheManager.containsKeyFormState("vehicleId")) {
+                        formState = formState.copy(vehicleId = CacheManager.getFormState("vehicleId")!!)
+                    }
+                    if (CacheManager.containsKeyFormState("zoneId")) {
+                        formState = formState.copy(zoneId = CacheManager.getFormState("zoneId")!!)
+                    }
+                    if (CacheManager.containsKeyFormState("type")) {
+                        formState = formState.copy(type = CacheManager.getFormState("type")!!)
+                    }
+                    if (CacheManager.containsKeyFormState("source")) {
+                        formState = formState.copy(source = CacheManager.getFormState("source")!!)
+                    }
+                    if (CacheManager.containsKeyFormState("destination")) {
+                        formState = formState.copy(destination = CacheManager.getFormState("destination")!!)
+                    }
+                    if (CacheManager.containsKeyFormState("price")) {
+                        formState = formState.copy(price = CacheManager.getFormState("price")!!)
+                    }
+                    if (CacheManager.containsKeyFormState("date")) {
+                        formState = formState.copy(date = CacheManager.getFormState("date")!!)
+                    }
+                    if (CacheManager.containsKeyFormState("departureTime")) {
+                        formState = formState.copy(departureTime = CacheManager.getFormState("departureTime")!!)
+                    }
 
-                Log.d("CreateRide", "Llamando a getUserVehicles")
-                val vehiclesResult = vehicleRepository.getUserVehicles()
-                val zonesResult = zoneRepository.getZones()
+                    isLoadingData = true
+                    loadErrorMessage = ""
 
-                vehicles = vehiclesResult
-                zones = zonesResult
-            } catch (e: Exception) {
-                Log.e("CreateRide", "Error loading initial data", e)
-                loadErrorMessage = "No se pudieron cargar vehiculos o zonas."
-                vehicles = emptyList()
-                zones = emptyList()
-            } finally {
-                isLoadingData = false
+                    val vehiclesResult = vehicleRepository.getUserVehicles()
+                    val zonesResult = zoneRepository.getZones()
+
+                    vehicles = vehiclesResult
+                    zones = zonesResult
+
+
+                } catch (e: Exception) {
+                    loadErrorMessage = "No se pudieron cargar vehiculos o zonas."
+                    vehicles = emptyList()
+                    zones = emptyList()
+                } finally {
+                    isLoadingData = false
+                }
             }
         }
     }
 
     fun onVehicleSelected(vehicleLicensePlate: String) {
         formState = formState.copy(vehicleId = vehicleLicensePlate)
+        CacheManager.putFormState("vehicleId", vehicleLicensePlate)
     }
 
     fun onZoneSelected(zoneName: String) {
         formState = formState.copy(zoneId = zoneName)
+        CacheManager.putFormState("zoneId", zoneName)
     }
 
     fun onTypeSelected(type: String) {
         formState = formState.copy(type = type)
+        CacheManager.putFormState("type", type)
     }
 
     fun onSourceChanged(value: String) {
         formState = formState.copy(source = value.take(MAX_SOURCE_LENGTH))
+        CacheManager.putFormState("source", value.take(MAX_SOURCE_LENGTH))
     }
 
     fun onDestinationChanged(value: String) {
         formState = formState.copy(destination = value.take(MAX_DESTINATION_LENGTH))
+        CacheManager.putFormState("destination", value.take(MAX_DESTINATION_LENGTH))
     }
 
     fun onPriceChanged(value: String) {
@@ -125,11 +160,13 @@ class CreateRideViewModel(
             .take(MAX_PRICE_LENGTH)
 
         formState = formState.copy(price = filteredValue)
+        CacheManager.putFormState("price", filteredValue)
     }
 
     fun onDateSelected(date: String) {
         timeValidationMessage = ""
         formState = formState.copy(date = date)
+        CacheManager.putFormState("date", date)
     }
 
     fun createRide() {
@@ -180,6 +217,8 @@ class CreateRideViewModel(
                         )
                     }
                 )
+
+                CacheManager.clearFormState()
             } catch (e: Exception) {
                 Log.e("CreateRide", "Error creating ride", e)
                 uiState = CreateRideUiState.Error("No se pudo crear el viaje. Revisa tus datos.")
@@ -277,5 +316,6 @@ class CreateRideViewModel(
 
         timeValidationMessage = ""
         formState = formState.copy(departureTime = time)
+        CacheManager.putFormState("departureTime", time)
     }
 }

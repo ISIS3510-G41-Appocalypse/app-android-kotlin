@@ -7,6 +7,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.LaunchedEffect
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.rememberNavController
+import com.gn41.appandroidkotlin.core.connectivity.NetworkHelper
 import com.gn41.appandroidkotlin.data.local.SessionManager
 import com.gn41.appandroidkotlin.data.repositories.AuthRepositoryImpl
 import com.gn41.appandroidkotlin.data.repositories.ReservationsRepositoryImpl
@@ -36,6 +37,7 @@ import com.gn41.appandroidkotlin.presentation.viewmodels.ActiveRideViewModelFact
 import com.mapbox.common.MapboxOptions
 import com.gn41.appandroidkotlin.BuildConfig
 
+
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -44,6 +46,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             AppAndroidKotlinTheme {
                 val sessionManager = SessionManager(this)
+                val networkHelper = NetworkHelper(this)
 
                 val authService = AuthService()
                 val authRepository = AuthRepositoryImpl(authService)
@@ -78,7 +81,7 @@ class MainActivity : ComponentActivity() {
                 val vehicleService = VehicleService(sessionManager, userIdService)
                 val zoneService = ZoneService(sessionManager)
 
-                val rideRepository = RideRepositoryImpl(rideService)
+                val rideRepository = RideRepositoryImpl(rideService, networkHelper)
                 val vehicleRepository = VehicleRepositoryImpl(vehicleService)
                 val zoneRepository = ZoneRepositoryImpl(zoneService)
 
@@ -87,7 +90,8 @@ class MainActivity : ComponentActivity() {
                     reservationsRepository = reservationsRepository,
                     sessionManager = sessionManager,
                     tripRepository = tripRepository,
-                    vehicleRepository = vehicleRepository
+                    vehicleRepository = vehicleRepository,
+                    networkHelper = networkHelper
                 )
 
 

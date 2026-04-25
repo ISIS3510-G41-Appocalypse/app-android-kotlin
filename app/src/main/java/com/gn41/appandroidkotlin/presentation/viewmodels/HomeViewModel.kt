@@ -7,6 +7,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.gn41.appandroidkotlin.core.connectivity.NetworkHelper
 import com.gn41.appandroidkotlin.data.dto.rides.RideDto
 import com.gn41.appandroidkotlin.data.local.SessionManager
 import com.gn41.appandroidkotlin.data.repositories.ReservationsRepository
@@ -33,7 +34,9 @@ data class HomeUiState(
     val activeFilterCount: Int = 0,
     val hasActiveRiderReservation: Boolean = false,
     val hasActiveDriverTrip: Boolean = false,
-    val isDriver: Boolean = false
+    val isDriver: Boolean = false,
+    // Estado de conectividad — separado de errorMessage
+    val isOffline: Boolean = false
 )
 
 private fun buildDepartureTimeOptions(): List<String> {
@@ -48,10 +51,12 @@ class HomeViewModel(
     private val sessionManager: SessionManager,
     private val reservationsRepository: ReservationsRepository? = null,
     private val tripRepository: TripRepository? = null,
-    private val vehicleRepository: VehicleRepository
+    private val vehicleRepository: VehicleRepository,
+    private val networkHelper: NetworkHelper
 ) : ViewModel() {
 
     private var allRides: List<RideDto> = emptyList()
+    private var lastConnectionState: Boolean? = null
     
     // IDs resueltos confiably desde el token (no desde SessionManager directo)
     private var currentResolvedUserId: Int? = null
@@ -61,7 +66,7 @@ class HomeViewModel(
         private set
 
     init {
-        loadRides()
+        observeNetworkChanges()
     }
 
     fun onTripTypeChange(value: String) {
@@ -85,6 +90,12 @@ class HomeViewModel(
     }
 
     fun onReserveClicked(rideId: Int) {
+        // FASE 5: bloquear reserva sin internet
+        if (uiState.isOffline) {
+            uiState = uiState.copy(reservationMessage = "Necesitas conexión a internet para reservar un viaje.")
+            return
+        }
+
         val token = sessionManager.getToken()
 
         if (token.isEmpty()) {
@@ -168,7 +179,11 @@ class HomeViewModel(
     }
 
     fun refreshHomeData() {
-        loadRides()
+        refreshNetworkState()
+    }
+
+    fun refreshNetworkState() {
+        handleNetworkState(networkHelper.isInternetAvailable())
     }
 
     fun clearFilters() {
@@ -254,6 +269,47 @@ class HomeViewModel(
             hasActiveFilters = activeFilterCount > 0,
             activeFilterCount = activeFilterCount
         )
+    }
+
+    // FASE 4: validar si el conductor puede crear viaje (necesita internet)
+    fun onCreateRideRequested(onNavigate: () -> Unit) {
+        if (uiState.isOffline) {
+            uiState = uiState.copy(reservationMessage = "Necesitas conexión a internet para crear un viaje.")
+            return
+        }
+        onNavigate()
+    }
+
+    // FASE 1: observar la red de forma reactiva usando NetworkCallback
+    private fun observeNetworkChanges() {
+        viewModelScope.launch {
+            networkHelper.observeNetworkChanges().collect { hasInternet ->
+                Log.d("HomeViewModel", "[NETWORK] isOnline: $hasInternet")
+                handleNetworkState(hasInternet)
+            }
+        }
+    }
+
+    private fun handleNetworkState(hasInternet: Boolean) {
+        if (!hasInternet) {
+            applyOfflineState()
+            lastConnectionState = false
+            return
+        }
+
+        if (uiState.isOffline || lastConnectionState != true) {
+            uiState = uiState.copy(
+                isOffline = false,
+                errorMessage = ""
+            )
+            lastConnectionState = true
+            loadRides()
+        } else {
+            uiState = uiState.copy(
+                isOffline = false,
+                errorMessage = ""
+            )
+        }
     }
 
     fun logout(onNavigateToLogin: () -> Unit) {
@@ -384,7 +440,24 @@ class HomeViewModel(
         }
     }
 
+    private fun applyOfflineState() {
+        allRides = emptyList()
+        val driverKnownLocally = uiState.isDriver || sessionManager.getDriverId() > 0
+        uiState = uiState.copy(
+            isOffline = true,
+            isLoading = false,
+            rides = emptyList(),
+            errorMessage = "",
+            isDriver = driverKnownLocally
+        )
+    }
+
     private fun loadRides() {
+        if (!networkHelper.isInternetAvailable()) {
+            applyOfflineState()
+            return
+        }
+
         val token = sessionManager.getToken()
 
         if (token.isEmpty()) {

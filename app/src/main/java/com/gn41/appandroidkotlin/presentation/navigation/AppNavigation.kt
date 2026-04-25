@@ -53,7 +53,10 @@ fun AppNavigation(
                     navController.navigate("trips")
                 },
                 onCreateRideClick = {
-                    navController.navigate("create_ride")
+                    // FASE 4: la validación de internet vive en el ViewModel
+                    homeViewModel.onCreateRideRequested {
+                        navController.navigate("create_ride")
+                    }
                 },
                 onLogoutClick = {
                     welcomeViewModel.resetLoginState()
