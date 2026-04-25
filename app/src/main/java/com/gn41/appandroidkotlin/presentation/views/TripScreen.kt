@@ -798,6 +798,13 @@ private fun DriverReservationRow(
         Text(text = item.riderName, style = MaterialTheme.typography.titleMedium)
         Spacer(modifier = Modifier.height(4.dp))
         Text(text = "Estado: ${mapStateLabel(item.status)}", style = MaterialTheme.typography.bodyMedium)
+        var color: Color = Color.Red
+        item.cancellationOdds?.let {
+            if (it<0.30){
+                color = Color(0xFF16A34A)
+            }
+        }
+        Text(text = "Cancelación ${item.cancellationOdds?.times(100)}%", color = color)
         Text(text = "Metodo de pago: ${item.paymentMethod}", style = MaterialTheme.typography.bodyMedium)
 
         if (item.status == "PENDIENTE") {

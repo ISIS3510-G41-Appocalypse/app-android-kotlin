@@ -128,7 +128,8 @@ class MainActivity : ComponentActivity() {
                     welcomeViewModel = welcomeViewModel,
                     homeViewModelFactory = homeFactory,
                     createRideViewModelFactory = createRideViewModelFactory,
-                    activeRideViewModelFactory = activeRideViewModelFactory
+                    /*activeRideViewModelFactory = activeRideViewModelFactory*/
+                    tripViewModelFactory = tripViewModelFactory
                 )
             }
         }

@@ -64,7 +64,7 @@ interface TripApi {
         @Header("apikey") apiKey: String,
         @Query("ride_id") rideId: String,
         @Query("state") state: String = "in.(PENDIENTE,ACEPTADA,EN_CURSO)",
-        @Query("select") select: String = "id,ride_id,rider_id,state,riders(id,users(first_name,last_name))",
+        @Query("select") select: String = "id,ride_id,rider_id,state,riders(id,cancellation_odds,users(first_name,last_name))",
         @Query("order") order: String = "id.desc"
     ): Response<List<TripReservationDto>>
 

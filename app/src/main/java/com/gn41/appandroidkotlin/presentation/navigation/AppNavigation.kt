@@ -27,7 +27,8 @@ fun AppNavigation(
     welcomeViewModel: WelcomeViewModel,
     homeViewModelFactory: HomeViewModelFactory,
     createRideViewModelFactory: CreateRideViewModelFactory,
-    activeRideViewModelFactory: ActiveRideViewModelFactory
+    /*activeRideViewModelFactory: ActiveRideViewModelFactory*/
+    tripViewModelFactory: TripViewModelFactory
 ) {
     NavHost(
         navController = navController,
@@ -66,7 +67,7 @@ fun AppNavigation(
                 }
             )
         }
-
+/*
         composable("trips") {
             val activeRideViewModel: ActiveRideViewModel = viewModel(factory = activeRideViewModelFactory)
             ActiveRideScreen(
@@ -77,8 +78,8 @@ fun AppNavigation(
                     }
                 }
             )
-        }
-/*
+        }*/
+
         composable("trips") {
             val tripViewModel: TripViewModel = viewModel(factory = tripViewModelFactory)
             TripScreen(
@@ -90,7 +91,7 @@ fun AppNavigation(
                 }
             )
         }
-        */
+
 
         composable("create_ride") {
             val createRideViewModel: CreateRideViewModel = viewModel(factory = createRideViewModelFactory)

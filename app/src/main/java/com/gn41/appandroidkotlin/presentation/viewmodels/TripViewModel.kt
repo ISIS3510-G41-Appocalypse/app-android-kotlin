@@ -110,6 +110,7 @@ class TripViewModel(
                                 TripReservationItemUiModel(
                                     id = reservation.id,
                                     riderName = riderName,
+                                    cancellationOdds = reservation.riders?.cancellation_odds,
                                     status = reservation.state
                                 )
                             }
