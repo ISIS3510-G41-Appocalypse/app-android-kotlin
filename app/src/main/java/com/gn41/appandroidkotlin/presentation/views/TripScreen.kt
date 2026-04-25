@@ -56,6 +56,8 @@ import com.gn41.appandroidkotlin.presentation.viewmodels.ActiveDriverTripUiModel
 import com.gn41.appandroidkotlin.presentation.viewmodels.ActiveRiderTripUiModel
 import com.gn41.appandroidkotlin.presentation.viewmodels.TripReservationItemUiModel
 import com.gn41.appandroidkotlin.presentation.viewmodels.TripViewModel
+import com.gn41.appandroidkotlin.presentation.viewmodels.normalizeState
+import com.gn41.appandroidkotlin.presentation.viewmodels.stateToReadableLabel
 import com.gn41.appandroidkotlin.ui.theme.AutumnEmber
 import kotlinx.coroutines.delay
 
@@ -623,11 +625,27 @@ private fun RiderReservationCard(
 
         Spacer(modifier = Modifier.height(10.dp))
 
-        Button(
-            onClick = onCancel,
-            colors = ButtonDefaults.buttonColors(containerColor = AutumnEmber)
-        ) {
-            Text("Cancelar reserva")
+        if (trip.showCancelButton) {
+            Button(
+                onClick = onCancel,
+                enabled = trip.canCancelReservation,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = AutumnEmber,
+                    disabledContainerColor = Color(0xFFCBD5E1),
+                    disabledContentColor = Color(0xFF64748B)
+                )
+            ) {
+                Text("Cancelar reserva")
+            }
+
+            if (trip.cancelDisabledReason != null) {
+                Spacer(modifier = Modifier.height(6.dp))
+                Text(
+                    text = trip.cancelDisabledReason,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Color(0xFF64748B)
+                )
+            }
         }
     }
 }
@@ -970,23 +988,12 @@ private fun formatTimeText(rawTime: String): String {
 }
 
 private fun mapStateLabel(state: String): String {
-    return when (state) {
-        "OFERTADO" -> "Ofertado"
-        "PENDIENTE" -> "Pendiente"
-        "ACEPTADA" -> "Aceptada"
-        "EN_CURSO" -> "En curso"
-        "FINALIZADO" -> "Finalizado"
-        "FINALIZADA" -> "Finalizada"
-        "CANCELADO" -> "Cancelado"
-        "CANCELADA" -> "Cancelada"
-        "RECHAZADA" -> "Rechazada"
-        else -> state
-    }
+    return stateToReadableLabel(state)
 }
 
 @Composable
 private fun StateChip(status: String) {
-    val (bg, fg) = when (status) {
+    val (bg, fg) = when (normalizeState(status)) {
         "PENDIENTE" -> Color(0xFFFEF3C7) to Color(0xFFB45309)
         "ACEPTADA" -> Color(0xFFD1FAE5) to Color(0xFF065F46)
         "EN_CURSO" -> Color(0xFFDBEAFE) to Color(0xFF1D4ED8)
