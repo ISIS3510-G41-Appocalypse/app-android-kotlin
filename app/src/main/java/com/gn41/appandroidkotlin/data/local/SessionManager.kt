@@ -49,6 +49,16 @@ class SessionManager(context: Context) {
         return sharedPreferences.getInt("session_driver_id", -1)
     }
 
+    fun saveCurrentRideId(id: Int) {
+        sharedPreferences.edit()
+            .putInt("session_current_ride_id", id)
+            .apply()
+    }
+
+    fun getCurrentRideId(): Int {
+        return sharedPreferences.getInt("session_current_ride_id", -1)
+    }
+
     fun clearDriverId() {
         sharedPreferences.edit()
             .remove("session_driver_id")

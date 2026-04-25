@@ -11,6 +11,8 @@ composeBom = "2024.09.00"
 material3 = "1.4.0"
 uiText = "1.10.5"
 firebaseSessions = "3.0.4"
+foundation = "1.10.6"
+runtime = "1.11.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -30,6 +32,8 @@ androidx-compose-material3 = { group = "androidx.compose.material3", name = "mat
 androidx-material3 = { group = "androidx.compose.material3", name = "material3", version.ref = "material3" }
 androidx-compose-ui-text = { group = "androidx.compose.ui", name = "ui-text", version.ref = "uiText" }
 firebase-sessions = { group = "com.google.firebase", name = "firebase-sessions", version.ref = "firebaseSessions" }
+androidx-compose-foundation = { group = "androidx.compose.foundation", name = "foundation", version.ref = "foundation" }
+androidx-compose-runtime = { group = "androidx.compose.runtime", name = "runtime", version.ref = "runtime" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

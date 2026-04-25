@@ -22,6 +22,7 @@ data class TripUserNestedDto(
 
 data class TripRiderNestedDto(
     val id: Int,
+    val cancellation_odds: Double,
     val users: TripUserNestedDto? = null
 )
 

@@ -75,6 +75,8 @@ dependencies {
     implementation(libs.androidx.compose.ui.text)
     implementation(libs.firebase.sessions)
     implementation("com.google.maps.android:maps-compose:8.3.0")
+    implementation(libs.androidx.compose.foundation)
+    implementation(libs.androidx.compose.runtime)
     implementation("com.mapbox.maps:android:11.8.0")
     implementation("com.mapbox.extension:maps-compose:11.8.0")
 
