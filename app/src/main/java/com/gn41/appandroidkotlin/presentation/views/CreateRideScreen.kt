@@ -69,6 +69,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.gn41.appandroidkotlin.presentation.viewmodels.CreateRideViewModel
 import com.gn41.appandroidkotlin.presentation.viewmodels.CreateRideViewModel.CreateRideUiState
+import com.gn41.appandroidkotlin.ui.theme.AutumnEmber
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
@@ -190,10 +191,11 @@ fun CreateRideScreen(
                 Spacer(modifier = Modifier.height(20.dp))
 
                 if (!viewModel.connectivity) {
-                    Text( text = "No tienes conexión a internet. Intenta de nuevo más tarde.",
-                        color = MaterialTheme.colorScheme.onPrimary,
-                        fontSize = 14.sp,
-                        textAlign = TextAlign.Center
+                    EmptyStateCard(
+                        icon = Icons.Default.WifiOff,
+                        iconTint = MaterialTheme.colorScheme.primary,
+                        title = "Sin conexión a internet",
+                        message = "No puedes crear viajes ahora mismo.\nRevisa tu conexión e intenta de nuevo."
                     )
                 }
                 else {

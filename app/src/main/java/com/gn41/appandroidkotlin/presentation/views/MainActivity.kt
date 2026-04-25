@@ -35,7 +35,6 @@ import com.gn41.appandroidkotlin.data.services.location.LocationService
 import com.gn41.appandroidkotlin.data.repositories.LocationRepositoryImpl
 import com.mapbox.common.MapboxOptions
 import com.gn41.appandroidkotlin.BuildConfig
-import com.gn41.appandroidkotlin.core.connectivity.NetworkHelper
 import com.gn41.appandroidkotlin.localStorage.LocalStorageManager
 
 
