@@ -4,12 +4,14 @@ import com.gn41.appandroidkotlin.BuildConfig
 import com.gn41.appandroidkotlin.data.dto.auth.LoginRequestDto
 import com.gn41.appandroidkotlin.data.dto.auth.LoginResponseDto
 import com.gn41.appandroidkotlin.data.services.SupabaseClient
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 class AuthService {
 
     private val authApi = SupabaseClient.authApi
 
-    suspend fun login(email: String, password: String): LoginResponseDto? {
+    suspend fun login(email: String, password: String): LoginResponseDto? = withContext(Dispatchers.IO) {
         val loginRequest = LoginRequestDto(
             email = email,
             password = password
@@ -22,6 +24,6 @@ class AuthService {
 
         println("Response body: ${response.body()}")
 
-        return if (response.isSuccessful && response.body() != null) { response.body() } else {null}
+        return@withContext if (response.isSuccessful && response.body() != null) { response.body() } else {null}
     }
 }

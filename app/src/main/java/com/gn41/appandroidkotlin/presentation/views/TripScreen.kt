@@ -815,14 +815,6 @@ private fun DriverMainCard(
 
         Spacer(modifier = Modifier.height(10.dp))
 
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            SmallActionButton(
-                text = "Mirar en Google",
-                onClick = onOpenRoute,
-                accentColor = Color(0xFF2563EB)
-            )
-        }
-
         Spacer(modifier = Modifier.height(8.dp))
 
         if (trip.status == "OFERTADO") {
@@ -879,7 +871,7 @@ private fun DriverReservationRow(
                 color = Color(0xFF16A34A)
             }
         }
-        Text(text = "Cancelación ${item.cancellationOdds?.times(100)}%", color = color)
+        Text(text = "Probabilidad de cancelación: ${item.cancellationOdds?.times(100)}%", color = color)
         Text(text = "Metodo de pago: ${item.paymentMethod}", style = MaterialTheme.typography.bodyMedium)
 
         if (item.status == "PENDIENTE") {

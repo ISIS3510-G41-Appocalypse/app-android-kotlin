@@ -8,13 +8,16 @@ import com.gn41.appandroidkotlin.data.dto.trips.TripRideDto
 import com.gn41.appandroidkotlin.data.dto.trips.TripRiderDto
 import com.gn41.appandroidkotlin.data.dto.trips.TripUserDto
 import com.gn41.appandroidkotlin.data.services.SupabaseClient
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 class TripService {
 
     private val tripApi = SupabaseClient.tripApi
 
-    suspend fun getUserByAuthId(authId: String, token: String): TripUserDto? {
-        return try {
+    suspend fun getUserByAuthId(authId: String, token: String): TripUserDto? = withContext(
+        Dispatchers.IO){
+        return@withContext try {
             val response = tripApi.getUserByAuthId(
                 token = "Bearer $token",
                 apiKey = BuildConfig.SUPABASE_KEY,
@@ -33,8 +36,8 @@ class TripService {
         }
     }
 
-    suspend fun getRiderByUserId(userId: Int, token: String): TripRiderDto? {
-        return try {
+    suspend fun getRiderByUserId(userId: Int, token: String): TripRiderDto? = withContext(Dispatchers.IO) {
+        return@withContext try {
             val response = tripApi.getRiderByUserId(
                 token = "Bearer $token",
                 apiKey = BuildConfig.SUPABASE_KEY,
@@ -53,8 +56,8 @@ class TripService {
         }
     }
 
-    suspend fun getDriverByUserId(userId: Int, token: String): TripDriverDto? {
-        return try {
+    suspend fun getDriverByUserId(userId: Int, token: String): TripDriverDto? = withContext(Dispatchers.IO) {
+        return@withContext try {
             val response = tripApi.getDriverByUserId(
                 token = "Bearer $token",
                 apiKey = BuildConfig.SUPABASE_KEY,
@@ -73,8 +76,8 @@ class TripService {
         }
     }
 
-    suspend fun getActiveRiderReservation(riderId: Int, token: String): List<TripReservationDto> {
-        return try {
+    suspend fun getActiveRiderReservation(riderId: Int, token: String): List<TripReservationDto> = withContext(Dispatchers.IO) {
+        return@withContext try {
             val response = tripApi.getActiveRiderReservation(
                 token = "Bearer $token",
                 apiKey = BuildConfig.SUPABASE_KEY,
@@ -93,8 +96,8 @@ class TripService {
         }
     }
 
-    suspend fun getActiveDriverRide(driverId: Int, token: String): TripRideDto? {
-        return try {
+    suspend fun getActiveDriverRide(driverId: Int, token: String): TripRideDto? = withContext(Dispatchers.IO){
+        return@withContext try {
             val response = tripApi.getActiveDriverRide(
                 token = "Bearer $token",
                 apiKey = BuildConfig.SUPABASE_KEY,
@@ -113,8 +116,8 @@ class TripService {
         }
     }
 
-    suspend fun getReservationsForRide(rideId: Int, token: String): List<TripReservationDto> {
-        return try {
+    suspend fun getReservationsForRide(rideId: Int, token: String): List<TripReservationDto> = withContext(Dispatchers.IO) {
+        return@withContext try {
             val response = tripApi.getReservationsForRide(
                 token = "Bearer $token",
                 apiKey = BuildConfig.SUPABASE_KEY,
@@ -133,8 +136,8 @@ class TripService {
         }
     }
 
-    suspend fun updateReservationState(reservationId: Int, newState: String, token: String): Boolean {
-        return try {
+    suspend fun updateReservationState(reservationId: Int, newState: String, token: String): Boolean = withContext(Dispatchers.IO) {
+        return@withContext try {
             val response = tripApi.updateReservationState(
                 token = "Bearer $token",
                 apiKey = BuildConfig.SUPABASE_KEY,
@@ -153,8 +156,8 @@ class TripService {
         }
     }
 
-    suspend fun updateRideState(rideId: Int, newState: String, token: String): Boolean {
-        return try {
+    suspend fun updateRideState(rideId: Int, newState: String, token: String): Boolean = withContext(Dispatchers.IO) {
+        return@withContext try {
             val stateCandidates = when (newState) {
                 "CANCELADO" -> listOf("CANCELADO", "CANCELADA")
                 "FINALIZADO" -> listOf("FINALIZADO", "FINALIZADA")
@@ -171,7 +174,7 @@ class TripService {
                 )
 
                 if (response.isSuccessful) {
-                    return true
+                    return@withContext true
                 }
 
                 lastError = response.errorBody()?.string().orEmpty()
