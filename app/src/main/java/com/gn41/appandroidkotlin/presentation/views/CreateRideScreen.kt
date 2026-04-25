@@ -81,7 +81,8 @@ import java.util.Locale
 @Composable
 fun CreateRideScreen(
     viewModel: CreateRideViewModel,
-    onBackClick: () -> Unit
+    onBackClick: () -> Unit,
+    onRideCreated: () -> Unit
 ) {
     var expandedVehicle by remember { mutableStateOf(false) }
     var expandedZone by remember { mutableStateOf(false) }
@@ -97,7 +98,7 @@ fun CreateRideScreen(
 
     LaunchedEffect(uiState) {
         if (uiState is CreateRideUiState.Success) {
-            onBackClick()
+            onRideCreated()
         }
     }
 

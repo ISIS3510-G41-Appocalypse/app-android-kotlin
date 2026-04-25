@@ -97,7 +97,13 @@ fun AppNavigation(
             val createRideViewModel: CreateRideViewModel = viewModel(factory = createRideViewModelFactory)
             CreateRideScreen(
                 viewModel = createRideViewModel,
-                onBackClick = { navController.popBackStack() }
+                onBackClick = { navController.popBackStack() },
+                onRideCreated = {
+                    navController.navigate("trips") {
+                        popUpTo("create_ride") { inclusive = true }
+                        launchSingleTop = true
+                    }
+                }
             )
         }
     }
