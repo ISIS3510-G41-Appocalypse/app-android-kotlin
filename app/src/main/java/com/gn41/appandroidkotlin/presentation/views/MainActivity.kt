@@ -54,7 +54,7 @@ class MainActivity : ComponentActivity() {
                 val authRepository = AuthRepositoryImpl(authService)
 
                 val tripService = TripService()
-                val tripRepository = TripRepositoryImpl(tripService)
+                val tripRepository = TripRepositoryImpl(tripService, networkHelper)
 
                 val welcomeFactory = WelcomeViewModelFactory(
                     context = this,

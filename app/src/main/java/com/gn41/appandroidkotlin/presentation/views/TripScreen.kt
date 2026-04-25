@@ -30,6 +30,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.WifiOff
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -62,168 +64,223 @@ fun TripScreen(
     viewModel: TripViewModel,
     onHomeClick: () -> Unit
 ) {
-    val state = viewModel.uiState
-    val context = LocalContext.current
-    var selectedSection by remember { mutableStateOf("Conductor") }
-    val configuration = LocalConfiguration.current
-    val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+    if (viewModel.connectivity) {
+        val state = viewModel.uiState
+        val context = LocalContext.current
+        var selectedSection by remember { mutableStateOf("Conductor") }
+        val configuration = LocalConfiguration.current
+        val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
 
-    val locationPermissionLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.RequestPermission()
-    ) { granted ->
-        viewModel.onLocationPermissionResult(granted)
-        if (granted && viewModel.uiState.isLocationSharingEnabled) {
-            viewModel.onLocationRequestStarted()
-            requestLastKnownLocation(context, viewModel)
-        }
-    }
-
-    if (state.infoMessage.isNotEmpty()) {
-        LaunchedEffect(state.infoMessage) {
-            delay(3000)
-            viewModel.clearInfoMessage()
-        }
-    }
-
-    LaunchedEffect(Unit) {
-        while (true) {
-            delay(8000)
-            viewModel.refreshTrips()
-        }
-    }
-
-    LaunchedEffect(state.isLocationSharingEnabled) {
-        if (state.isLocationSharingEnabled) {
-            val granted = ContextCompat.checkSelfPermission(
-                context,
-                Manifest.permission.ACCESS_FINE_LOCATION
-            ) == PackageManager.PERMISSION_GRANTED
-
+        val locationPermissionLauncher = rememberLauncherForActivityResult(
+            contract = ActivityResultContracts.RequestPermission()
+        ) { granted ->
             viewModel.onLocationPermissionResult(granted)
-
-            if (granted) {
+            if (granted && viewModel.uiState.isLocationSharingEnabled) {
                 viewModel.onLocationRequestStarted()
                 requestLastKnownLocation(context, viewModel)
-            } else {
-                locationPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
             }
         }
-    }
-
-    val scrollState = rememberScrollState()
-
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(darkBlue)
-            .statusBarsPadding()
-            .navigationBarsPadding()
-            .background(darkBlue)
-            .padding(16.dp)
-            .verticalScroll(scrollState),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Text(
-            text = "Mis viajes",
-            style = MaterialTheme.typography.titleLarge,
-            color = Color.White
-        )
-
-        Spacer(modifier = Modifier.height(6.dp))
-
-        Text(
-            text = "Revisa tu viaje como conductor o pasajero.",
-            style = MaterialTheme.typography.bodyMedium,
-            color = Color.LightGray
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
 
         if (state.infoMessage.isNotEmpty()) {
-            Text(
-                text = state.infoMessage,
-                style = MaterialTheme.typography.bodyMedium,
-                color = Color(0xFF0D9488),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(Color(0xFFE6FFFA), RoundedCornerShape(10.dp))
-                    .padding(10.dp)
-            )
-            Spacer(modifier = Modifier.height(10.dp))
+            LaunchedEffect(state.infoMessage) {
+                delay(3000)
+                viewModel.clearInfoMessage()
+            }
         }
 
-        Box(
-            modifier = Modifier
-                .weight(1f)
-                .fillMaxWidth()
-        ) {
-            when {
-                state.isLoading -> {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        CircularProgressIndicator(color = Color.White)
-                    }
-                }
+        LaunchedEffect(Unit) {
+            while (true) {
+                delay(8000)
+                viewModel.refreshTrips()
+            }
+        }
 
-                state.errorMessage.isNotEmpty() -> {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = state.errorMessage,
-                            color = Color(0xFFFCA5A5),
-                            style = MaterialTheme.typography.bodyMedium
+        LaunchedEffect(state.isLocationSharingEnabled) {
+            if (state.isLocationSharingEnabled) {
+                val granted = ContextCompat.checkSelfPermission(
+                    context,
+                    Manifest.permission.ACCESS_FINE_LOCATION
+                ) == PackageManager.PERMISSION_GRANTED
+
+                viewModel.onLocationPermissionResult(granted)
+
+                if (granted) {
+                    viewModel.onLocationRequestStarted()
+                    requestLastKnownLocation(context, viewModel)
+                } else {
+                    locationPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
+                }
+            }
+        }
+
+        val scrollState = rememberScrollState()
+
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(darkBlue)
+                .statusBarsPadding()
+                .navigationBarsPadding()
+                .background(darkBlue)
+                .padding(16.dp)
+                .verticalScroll(scrollState),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                text = "Mis viajes",
+                style = MaterialTheme.typography.titleLarge,
+                color = Color.White
+            )
+
+            Spacer(modifier = Modifier.height(6.dp))
+
+            Text(
+                text = "Revisa tu viaje como conductor o pasajero.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = Color.LightGray
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            if (state.infoMessage.isNotEmpty()) {
+                Text(
+                    text = state.infoMessage,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = Color(0xFF0D9488),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(Color(0xFFE6FFFA), RoundedCornerShape(10.dp))
+                        .padding(10.dp)
+                )
+                Spacer(modifier = Modifier.height(10.dp))
+            }
+
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth()
+            ) {
+                when {
+                    state.isLoading -> {
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            CircularProgressIndicator(color = Color.White)
+                        }
+                    }
+
+                    state.errorMessage.isNotEmpty() -> {
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = state.errorMessage,
+                                color = Color(0xFFFCA5A5),
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                        }
+                    }
+
+                    isLandscape -> {
+                        LandscapeTripsContent(
+                            viewModel = viewModel,
+                            selectedSection = selectedSection,
+                            onSectionSelected = { selectedSection = it },
+                            driverTrip = state.activeDriverTrip,
+                            riderTrips = state.activeRiderTrips,
+                            onAcceptReservation = viewModel::onAcceptReservationClicked,
+                            onRejectReservation = viewModel::onRejectReservationClicked,
+                            onCancelTrip = viewModel::onCancelTripClicked,
+                            onStartTrip = viewModel::onStartTripClicked,
+                            onOpenRoute = viewModel::onOpenRouteClicked,
+                            onFinishTrip = viewModel::onFinishTripClicked,
+                            onCancelReservation = viewModel::onCancelReservationClicked
+                        )
+                    }
+
+                    else -> {
+                        PortraitTripsContent(
+                            viewModel = viewModel,
+                            selectedSection = selectedSection,
+                            onSectionSelected = { selectedSection = it },
+                            driverTrip = state.activeDriverTrip,
+                            riderTrips = state.activeRiderTrips,
+                            onAcceptReservation = viewModel::onAcceptReservationClicked,
+                            onRejectReservation = viewModel::onRejectReservationClicked,
+                            onCancelTrip = viewModel::onCancelTripClicked,
+                            onStartTrip = viewModel::onStartTripClicked,
+                            onOpenRoute = viewModel::onOpenRouteClicked,
+                            onFinishTrip = viewModel::onFinishTripClicked,
+                            onCancelReservation = viewModel::onCancelReservationClicked
                         )
                     }
                 }
-
-                isLandscape -> {
-                    LandscapeTripsContent(
-                        viewModel = viewModel,
-                        selectedSection = selectedSection,
-                        onSectionSelected = { selectedSection = it },
-                        driverTrip = state.activeDriverTrip,
-                        riderTrips = state.activeRiderTrips,
-                        onAcceptReservation = viewModel::onAcceptReservationClicked,
-                        onRejectReservation = viewModel::onRejectReservationClicked,
-                        onCancelTrip = viewModel::onCancelTripClicked,
-                        onStartTrip = viewModel::onStartTripClicked,
-                        onOpenRoute = viewModel::onOpenRouteClicked,
-                        onFinishTrip = viewModel::onFinishTripClicked,
-                        onCancelReservation = viewModel::onCancelReservationClicked
-                    )
-                }
-
-                else -> {
-                    PortraitTripsContent(
-                        viewModel = viewModel,
-                        selectedSection = selectedSection,
-                        onSectionSelected = { selectedSection = it },
-                        driverTrip = state.activeDriverTrip,
-                        riderTrips = state.activeRiderTrips,
-                        onAcceptReservation = viewModel::onAcceptReservationClicked,
-                        onRejectReservation = viewModel::onRejectReservationClicked,
-                        onCancelTrip = viewModel::onCancelTripClicked,
-                        onStartTrip = viewModel::onStartTripClicked,
-                        onOpenRoute = viewModel::onOpenRouteClicked,
-                        onFinishTrip = viewModel::onFinishTripClicked,
-                        onCancelReservation = viewModel::onCancelReservationClicked
-                    )
-                }
             }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            BottomNavigationBar(
+                selectedTab = "Viajes",
+                onTabClick = {
+                    if (it == "Inicio") onHomeClick()
+                }
+            )
         }
+    }
+    else {
+        val scrollState = rememberScrollState()
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(darkBlue)
+                .statusBarsPadding()
+                .navigationBarsPadding()
+                .background(darkBlue)
+                .padding(16.dp)
+                .verticalScroll(scrollState),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                text = "Mis viajes",
+                style = MaterialTheme.typography.titleLarge,
+                color = Color.White
+            )
 
-        Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(6.dp))
 
-        BottomNavigationBar(
-            selectedTab = "Viajes",
-            onTabClick = {
-                if (it == "Inicio") onHomeClick()
+            Text(
+                text = "Revisa tu viaje como conductor o pasajero.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = Color.LightGray
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            LazyColumn(
+                modifier = Modifier
+                .weight(1f)
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                item{
+                    EmptyStateCard(
+                        icon = Icons.Default.WifiOff,
+                        iconTint = MaterialTheme.colorScheme.primary,
+                        title = "Sin conexión a internet",
+                        message = "No puedes gestionar tus viajes ahora mismo.\nRevisa tu conexión e intenta de nuevo."
+                    )
+                }
             }
-        )
+
+            BottomNavigationBar(
+                selectedTab = "Viajes",
+                onTabClick = {
+                    if (it == "Inicio") onHomeClick()
+                }
+            )
+        }
     }
 }
 
@@ -371,7 +428,7 @@ private fun LandscapeTripsContent(
                         mapMarkers = viewModel.getMapMarkers()
                     )
                 } else {
-                    EmptyStateCard(message = "No hay un viaje activo para mostrar en el mapa.")
+                    EmptyStateCardTrip(message = "No hay un viaje activo para mostrar en el mapa.")
                 }
             } else {
                 val firstTrip = riderTrips.firstOrNull()
@@ -394,7 +451,7 @@ private fun LandscapeTripsContent(
 
                     )
                 } else {
-                    EmptyStateCard(message = "No hay una reserva activa para mostrar en el mapa.")
+                    EmptyStateCardTrip(message = "No hay una reserva activa para mostrar en el mapa.")
                 }
             }
         }
@@ -441,7 +498,7 @@ private fun RiderSection(
     onCancelReservation: (Int) -> Unit
 ) {
     if (trips.isEmpty()) {
-        EmptyStateCard(message = "No tienes una reserva activa como pasajero.")
+        EmptyStateCardTrip(message = "No tienes una reserva activa como pasajero.")
         return
     }
 
@@ -504,7 +561,7 @@ private fun RiderSummarySection(
     onCancelReservation: (Int) -> Unit
 ) {
     if (trips.isEmpty()) {
-        EmptyStateCard(message = "No tienes una reserva activa como pasajero.")
+        EmptyStateCardTrip(message = "No tienes una reserva activa como pasajero.")
         return
     }
 
@@ -587,7 +644,7 @@ private fun DriverSection(
     onFinishTrip: () -> Unit
 ) {
     if (trip == null) {
-        EmptyStateCard(message = "No tienes un viaje activo como conductor.")
+        EmptyStateCardTrip(message = "No tienes un viaje activo como conductor.")
         return
     }
 
@@ -654,7 +711,7 @@ private fun DriverSection(
             }
         } else {
             item {
-                EmptyStateCard(message = "No tienes ofertas sobre este viaje.")
+                EmptyStateCardTrip(message = "No tienes ofertas sobre este viaje.")
             }
         }
     }
@@ -671,7 +728,7 @@ private fun DriverSummarySection(
     onFinishTrip: () -> Unit
 ) {
     if (trip == null) {
-        EmptyStateCard(message = "No tienes un viaje activo como conductor.")
+        EmptyStateCardTrip(message = "No tienes un viaje activo como conductor.")
         return
     }
 
@@ -708,7 +765,7 @@ private fun DriverSummarySection(
             }
         } else {
             item {
-                EmptyStateCard(message = "No tienes ofertas sobre este viaje.")
+                EmptyStateCardTrip(message = "No tienes ofertas sobre este viaje.")
             }
         }
     }
@@ -859,7 +916,7 @@ private fun SmallActionButton(
 }
 
 @Composable
-private fun EmptyStateCard(message: String) {
+private fun EmptyStateCardTrip(message: String) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
