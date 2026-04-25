@@ -3,13 +3,15 @@ package com.gn41.appandroidkotlin.data.services.reservations
 import android.util.Log
 import com.gn41.appandroidkotlin.BuildConfig
 import com.gn41.appandroidkotlin.data.services.SupabaseClient
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 class ReservationsService {
 
     private val reservationsApi = SupabaseClient.reservationsApi
 
-    suspend fun getUserByAuthId(authId: String, token: String): UserSimpleDto? {
-        return try {
+    suspend fun getUserByAuthId(authId: String, token: String): UserSimpleDto? = withContext(Dispatchers.IO) {
+        return@withContext try {
             Log.d("ReservationsService", "getUserByAuthId authId=$authId")
 
             val response = reservationsApi.getUserByAuthId(
@@ -32,8 +34,8 @@ class ReservationsService {
         }
     }
 
-    suspend fun getRiderByUserId(userId: Int, token: String): RiderSimpleDto? {
-        return try {
+    suspend fun getRiderByUserId(userId: Int, token: String): RiderSimpleDto? = withContext(Dispatchers.IO) {
+        return@withContext try {
             Log.d("ReservationsService", "getRiderByUserId userId=$userId")
 
             val response = reservationsApi.getRiderByUserId(
@@ -56,8 +58,8 @@ class ReservationsService {
         }
     }
 
-    suspend fun getReservations(riderId: Int, token: String): List<ReservationDto>? {
-        return try {
+    suspend fun getReservations(riderId: Int, token: String): List<ReservationDto>? = withContext(Dispatchers.IO) {
+        return@withContext try {
             Log.d("ReservationsService", "getReservations riderId=$riderId")
 
             val response = reservationsApi.getReservations(
@@ -86,8 +88,8 @@ class ReservationsService {
         meetingPoint: String,
         destinationPoint: String,
         token: String
-    ): Boolean {
-        return try {
+    ): Boolean = withContext(Dispatchers.IO) {
+        return@withContext try {
             Log.d(
                 "ReservationsService",
                 "createReservation rideId=$rideId riderId=$riderId meetingPoint=$meetingPoint destinationPoint=$destinationPoint"

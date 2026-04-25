@@ -8,6 +8,8 @@ import com.gn41.appandroidkotlin.data.dto.createRide.RideUserDto
 import com.gn41.appandroidkotlin.data.local.SessionManager
 import com.gn41.appandroidkotlin.data.services.SupabaseClient
 import com.gn41.appandroidkotlin.data.services.userId.UserIdService
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import retrofit2.HttpException
 
 class RideService(
@@ -16,12 +18,12 @@ class RideService(
 ) {
     private val rideApi = SupabaseClient.rideApi
 
-    suspend fun create(request: CreateRideRequestDto): Result<Unit> {
-        return try {
+    suspend fun create(request: CreateRideRequestDto): Result<Unit> = withContext(Dispatchers.IO){
+        return@withContext try {
             val token = sessionManager.getToken()
 
             if (token.isEmpty()) {
-                return Result.failure(Exception("No auth token"))
+                return@withContext Result.failure(Exception("No auth token"))
             }
 
             val userId = userIdService.getUserByAuthId().id
@@ -44,11 +46,11 @@ class RideService(
         }
     }
 
-    suspend fun cancelRide(id: Int) : Result<Unit> {
+    suspend fun cancelRide(id: Int) : Result<Unit> = withContext(Dispatchers.IO){
         val token = sessionManager.getToken()
 
         if (token.isEmpty()) {
-            return Result.failure(Exception("No auth token"))
+            return@withContext Result.failure(Exception("No auth token"))
         }
 
         rideApi.cancelRide(
@@ -58,14 +60,14 @@ class RideService(
             ridePatch = mapOf("state" to "CANCELADO")
         )
 
-        return Result.success(Unit)
+        return@withContext Result.success(Unit)
     }
 
-    suspend fun getActiveRide() : ActiveRideDto? {
+    suspend fun getActiveRide() : ActiveRideDto? = withContext(Dispatchers.IO) {
         val token = sessionManager.getToken()
 
         if (token.isEmpty()) {
-            return null
+            return@withContext null
         }
 
         val userId = userIdService.getUserByAuthId().id
@@ -77,15 +79,15 @@ class RideService(
             driverId = "eq.$driverId"
         ).firstOrNull()
 
-        return ride
+        return@withContext ride
     }
 
-    suspend fun getRideUsers(id: Int, state:String): List<RideUserDto>? {
+    suspend fun getRideUsers(id: Int, state:String): List<RideUserDto>? = withContext(Dispatchers.IO) {
         try {
             val token = sessionManager.getToken()
 
             if (token.isEmpty()) {
-                return null
+                return@withContext null
             }
 
             val rideUsersId = rideApi.getRideUsersId(
@@ -96,7 +98,7 @@ class RideService(
             )
 
             if (rideUsersId.isEmpty()) {
-                return null
+                return@withContext null
             }
 
             var riderIds = ""
@@ -144,11 +146,11 @@ class RideService(
                 rideUsers.add(rideUser)
             }
 
-            return rideUsers
+            return@withContext rideUsers
         }
         catch(e: HttpException){
             Log.e("API", e.response()?.errorBody()?.string() ?: "null")
-            return null
+            return@withContext null
         }
     }
 

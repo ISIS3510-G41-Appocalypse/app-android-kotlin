@@ -4,16 +4,18 @@ import android.util.Log
 import com.gn41.appandroidkotlin.BuildConfig
 import com.gn41.appandroidkotlin.data.dto.location.UserSharedLocationDto
 import com.gn41.appandroidkotlin.data.services.SupabaseClient
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 class LocationService {
 
     private val locationApi = SupabaseClient.locationApi
 
-    suspend fun insertUserLocation(
+    suspend fun insertUserLocation (
         dto: UserSharedLocationDto,
         token: String
-    ): Boolean {
-        return try {
+    ): Boolean = withContext(Dispatchers.IO) {
+        return@withContext try {
             val response = locationApi.insertUserLocation(
                 token = "Bearer $token",
                 apiKey = BuildConfig.SUPABASE_KEY,
@@ -37,7 +39,7 @@ class LocationService {
     suspend fun getLocationsByRide(
         rideId: Int,
         token: String
-    ): List<UserSharedLocationDto> {
+    ): List<UserSharedLocationDto> = withContext(Dispatchers.IO) {
         val response = locationApi.getLocationsByRide(
             token = "Bearer $token",
             apiKey = BuildConfig.SUPABASE_KEY,
@@ -45,7 +47,7 @@ class LocationService {
         )
 
         if (response.isSuccessful) {
-            return response.body() ?: emptyList()
+            return@withContext response.body() ?: emptyList()
         }
 
         throw Exception("No se pudieron cargar las ubicaciones del ride.")

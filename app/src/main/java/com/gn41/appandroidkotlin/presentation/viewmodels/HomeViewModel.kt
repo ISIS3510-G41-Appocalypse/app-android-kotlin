@@ -134,11 +134,11 @@ class HomeViewModel(
                 }
 
                 val reservations = repository.getReservations(rider.id, token).orEmpty()
-                val hasActive = reservations.any {
-                    it.state == "PENDIENTE" ||
-                        it.state == "ACEPTADA" ||
-                        it.state == "EN_CURSO"
-                }
+                val hasActive = hasActivePassengerReservation(
+                    riderId = rider.id,
+                    token = token,
+                    fallbackReservationStates = reservations.map { it.state }
+                )
 
                 if (hasActive) {
                     uiState = uiState.copy(
@@ -357,6 +357,61 @@ class HomeViewModel(
         return state?.trim()?.equals("OFERTADO", ignoreCase = true) == true
     }
 
+    private fun normalizeState(state: String?): String {
+        val rawState = state?.trim()?.uppercase(Locale.getDefault()).orEmpty()
+        return when (rawState) {
+            "PENDIENTE", "PENDING" -> "PENDIENTE"
+            "ACEPTADA", "ACCEPTED" -> "ACEPTADA"
+            "EN_CURSO", "IN_PROGRESS" -> "EN_CURSO"
+            "OFERTADO", "OFFERED", "ACTIVE" -> "OFERTADO"
+            "FINALIZADO", "FINALIZADA", "FINISHED", "COMPLETED" -> "FINALIZADO"
+            "CANCELADO", "CANCELADA", "CANCELLED" -> "CANCELADO"
+            "RECHAZADA", "REJECTED" -> "RECHAZADA"
+            else -> rawState
+        }
+    }
+
+    private fun isActivePassengerReservation(
+        reservationState: String?,
+        rideState: String?
+    ): Boolean {
+        val normalizedReservationState = normalizeState(reservationState)
+        val normalizedRideState = normalizeState(rideState)
+
+        val isActiveReservationState = normalizedReservationState in setOf("PENDIENTE", "ACEPTADA", "EN_CURSO")
+        val isRideFinishedOrCancelled = normalizedRideState in setOf("FINALIZADO", "CANCELADO")
+
+        return isActiveReservationState && !isRideFinishedOrCancelled
+    }
+
+    private suspend fun hasActivePassengerReservation(
+        riderId: Int,
+        token: String,
+        fallbackReservationStates: List<String> = emptyList()
+    ): Boolean {
+        val tripRepo = tripRepository
+        if (tripRepo != null) {
+            val reservations = tripRepo.getActiveRiderReservation(riderId, token)
+            return reservations.any { reservation ->
+                isActivePassengerReservation(
+                    reservationState = reservation.state,
+                    rideState = reservation.rides?.state
+                )
+            }
+        }
+
+        // Fallback solo por compatibilidad: si no tenemos rideState,
+        // evitamos bloquear por estados historicos (ej. ACEPTADA/PENDIENTE vieja).
+        // Solo se bloquea cuando el estado es claramente activo y reciente.
+        return fallbackReservationStates.any { state ->
+            isFallbackActivePassengerReservation(state)
+        }
+    }
+
+    private fun isFallbackActivePassengerReservation(reservationState: String?): Boolean {
+        return normalizeState(reservationState) == "EN_CURSO"
+    }
+
     private fun isRideUpcoming(
         ride: RideDto,
         now: Date,
@@ -529,7 +584,11 @@ class HomeViewModel(
                 val rider = resRepo.getRiderByUserId(user.id, token)
                 val hasActiveRider = if (rider != null) {
                     val reservations = resRepo.getReservations(rider.id, token).orEmpty()
-                    reservations.any { it.state == "PENDIENTE" || it.state == "ACEPTADA" || it.state == "EN_CURSO" }
+                    hasActivePassengerReservation(
+                        riderId = rider.id,
+                        token = token,
+                        fallbackReservationStates = reservations.map { it.state }
+                    )
                 } else {
                     false
                 }

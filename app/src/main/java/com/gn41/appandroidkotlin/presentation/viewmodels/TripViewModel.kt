@@ -80,20 +80,44 @@ class TripViewModel(
                     val riderTrips = if (rider != null) {
                         val reservations = tripRepository.getActiveRiderReservation(rider.id, token)
                         reservations
-                            .sortedBy { stateOrder(it.state) }
                             .mapNotNull { reservation ->
                                 reservation.rides?.let { ride ->
+                                    val reservationState = normalizeState(reservation.state)
+                                    val rideState = normalizeState(ride.state)
+
+                                    if (!shouldShowRiderReservation(reservationState, rideState)) {
+                                        return@let null
+                                    }
+
+                                    val canCancelReservation = canCancelRiderReservation(
+                                        reservationState = reservationState,
+                                        rideState = rideState
+                                    )
+
                                     ActiveRiderTripUiModel(
                                         reservationId = reservation.id,
                                         rideId = ride.id,
                                         source = ride.source,
                                         destination = ride.destination,
-                                        status = reservation.state,
-                                        rideStatus = ride.state,
-                                        departureTime = ride.departure_time
+                                        status = reservationState,
+                                        rideStatus = rideState,
+                                        departureTime = ride.departure_time,
+                                        canCancelReservation = canCancelReservation,
+                                        showCancelButton = true,
+                                        cancelDisabledReason = if (
+                                            shouldDisableCancelButton(
+                                                reservationState = reservationState,
+                                                rideState = rideState
+                                            ) && rideState == "EN_CURSO"
+                                        ) {
+                                            "No puedes cancelar un viaje en curso."
+                                        } else {
+                                            null
+                                        }
                                     )
                                 }
                             }
+                            .sortedBy { stateOrder(it.status) }
                     } else {
                         emptyList()
                     }
@@ -123,7 +147,8 @@ class TripViewModel(
 
                             val totalSeats = activeRide.vehicles?.number_slots ?: 0
                             val acceptedReservations = reservationItems.count {
-                                it.status == "ACEPTADA" || it.status == "EN_CURSO"
+                                val reservationState = normalizeState(it.status)
+                                reservationState == "ACEPTADA" || reservationState == "EN_CURSO"
                             }
                             val availableSeats =
                                 (totalSeats - acceptedReservations).coerceAtLeast(0)
@@ -455,11 +480,50 @@ private fun changeReservationState(
         return formatter.format(Date())
     }
 
-    private fun stateOrder(state: String): Int = when (state) {
+    private fun stateOrder(state: String): Int = when (normalizeState(state)) {
         "PENDIENTE" -> 0
         "ACEPTADA" -> 1
         "EN_CURSO" -> 2
         else -> 3
+    }
+
+    private fun shouldShowRiderReservation(
+        reservationState: String?,
+        rideState: String?
+    ): Boolean {
+        val normalizedReservationState = normalizeState(reservationState)
+        val normalizedRideState = normalizeState(rideState)
+
+        if (normalizedReservationState in setOf("CANCELADO", "RECHAZADA")) return false
+        if (normalizedRideState in setOf("FINALIZADO", "CANCELADO")) return false
+
+        return when (normalizedReservationState) {
+            "PENDIENTE", "ACEPTADA" -> true
+            "EN_CURSO" -> normalizedRideState == "EN_CURSO"
+            else -> false
+        }
+    }
+
+    private fun canCancelRiderReservation(
+        reservationState: String?,
+        rideState: String?
+    ): Boolean {
+        val normalizedReservationState = normalizeState(reservationState)
+        val normalizedRideState = normalizeState(rideState)
+
+        val reservationCanBeCancelled =
+            normalizedReservationState == "PENDIENTE" || normalizedReservationState == "ACEPTADA"
+        val rideAllowsCancellation = normalizedRideState == "OFERTADO"
+
+        return reservationCanBeCancelled && rideAllowsCancellation
+    }
+
+    private fun shouldDisableCancelButton(
+        reservationState: String?,
+        rideState: String?
+    ): Boolean {
+        val shouldShow = shouldShowRiderReservation(reservationState, rideState)
+        return shouldShow && !canCancelRiderReservation(reservationState, rideState)
     }
 
 

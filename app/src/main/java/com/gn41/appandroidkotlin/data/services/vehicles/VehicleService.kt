@@ -6,6 +6,8 @@ import com.gn41.appandroidkotlin.data.dto.vehicle.VehicleDto
 import com.gn41.appandroidkotlin.data.local.SessionManager
 import com.gn41.appandroidkotlin.data.services.SupabaseClient
 import com.gn41.appandroidkotlin.data.services.userId.UserIdService
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 class VehicleService(
     private val sessionManager: SessionManager,
@@ -13,19 +15,19 @@ class VehicleService(
 ) {
     private val vehicleApi = SupabaseClient.vehicleApi
 
-    suspend fun getUserVehicles(): List<VehicleDto> {
+    suspend fun getUserVehicles(): List<VehicleDto> = withContext(Dispatchers.IO) {
         val token = sessionManager.getToken()
 
         if (token.isEmpty()) {
-            return emptyList()
+            return@withContext emptyList()
         }
 
-        return try {
+        return@withContext try {
             val userId = userIdService.getUserByAuthId().id
             val driver = userIdService.getDriverByUser(userId)
-            
+
             if (driver == null) {
-                return emptyList()
+                return@withContext emptyList()
             }
 
             Log.d("CreateRide", "Token: $token")
@@ -42,7 +44,7 @@ class VehicleService(
         }
     }
 
-    suspend fun getVehicleByLicensePlate(licensePlate: String): VehicleDto {
+    suspend fun getVehicleByLicensePlate(licensePlate: String): VehicleDto = withContext(Dispatchers.IO) {
         val token = sessionManager.getToken()
 
         if (token.isEmpty()) {
@@ -58,7 +60,7 @@ class VehicleService(
         Log.d("Vehicles", licensePlate)
         Log.d("Vehicles", "$vehicle")
 
-        return vehicle.firstOrNull()
+        return@withContext vehicle.firstOrNull()
             ?: throw Exception("Vehicle not found")
     }
 }

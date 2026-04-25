@@ -4,6 +4,8 @@ import com.gn41.appandroidkotlin.BuildConfig
 import com.gn41.appandroidkotlin.data.dto.zone.ZoneDto
 import com.gn41.appandroidkotlin.data.local.SessionManager
 import com.gn41.appandroidkotlin.data.services.SupabaseClient
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 class ZoneService(
     private val sessionManager: SessionManager
@@ -23,7 +25,7 @@ class ZoneService(
         )
     }
 
-    suspend fun getZoneByName(name: String): ZoneDto {
+    suspend fun getZoneByName(name: String): ZoneDto = withContext(Dispatchers.IO) {
         val token = sessionManager.getToken()
 
         if (token.isEmpty()) {
@@ -36,7 +38,7 @@ class ZoneService(
             name = "eq.$name"
         )
 
-        return zone.firstOrNull()
+        return@withContext zone.firstOrNull()
             ?: throw Exception("Zone not found")
     }
 }

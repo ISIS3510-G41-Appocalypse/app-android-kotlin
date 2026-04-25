@@ -6,13 +6,15 @@ import com.gn41.appandroidkotlin.BuildConfig
 import com.gn41.appandroidkotlin.data.dto.user.UserIdDto
 import com.gn41.appandroidkotlin.data.local.SessionManager
 import com.gn41.appandroidkotlin.data.services.SupabaseClient
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 class UserIdService(
     private val sessionManager: SessionManager
 ) {
     private val userIdApi = SupabaseClient.userIdApi
 
-    suspend fun getUserByAuthId(): UserIdDto {
+    suspend fun getUserByAuthId(): UserIdDto = withContext(Dispatchers.IO) {
         Log.d("CreateRide", "Llamando a getUserByAuthId")
 
         val token = sessionManager.getToken()
@@ -34,20 +36,20 @@ class UserIdService(
             authId = "eq.$authId"
         )
 
-        return response.firstOrNull()
+        return@withContext response.firstOrNull()
             ?: throw Exception("User not found")
     }
 
-    suspend fun getDriverByUser(userId: Int): UserIdDto? {
+    suspend fun getDriverByUser(userId: Int): UserIdDto? = withContext(Dispatchers.IO) {
         Log.d("CreateRide", "Llamando a getDriverByUser")
 
         val token = sessionManager.getToken()
 
         if (token.isEmpty()) {
-            return null
+            return@withContext null
         }
 
-        return try {
+        return@withContext try {
             val response = userIdApi.getDriverByUser(
                 token = "Bearer $token",
                 apiKey = BuildConfig.SUPABASE_KEY,
@@ -60,7 +62,7 @@ class UserIdService(
         }
     }
 
-    suspend fun getDriverIdByUserId(userId: Int): Int {
+    suspend fun getDriverIdByUserId(userId: Int): Int = withContext(Dispatchers.IO) {
         val token = sessionManager.getToken()
         if (token.isEmpty()) {
             throw Exception("No auth token")
@@ -72,7 +74,7 @@ class UserIdService(
             userId = "eq.$userId"
         )
 
-        return response.firstOrNull()?.id
+        return@withContext response.firstOrNull()?.id
             ?: throw Exception("Driver not found")
     }
 
