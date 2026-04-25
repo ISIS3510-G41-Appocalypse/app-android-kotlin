@@ -16,6 +16,7 @@ import com.gn41.appandroidkotlin.data.local.SessionManager
 import com.gn41.appandroidkotlin.data.repositories.RideRepository
 import com.gn41.appandroidkotlin.data.repositories.VehicleRepository
 import com.gn41.appandroidkotlin.data.repositories.ZoneRepository
+import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
 
 
@@ -69,6 +70,7 @@ class CreateRideViewModel(
     var timeValidationMessage by mutableStateOf("")
         private set
 
+
     companion object {
         private const val MAX_SOURCE_LENGTH = 40
         private const val MAX_DESTINATION_LENGTH = 40
@@ -84,6 +86,7 @@ class CreateRideViewModel(
         if (connectivity) {
             viewModelScope.launch {
                 try {
+                    val read = async {  rideRepository.readLocalStorage() }
                     if (CacheManager.containsKeyFormState("vehicleId")) {
                         formState = formState.copy(vehicleId = CacheManager.getFormState("vehicleId")!!)
                     }
@@ -109,6 +112,33 @@ class CreateRideViewModel(
                         formState = formState.copy(departureTime = CacheManager.getFormState("departureTime")!!)
                     }
 
+                    if (read.await() == "form_state.json cargado") {
+                        if (CacheManager.containsKeyFormState("vehicleId")) {
+                            formState = formState.copy(vehicleId = CacheManager.getFormState("vehicleId")!!)
+                        }
+                        if (CacheManager.containsKeyFormState("zoneId")) {
+                            formState = formState.copy(zoneId = CacheManager.getFormState("zoneId")!!)
+                        }
+                        if (CacheManager.containsKeyFormState("type")) {
+                            formState = formState.copy(type = CacheManager.getFormState("type")!!)
+                        }
+                        if (CacheManager.containsKeyFormState("source")) {
+                            formState = formState.copy(source = CacheManager.getFormState("source")!!)
+                        }
+                        if (CacheManager.containsKeyFormState("destination")) {
+                            formState = formState.copy(destination = CacheManager.getFormState("destination")!!)
+                        }
+                        if (CacheManager.containsKeyFormState("price")) {
+                            formState = formState.copy(price = CacheManager.getFormState("price")!!)
+                        }
+                        if (CacheManager.containsKeyFormState("date")) {
+                            formState = formState.copy(date = CacheManager.getFormState("date")!!)
+                        }
+                        if (CacheManager.containsKeyFormState("departureTime")) {
+                            formState = formState.copy(departureTime = CacheManager.getFormState("departureTime")!!)
+                        }
+                    }
+
                     isLoadingData = true
                     loadErrorMessage = ""
 
@@ -118,6 +148,7 @@ class CreateRideViewModel(
                     vehicles = vehiclesResult
                     zones = zonesResult
 
+                    rideRepository.clearLocalStorage()
 
                 } catch (e: Exception) {
                     loadErrorMessage = "No se pudieron cargar vehiculos o zonas."
@@ -170,59 +201,66 @@ class CreateRideViewModel(
     }
 
     fun createRide() {
-        viewModelScope.launch {
-            try {
-                val error = validateForm()
-                if (error != null) {
-                    uiState = CreateRideUiState.Error(error)
-                    return@launch
-                }
-
-                uiState = CreateRideUiState.Loading
-
-                val driverId = sessionManager.getDriverId()
-                if (driverId <= 0) {
-                    uiState = CreateRideUiState.Error("No se pudo obtener tu identificación como conductor.")
-                    return@launch
-                }
-
-                val type: String
-                if (formState.type == "Hacia la universidad") {
-                    type = "TO_UNIVERSITY"
-                }
-                else{
-                    type = "FROM_UNIVERSITY"
-                }
-
-                val result = rideRepository.createRide(
-                    CreateRideRequestDto(
-                        vehicleId = vehicleRepository.getVehicleByLicensePlate(formState.vehicleId).id,
-                        zoneId = zoneRepository.getZoneByName(formState.zoneId).id,
-                        source = formState.source,
-                        destination = formState.destination,
-                        price = formState.price.toDouble(),
-                        departureTime = formState.departureTime,
-                        date = formState.date,
-                        driverId = driverId,
-                        state = "OFERTADO",
-                        type = type
-                    )
-                )
-
-                uiState = result.fold(
-                    onSuccess = { CreateRideUiState.Success },
-                    onFailure = {
-                        CreateRideUiState.Error(
-                            it.message ?: "Error al crear el viaje"
-                        )
+        connectivity = rideRepository.availableConnection()
+        if (connectivity) {
+            viewModelScope.launch {
+                try {
+                    val error = validateForm()
+                    if (error != null) {
+                        uiState = CreateRideUiState.Error(error)
+                        return@launch
                     }
-                )
 
-                CacheManager.clearFormState()
-            } catch (e: Exception) {
-                Log.e("CreateRide", "Error creating ride", e)
-                uiState = CreateRideUiState.Error("No se pudo crear el viaje. Revisa tus datos.")
+                    uiState = CreateRideUiState.Loading
+
+                    val driverId = sessionManager.getDriverId()
+                    if (driverId <= 0) {
+                        uiState =
+                            CreateRideUiState.Error("No se pudo obtener tu identificación como conductor.")
+                        return@launch
+                    }
+
+                    val type: String
+                    if (formState.type == "Hacia la universidad") {
+                        type = "TO_UNIVERSITY"
+                    } else {
+                        type = "FROM_UNIVERSITY"
+                    }
+
+                    val result = rideRepository.createRide(
+                        CreateRideRequestDto(
+                            vehicleId = vehicleRepository.getVehicleByLicensePlate(formState.vehicleId).id,
+                            zoneId = zoneRepository.getZoneByName(formState.zoneId).id,
+                            source = formState.source,
+                            destination = formState.destination,
+                            price = formState.price.toDouble(),
+                            departureTime = formState.departureTime,
+                            date = formState.date,
+                            driverId = driverId,
+                            state = "OFERTADO",
+                            type = type
+                        )
+                    )
+
+                    uiState = result.fold(
+                        onSuccess = { CreateRideUiState.Success },
+                        onFailure = {
+                            CreateRideUiState.Error(
+                                it.message ?: "Error al crear el viaje"
+                            )
+                        }
+                    )
+
+                    CacheManager.clearFormState()
+                } catch (e: Exception) {
+                    Log.e("CreateRide", "Error creating ride", e)
+                    uiState =
+                        CreateRideUiState.Error("No se pudo crear el viaje. Revisa tus datos.")
+                }
             }
+        }
+        else{
+            viewModelScope.launch { rideRepository.saveCache() }
         }
     }
 

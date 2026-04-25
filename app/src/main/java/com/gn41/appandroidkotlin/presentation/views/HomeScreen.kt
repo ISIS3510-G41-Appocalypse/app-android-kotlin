@@ -105,7 +105,7 @@ private fun EmptyFilteredStateView() {
 
 /** Card reutilizable para cualquier estado vacío */
 @Composable
-private fun EmptyStateCard(
+fun EmptyStateCard(
     icon: ImageVector,
     iconTint: Color,
     title: String,
