@@ -35,6 +35,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -45,9 +46,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import com.gn41.appandroidkotlin.presentation.components.RideItemCard
 import com.gn41.appandroidkotlin.presentation.viewmodels.HomeViewModel
 import com.gn41.appandroidkotlin.ui.theme.AutumnEmber
@@ -159,6 +163,24 @@ fun HomeScreen(
     var selectedBottomTab by remember { mutableStateOf("Inicio") }
     val configuration = LocalConfiguration.current
     val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+    val lifecycleOwner = LocalLifecycleOwner.current
+
+    LaunchedEffect(Unit) {
+        viewModel.refreshNetworkState()
+    }
+
+    DisposableEffect(lifecycleOwner, viewModel) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                viewModel.refreshNetworkState()
+            }
+        }
+
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
+    }
 
     Box(
         modifier = Modifier
@@ -564,17 +586,28 @@ fun FilterCard(
                     selectedValue = selectedDay,
                     options = dayOptions,
                     onValueSelected = onDayChange,
-                    useSelectionHighlight = false,
+                    defaultValue = "Hoy",
                     neutralLabelColor = PrussianBlue
                 )
             }
             Spacer(modifier = Modifier.width(8.dp))
             Column(modifier = Modifier.weight(1f)) {
-                FilterDropdownField(label = "Tipo de viaje", selectedValue = selectedTripType, options = tripTypeOptions, onValueSelected = onTripTypeChange)
+                FilterDropdownField(
+                    label = "Tipo de viaje",
+                    selectedValue = selectedTripType,
+                    options = tripTypeOptions,
+                    onValueSelected = onTripTypeChange
+                )
             }
         }
         Spacer(modifier = Modifier.height(8.dp))
-        FilterDropdownField(label = "Hora de salida", selectedValue = selectedDepartureTime, options = departureOptions, onValueSelected = onDepartureTimeChange)
+        FilterDropdownField(
+            label = "Hora de salida",
+            selectedValue = selectedDepartureTime,
+            options = departureOptions,
+            onValueSelected = onDepartureTimeChange,
+            defaultValue = "Todas"
+        )
         Spacer(modifier = Modifier.height(10.dp))
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -605,10 +638,13 @@ fun FilterDropdownField(
     options: List<String>,
     onValueSelected: (String) -> Unit,
     useSelectionHighlight: Boolean = true,
+    defaultValue: String = "Todos",
     neutralLabelColor: Color = Color.Unspecified
 ) {
     var expanded by remember { mutableStateOf(false) }
-    val backgroundColor = Color(0xFFF0F4F8)
+    val isActive = useSelectionHighlight && selectedValue != defaultValue
+    val backgroundColor = if (isActive) Color(0xFFCCFBF1) else Color(0xFFF0F4F8)
+    val borderColor = if (isActive) DarkCyan.copy(alpha = 0.35f) else Color.Transparent
 
     Text(
         text = label,
@@ -620,7 +656,7 @@ fun FilterDropdownField(
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .border(1.dp, Color.Transparent, RoundedCornerShape(8.dp))
+            .border(1.dp, borderColor, RoundedCornerShape(8.dp))
             .background(backgroundColor, RoundedCornerShape(8.dp))
             .clickable { expanded = true }
             .padding(horizontal = 10.dp, vertical = 10.dp)

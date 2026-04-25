@@ -179,7 +179,11 @@ class HomeViewModel(
     }
 
     fun refreshHomeData() {
-        loadRides()
+        refreshNetworkState()
+    }
+
+    fun refreshNetworkState() {
+        handleNetworkState(networkHelper.isInternetAvailable())
     }
 
     fun clearFilters() {
@@ -281,39 +285,35 @@ class HomeViewModel(
         viewModelScope.launch {
             networkHelper.observeNetworkChanges().collect { hasInternet ->
                 Log.d("HomeViewModel", "[NETWORK] isOnline: $hasInternet")
-                if (!hasInternet) {
-                    allRides = emptyList()
-                    // Preservar isDriver usando SessionManager como fuente local
-                    // para que el botón Create Ride siga visible aunque no haya internet
-                    val driverKnownLocally = uiState.isDriver || sessionManager.getDriverId() > 0
-                    uiState = uiState.copy(
-                        isOffline = true,
-                        isLoading = false,
-                        rides = emptyList(),
-                        errorMessage = "",
-                        isDriver = driverKnownLocally
-                    )
-                    lastConnectionState = false
-                    return@collect
-                }
-
-                // Internet disponible: limpiar estado offline y recargar
-                uiState = uiState.copy(
-                    isOffline = false,
-                    errorMessage = ""
-                )
-
-                // Cargar en primer estado online y cada reconexión false -> true
-                val shouldReload = lastConnectionState != true
-                lastConnectionState = true
-                if (shouldReload) {
-                    loadRides()
-                }
+                handleNetworkState(hasInternet)
             }
         }
     }
 
-    fun logout(onNavigateToLogin: () -> Unit) {        sessionManager.clearToken()
+    private fun handleNetworkState(hasInternet: Boolean) {
+        if (!hasInternet) {
+            applyOfflineState()
+            lastConnectionState = false
+            return
+        }
+
+        if (uiState.isOffline || lastConnectionState != true) {
+            uiState = uiState.copy(
+                isOffline = false,
+                errorMessage = ""
+            )
+            lastConnectionState = true
+            loadRides()
+        } else {
+            uiState = uiState.copy(
+                isOffline = false,
+                errorMessage = ""
+            )
+        }
+    }
+
+    fun logout(onNavigateToLogin: () -> Unit) {
+        sessionManager.clearToken()
         sessionManager.clearUserId()
         sessionManager.clearDriverId()
         currentResolvedUserId = null
@@ -440,18 +440,21 @@ class HomeViewModel(
         }
     }
 
+    private fun applyOfflineState() {
+        allRides = emptyList()
+        val driverKnownLocally = uiState.isDriver || sessionManager.getDriverId() > 0
+        uiState = uiState.copy(
+            isOffline = true,
+            isLoading = false,
+            rides = emptyList(),
+            errorMessage = "",
+            isDriver = driverKnownLocally
+        )
+    }
+
     private fun loadRides() {
         if (!networkHelper.isInternetAvailable()) {
-            allRides = emptyList()
-            // Preservar isDriver con datos locales para no perder el botón Create Ride
-            val driverKnownLocally = uiState.isDriver || sessionManager.getDriverId() > 0
-            uiState = uiState.copy(
-                isOffline = true,
-                isLoading = false,
-                rides = emptyList(),
-                errorMessage = "",
-                isDriver = driverKnownLocally
-            )
+            applyOfflineState()
             return
         }
 

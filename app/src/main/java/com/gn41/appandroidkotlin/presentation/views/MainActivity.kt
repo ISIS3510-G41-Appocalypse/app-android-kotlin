@@ -90,7 +90,7 @@ class MainActivity : ComponentActivity() {
                     sessionManager = sessionManager,
                     tripRepository = tripRepository,
                     vehicleRepository = vehicleRepository,
-                    networkHelper = NetworkHelper(this)
+                    networkHelper = networkHelper
                 )
 
 
