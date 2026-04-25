@@ -34,6 +34,7 @@ import com.gn41.appandroidkotlin.data.services.location.LocationService
 import com.gn41.appandroidkotlin.data.repositories.LocationRepositoryImpl
 import com.mapbox.common.MapboxOptions
 import com.gn41.appandroidkotlin.BuildConfig
+import com.gn41.appandroidkotlin.core.connectivity.NetworkHelper
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -43,6 +44,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             AppAndroidKotlinTheme {
                 val sessionManager = SessionManager(this)
+                val networkHelper = NetworkHelper(this)
 
                 val authService = AuthService()
                 val authRepository = AuthRepositoryImpl(authService)
@@ -77,7 +79,7 @@ class MainActivity : ComponentActivity() {
                 val vehicleService = VehicleService(sessionManager, userIdService)
                 val zoneService = ZoneService(sessionManager)
 
-                val rideRepository = RideRepositoryImpl(rideService)
+                val rideRepository = RideRepositoryImpl(rideService, networkHelper)
                 val vehicleRepository = VehicleRepositoryImpl(vehicleService)
                 val zoneRepository = ZoneRepositoryImpl(zoneService)
 
