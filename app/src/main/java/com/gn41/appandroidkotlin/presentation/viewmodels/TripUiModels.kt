@@ -1,6 +1,7 @@
 package com.gn41.appandroidkotlin.presentation.viewmodels
 
 import com.gn41.appandroidkotlin.domain.UserSharedLocation
+import java.util.Locale
 
 data class TripReservationItemUiModel(
     val id: Int,
@@ -17,7 +18,10 @@ data class ActiveRiderTripUiModel(
     val destination: String,
     val status: String,
     val rideStatus: String,
-    val departureTime: String
+    val departureTime: String,
+    val canCancelReservation: Boolean,
+    val showCancelButton: Boolean,
+    val cancelDisabledReason: String?
 )
 
 data class ActiveDriverTripUiModel(
@@ -66,6 +70,43 @@ data class MapUserMarkerUiState(
     val isDriver: Boolean,
     val distanceMeters: Int? = null
 )
+
+fun normalizeState(state: String?): String {
+    val rawState = state?.trim()?.uppercase(Locale.getDefault()).orEmpty()
+    return when (rawState) {
+        "PENDIENTE", "PENDING" -> "PENDIENTE"
+        "ACEPTADA", "ACCEPTED" -> "ACEPTADA"
+        "EN_CURSO", "IN_PROGRESS" -> "EN_CURSO"
+        "OFERTADO", "OFFERED", "ACTIVE" -> "OFERTADO"
+        "FINALIZADO", "FINALIZADA", "FINISHED", "COMPLETED" -> "FINALIZADO"
+        "CANCELADO", "CANCELADA", "CANCELLED" -> "CANCELADO"
+        "RECHAZADA", "REJECTED" -> "RECHAZADA"
+        else -> rawState
+    }
+}
+
+fun stateToReadableLabel(state: String?): String {
+    val normalizedState = normalizeState(state)
+    return when (normalizedState) {
+        "OFERTADO" -> "Ofertado"
+        "PENDIENTE" -> "Pendiente"
+        "ACEPTADA" -> "Aceptada"
+        "EN_CURSO" -> "En curso"
+        "FINALIZADO" -> "Finalizado"
+        "CANCELADO" -> "Cancelado"
+        "RECHAZADA" -> "Rechazada"
+        else -> normalizedState
+            .lowercase(Locale.getDefault())
+            .split("_")
+            .filter { it.isNotBlank() }
+            .joinToString(" ") { word ->
+                word.replaceFirstChar { char ->
+                    if (char.isLowerCase()) char.titlecase(Locale.getDefault()) else char.toString()
+                }
+            }
+            .ifBlank { "Desconocido" }
+    }
+}
 
 
 fun buildInitials(fullName: String): String {
