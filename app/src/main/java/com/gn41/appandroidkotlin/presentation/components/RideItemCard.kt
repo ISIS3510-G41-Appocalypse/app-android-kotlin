@@ -37,6 +37,7 @@ import com.gn41.appandroidkotlin.ui.theme.BrightSnow
 import com.gn41.appandroidkotlin.ui.theme.CoolSteel
 import com.gn41.appandroidkotlin.ui.theme.DarkCyan
 import com.gn41.appandroidkotlin.ui.theme.PrussianBlue
+import java.util.Locale
 
 private val CardDivider = Color(0xFFE2E8F0)
 
@@ -92,7 +93,12 @@ fun RideItemCard(
         AlertDialog(
             onDismissRequest = { showDialog = false },
             title = { Text(text = "Confirmar reserva") },
-            text = { Text(text = "¿Deseas reservar este viaje?") },
+            text = {
+                Column {
+                    Text(text = "¿Deseas reservar este viaje?")
+                    RecommendationBox(rating = ride.recommendationRating)
+                }
+            },
             dismissButton = {
                 TextButton(onClick = { showDialog = false }) {
                     Text(text = "Cancelar")
@@ -108,6 +114,68 @@ fun RideItemCard(
                     Text(text = "Confirmar")
                 }
             }
+        )
+    }
+}
+
+@Composable
+private fun RecommendationBox(rating: Double?) {
+    if (rating == null) return
+
+    val safeRating = rating.coerceIn(0.0, 5.0)
+    val ratingText = String.format(Locale.getDefault(), "%.1f / 5", safeRating)
+
+    val advice = when {
+        safeRating >= 4.0 -> "Te recomendamos viajar con este conductor."
+        safeRating >= 3.0 -> "La recomendación es neutral."
+        else -> "Este viaje no es tan recomendado para ti."
+    }
+
+    val normalTextColor = MaterialTheme.colorScheme.onSurface
+    val ratingTextColor = when {
+        safeRating >= 4.0 -> Color(0xFF16A34A)
+        safeRating >= 3.0 -> Color(0xFFB45309)
+        else -> Color(0xFFEF4444)
+    }
+
+    Spacer(modifier = Modifier.height(12.dp))
+
+    Column(
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Text(
+            text = "¡No has viajado con este conductor!",
+            color = Color(0xFFB45309),
+            fontWeight = FontWeight.Bold,
+            style = MaterialTheme.typography.bodyMedium
+        )
+        Text(
+            text = buildAnnotatedString {
+                withStyle(
+                    SpanStyle(
+                        color = normalTextColor
+                    )
+                ) {
+                    append(" Estimamos que tu experiencia tendría una calificación de ")
+                }
+                withStyle(
+                    SpanStyle(
+                        color = ratingTextColor,
+                        fontWeight = FontWeight.Bold
+                    )
+                ) {
+                    append(ratingText)
+                }
+                withStyle(
+                    SpanStyle(
+                        color = normalTextColor
+                    )
+                ) {
+                    append(". ")
+                    append(advice)
+                }
+            },
+            style = MaterialTheme.typography.bodyMedium
         )
     }
 }

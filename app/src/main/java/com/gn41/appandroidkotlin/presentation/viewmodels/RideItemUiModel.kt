@@ -6,6 +6,7 @@ import kotlin.math.roundToInt
 
 data class RideItemUiModel(
     val id: Int,
+    val driverId: Int,
     val source: String,
     val destination: String,
     val date: String,
@@ -18,7 +19,8 @@ data class RideItemUiModel(
     val totalSlots: Int,
     val availableSlots: Int,
     val zoneName: String,
-    val cancellationRiskPercent: Int?
+    val cancellationRiskPercent: Int?,
+    val recommendationRating: Double? = null
 )
 
 fun mapToRideUiModel(dto: RideDto): RideItemUiModel {
@@ -63,6 +65,7 @@ fun mapToRideUiModel(dto: RideDto): RideItemUiModel {
 
     return RideItemUiModel(
         id = dto.id,
+        driverId = dto.driver_id,
         source = dto.source,
         destination = dto.destination,
         date = dto.date,
@@ -75,7 +78,8 @@ fun mapToRideUiModel(dto: RideDto): RideItemUiModel {
         totalSlots = totalSlots,
         availableSlots = availableSlots,
         zoneName = zoneName,
-        cancellationRiskPercent = cancellationRiskPercent
+        cancellationRiskPercent = cancellationRiskPercent,
+        recommendationRating = null
     )
 }
 

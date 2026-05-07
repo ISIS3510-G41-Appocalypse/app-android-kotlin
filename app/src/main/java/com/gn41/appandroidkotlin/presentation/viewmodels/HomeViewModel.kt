@@ -56,6 +56,7 @@ class HomeViewModel(
 ) : ViewModel() {
 
     private var allRides: List<RideDto> = emptyList()
+    private var recommendationByRideId: Map<Int, Double> = emptyMap()
     private var lastConnectionState: Boolean? = null
     
     // IDs resueltos confiably desde el token (no desde SessionManager directo)
@@ -266,7 +267,11 @@ class HomeViewModel(
         uiState = uiState.copy(
             rides = filteredRides
                 .sortedByDescending { it.drivers?.rating ?: 0.0 }
-                .map { mapToRideUiModel(it) },
+                .map { ride ->
+                    mapToRideUiModel(ride).copy(
+                        recommendationRating = recommendationByRideId[ride.id]
+                    )
+                },
             hasActiveFilters = activeFilterCount > 0,
             activeFilterCount = activeFilterCount
         )
@@ -507,6 +512,7 @@ class HomeViewModel(
 
     private fun applyOfflineState() {
         allRides = emptyList()
+        recommendationByRideId = emptyMap()
         val driverKnownLocally = uiState.isDriver || sessionManager.getDriverId() > 0
         uiState = uiState.copy(
             isOffline = true,
@@ -553,6 +559,10 @@ class HomeViewModel(
                     Log.d("HomeViewModel", "[FILTRO] OFERTADO rides: ${offeredRides.size}")
                     Log.d("HomeViewModel", "[FILTRO] Resolved userId: $currentResolvedUserId, driverId: $currentResolvedDriverId")
                     allRides = offeredRides
+                    recommendationByRideId = loadRecommendationsForRides(
+                        rides = offeredRides,
+                        token = token
+                    )
                     uiState = uiState.copy(
                         isLoading = false,
                         errorMessage = "",
@@ -561,6 +571,7 @@ class HomeViewModel(
                     applyFilters()
                     checkBlockingStates()
                 } else {
+                    recommendationByRideId = emptyMap()
                     Log.e("HomeViewModel", "Rides result is null")
                     uiState = uiState.copy(
                         isLoading = false,
@@ -568,6 +579,7 @@ class HomeViewModel(
                     )
                 }
             } catch (e: Exception) {
+                recommendationByRideId = emptyMap()
                 Log.e("HomeViewModel", "Exception loading rides", e)
                 uiState = uiState.copy(
                     isLoading = false,
@@ -575,6 +587,35 @@ class HomeViewModel(
                 )
             }
         }
+    }
+
+    private suspend fun loadRecommendationsForRides(
+        rides: List<RideDto>,
+        token: String
+    ): Map<Int, Double> {
+        val repository = reservationsRepository ?: return emptyMap()
+        val currentUserId = currentResolvedUserId ?: return emptyMap()
+        val rider = repository.getRiderByUserId(currentUserId, token) ?: return emptyMap()
+
+        val recommendationMap = mutableMapOf<Int, Double>()
+
+        rides.forEach { ride ->
+            val rating = try {
+                ridesRepository.getRiderDriverRecommendation(
+                    riderId = rider.id,
+                    driverId = ride.driver_id,
+                    token = token
+                )
+            } catch (_: Exception) {
+                null
+            }
+
+            if (rating != null) {
+                recommendationMap[ride.id] = rating.coerceIn(0.0, 5.0)
+            }
+        }
+
+        return recommendationMap
     }
 
     // verifica si el usuario ya tiene reserva activa o viaje activo como conductor
