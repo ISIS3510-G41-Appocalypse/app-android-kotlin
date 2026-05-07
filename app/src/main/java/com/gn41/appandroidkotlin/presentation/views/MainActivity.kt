@@ -75,7 +75,8 @@ class MainActivity : ComponentActivity() {
                 val tripViewModelFactory = TripViewModelFactory(
                     tripRepository = tripRepository,
                     sessionManager = sessionManager,
-                    locationRepository = locationRepository
+                    locationRepository = locationRepository,
+                    networkHelper = networkHelper
                 )
 
                 val userIdService = UserIdService(sessionManager)

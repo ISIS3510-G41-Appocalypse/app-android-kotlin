@@ -172,7 +172,18 @@ fun TripScreen(
                             modifier = Modifier.fillMaxSize(),
                             contentAlignment = Alignment.Center
                         ) {
-                            CircularProgressIndicator(color = Color.White)
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.Center
+                            ) {
+                                CircularProgressIndicator(color = Color.White)
+                                Spacer(modifier = Modifier.height(10.dp))
+                                Text(
+                                    text = "Cargando mis viajes...",
+                                    color = Color.White,
+                                    style = MaterialTheme.typography.bodyMedium
+                                )
+                            }
                         }
                     }
 
