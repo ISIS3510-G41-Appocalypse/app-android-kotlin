@@ -39,4 +39,31 @@ class RidesService {
             null
         }
     }
+
+    suspend fun getRiderDriverRecommendation(
+        riderId: Int,
+        driverId: Int,
+        token: String
+    ): Double? = withContext(Dispatchers.IO) {
+        return@withContext try {
+            val response = ridesApi.getRiderDriverRecommendation(
+                token = "Bearer $token",
+                apiKey = BuildConfig.SUPABASE_KEY,
+                riderId = "eq.$riderId",
+                driverId = "eq.$driverId",
+                limit = 1
+            )
+
+            if (!response.isSuccessful) {
+                null
+            } else {
+                response.body()
+                    ?.firstOrNull()
+                    ?.rating
+                    ?.coerceIn(0.0, 5.0)
+            }
+        } catch (_: Exception) {
+            null
+        }
+    }
 }

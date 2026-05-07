@@ -8,5 +8,13 @@ class RidesRepositoryImpl(private val ridesService: RidesService) : RidesReposit
     override suspend fun getRides(token: String): List<RideDto>? {
         return ridesService.getRides(token)
     }
+
+    override suspend fun getRiderDriverRecommendation(
+        riderId: Int,
+        driverId: Int,
+        token: String
+    ): Double? {
+        return ridesService.getRiderDriverRecommendation(riderId, driverId, token)
+    }
 }
 

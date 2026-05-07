@@ -37,6 +37,7 @@ import com.gn41.appandroidkotlin.ui.theme.BrightSnow
 import com.gn41.appandroidkotlin.ui.theme.CoolSteel
 import com.gn41.appandroidkotlin.ui.theme.DarkCyan
 import com.gn41.appandroidkotlin.ui.theme.PrussianBlue
+import java.util.Locale
 
 private val CardDivider = Color(0xFFE2E8F0)
 
@@ -92,7 +93,12 @@ fun RideItemCard(
         AlertDialog(
             onDismissRequest = { showDialog = false },
             title = { Text(text = "Confirmar reserva") },
-            text = { Text(text = "¿Deseas reservar este viaje?") },
+            text = {
+                Column {
+                    Text(text = "¿Deseas reservar este viaje?")
+                    RecommendationBox(rating = ride.recommendationRating)
+                }
+            },
             dismissButton = {
                 TextButton(onClick = { showDialog = false }) {
                     Text(text = "Cancelar")
@@ -108,6 +114,61 @@ fun RideItemCard(
                     Text(text = "Confirmar")
                 }
             }
+        )
+    }
+}
+
+@Composable
+private fun RecommendationBox(rating: Double?) {
+    if (rating == null) return
+
+    val safeRating = rating.coerceIn(0.0, 5.0)
+    val ratingText = String.format(Locale.getDefault(), "%.1f", safeRating)
+
+    val backgroundColor: Color
+    val textColor: Color
+    val advice: String
+
+    when {
+        safeRating >= 4.0 -> {
+            backgroundColor = Color(0xFFDCFCE7)
+            textColor = Color(0xFF16A34A)
+            advice = "Te recomendamos viajar con este conductor."
+        }
+        safeRating >= 3.0 -> {
+            backgroundColor = Color(0xFFFEF3C7)
+            textColor = Color(0xFFB45309)
+            advice = "La recomendación es neutral."
+        }
+        else -> {
+            backgroundColor = Color(0xFFFEE2E2)
+            textColor = Color(0xFFDC2626)
+            advice = "Este viaje no es tan recomendado para ti."
+        }
+    }
+
+    Spacer(modifier = Modifier.height(10.dp))
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(backgroundColor, RoundedCornerShape(10.dp))
+            .padding(12.dp)
+    ) {
+        Text(
+            text = "No has viajado con este conductor.",
+            color = textColor,
+            fontWeight = FontWeight.SemiBold
+        )
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(
+            text = "Estimamos que tu experiencia tendría una calificación de $ratingText/5.",
+            color = textColor
+        )
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(
+            text = advice,
+            color = textColor
         )
     }
 }
