@@ -123,52 +123,59 @@ private fun RecommendationBox(rating: Double?) {
     if (rating == null) return
 
     val safeRating = rating.coerceIn(0.0, 5.0)
-    val ratingText = String.format(Locale.getDefault(), "%.1f", safeRating)
+    val ratingText = String.format(Locale.getDefault(), "%.1f / 5", safeRating)
 
-    val backgroundColor: Color
-    val textColor: Color
-    val advice: String
-
-    when {
-        safeRating >= 4.0 -> {
-            backgroundColor = Color(0xFFDCFCE7)
-            textColor = Color(0xFF16A34A)
-            advice = "Te recomendamos viajar con este conductor."
-        }
-        safeRating >= 3.0 -> {
-            backgroundColor = Color(0xFFFEF3C7)
-            textColor = Color(0xFFB45309)
-            advice = "La recomendación es neutral."
-        }
-        else -> {
-            backgroundColor = Color(0xFFFEE2E2)
-            textColor = Color(0xFFDC2626)
-            advice = "Este viaje no es tan recomendado para ti."
-        }
+    val advice = when {
+        safeRating >= 4.0 -> "Te recomendamos viajar con este conductor."
+        safeRating >= 3.0 -> "La recomendación es neutral."
+        else -> "Este viaje no es tan recomendado para ti."
     }
 
-    Spacer(modifier = Modifier.height(10.dp))
+    val normalTextColor = MaterialTheme.colorScheme.onSurface
+    val ratingTextColor = when {
+        safeRating >= 4.0 -> Color(0xFF16A34A)
+        safeRating >= 3.0 -> Color(0xFFB45309)
+        else -> Color(0xFFEF4444)
+    }
+
+    Spacer(modifier = Modifier.height(12.dp))
 
     Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(backgroundColor, RoundedCornerShape(10.dp))
-            .padding(12.dp)
+        modifier = Modifier.fillMaxWidth()
     ) {
         Text(
-            text = "No has viajado con este conductor.",
-            color = textColor,
-            fontWeight = FontWeight.SemiBold
+            text = "¡No has viajado con este conductor!",
+            color = Color(0xFFB45309),
+            fontWeight = FontWeight.Bold,
+            style = MaterialTheme.typography.bodyMedium
         )
-        Spacer(modifier = Modifier.height(4.dp))
         Text(
-            text = "Estimamos que tu experiencia tendría una calificación de $ratingText/5.",
-            color = textColor
-        )
-        Spacer(modifier = Modifier.height(4.dp))
-        Text(
-            text = advice,
-            color = textColor
+            text = buildAnnotatedString {
+                withStyle(
+                    SpanStyle(
+                        color = normalTextColor
+                    )
+                ) {
+                    append(" Estimamos que tu experiencia tendría una calificación de ")
+                }
+                withStyle(
+                    SpanStyle(
+                        color = ratingTextColor,
+                        fontWeight = FontWeight.Bold
+                    )
+                ) {
+                    append(ratingText)
+                }
+                withStyle(
+                    SpanStyle(
+                        color = normalTextColor
+                    )
+                ) {
+                    append(". ")
+                    append(advice)
+                }
+            },
+            style = MaterialTheme.typography.bodyMedium
         )
     }
 }
