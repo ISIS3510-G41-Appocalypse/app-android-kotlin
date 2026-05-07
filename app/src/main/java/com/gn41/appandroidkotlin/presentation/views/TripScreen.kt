@@ -32,11 +32,13 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.WifiOff
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -70,6 +72,8 @@ fun TripScreen(
         val state = viewModel.uiState
         val context = LocalContext.current
         var selectedSection by remember { mutableStateOf("Conductor") }
+        var reservationToAcceptId by remember { mutableStateOf<Int?>(null) }
+        var reservationToRejectId by remember { mutableStateOf<Int?>(null) }
         val configuration = LocalConfiguration.current
         val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
 
@@ -192,8 +196,8 @@ fun TripScreen(
                             onSectionSelected = { selectedSection = it },
                             driverTrip = state.activeDriverTrip,
                             riderTrips = state.activeRiderTrips,
-                            onAcceptReservation = viewModel::onAcceptReservationClicked,
-                            onRejectReservation = viewModel::onRejectReservationClicked,
+                            onAcceptReservation = { reservationToAcceptId = it },
+                            onRejectReservation = { reservationToRejectId = it },
                             onCancelTrip = viewModel::onCancelTripClicked,
                             onStartTrip = viewModel::onStartTripClicked,
                             onOpenRoute = viewModel::onOpenRouteClicked,
@@ -209,8 +213,8 @@ fun TripScreen(
                             onSectionSelected = { selectedSection = it },
                             driverTrip = state.activeDriverTrip,
                             riderTrips = state.activeRiderTrips,
-                            onAcceptReservation = viewModel::onAcceptReservationClicked,
-                            onRejectReservation = viewModel::onRejectReservationClicked,
+                            onAcceptReservation = { reservationToAcceptId = it },
+                            onRejectReservation = { reservationToRejectId = it },
                             onCancelTrip = viewModel::onCancelTripClicked,
                             onStartTrip = viewModel::onStartTripClicked,
                             onOpenRoute = viewModel::onOpenRouteClicked,
@@ -227,6 +231,54 @@ fun TripScreen(
                 selectedTab = "Viajes",
                 onTabClick = {
                     if (it == "Inicio") onHomeClick()
+                }
+            )
+        }
+
+        if (reservationToAcceptId != null) {
+            AlertDialog(
+                onDismissRequest = { reservationToAcceptId = null },
+                title = { Text("¿Aceptar esta reserva?") },
+                text = { Text("El pasajero sera agregado a tu viaje.") },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            val reservationId = reservationToAcceptId ?: return@TextButton
+                            viewModel.onAcceptReservationClicked(reservationId)
+                            reservationToAcceptId = null
+                        }
+                    ) {
+                        Text("Aceptar")
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { reservationToAcceptId = null }) {
+                        Text("Cancelar")
+                    }
+                }
+            )
+        }
+
+        if (reservationToRejectId != null) {
+            AlertDialog(
+                onDismissRequest = { reservationToRejectId = null },
+                title = { Text("¿Rechazar esta reserva?") },
+                text = { Text("El pasajero podra buscar otro viaje.") },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            val reservationId = reservationToRejectId ?: return@TextButton
+                            viewModel.onRejectReservationClicked(reservationId)
+                            reservationToRejectId = null
+                        }
+                    ) {
+                        Text("Rechazar")
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { reservationToRejectId = null }) {
+                        Text("Cancelar")
+                    }
                 }
             )
         }
@@ -675,6 +727,16 @@ private fun DriverSection(
 
     val totalUsersInRide = trip.reservationsCount + 1
 
+    val canManageReservations = normalizeState(trip.status) == "OFERTADO"
+    val visibleReservations = if (normalizeState(trip.status) == "EN_CURSO") {
+        trip.reservations.filter {
+            val reservationState = normalizeState(it.status)
+            reservationState == "ACEPTADA" || reservationState == "EN_CURSO"
+        }
+    } else {
+        trip.reservations
+    }
+
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         verticalArrangement = Arrangement.spacedBy(10.dp)
@@ -710,7 +772,7 @@ private fun DriverSection(
             }
         }
 
-        if (trip.reservations.isNotEmpty()) {
+        if (visibleReservations.isNotEmpty()) {
             item {
                 Text(
                     text = "Reservas actuales",
@@ -719,10 +781,11 @@ private fun DriverSection(
                 )
             }
 
-            items(trip.reservations) { reservation ->
+            items(visibleReservations) { reservation ->
                 DriverReservationRow(
                     item = reservation,
                     canAccept = trip.availableSeats > 0,
+                    canManageReservation = canManageReservations,
                     onAccept = { onAcceptReservation(reservation.id) },
                     onReject = { onRejectReservation(reservation.id) }
                 )
@@ -750,6 +813,16 @@ private fun DriverSummarySection(
         return
     }
 
+    val canManageReservations = normalizeState(trip.status) == "OFERTADO"
+    val visibleReservations = if (normalizeState(trip.status) == "EN_CURSO") {
+        trip.reservations.filter {
+            val reservationState = normalizeState(it.status)
+            reservationState == "ACEPTADA" || reservationState == "EN_CURSO"
+        }
+    } else {
+        trip.reservations
+    }
+
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         verticalArrangement = Arrangement.spacedBy(10.dp)
@@ -764,7 +837,7 @@ private fun DriverSummarySection(
             )
         }
 
-        if (trip.reservations.isNotEmpty()) {
+        if (visibleReservations.isNotEmpty()) {
             item {
                 Text(
                     text = "Reservas actuales",
@@ -773,10 +846,11 @@ private fun DriverSummarySection(
                 )
             }
 
-            items(trip.reservations) { reservation ->
+            items(visibleReservations) { reservation ->
                 DriverReservationRow(
                     item = reservation,
                     canAccept = trip.availableSeats > 0,
+                    canManageReservation = canManageReservations,
                     onAccept = { onAcceptReservation(reservation.id) },
                     onReject = { onRejectReservation(reservation.id) }
                 )
@@ -817,7 +891,7 @@ private fun DriverMainCard(
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        if (trip.status == "OFERTADO") {
+        if (normalizeState(trip.status) == "OFERTADO") {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 SmallActionButton(
                     text = "Cancelar viaje",
@@ -832,7 +906,7 @@ private fun DriverMainCard(
             }
         }
 
-        if (trip.status == "EN_CURSO") {
+        if (normalizeState(trip.status) == "EN_CURSO") {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 SmallActionButton(
                     text = "Abrir ruta",
@@ -853,6 +927,7 @@ private fun DriverMainCard(
 private fun DriverReservationRow(
     item: TripReservationItemUiModel,
     canAccept: Boolean,
+    canManageReservation: Boolean,
     onAccept: () -> Unit,
     onReject: () -> Unit
 ) {
@@ -874,7 +949,7 @@ private fun DriverReservationRow(
         Text(text = "Probabilidad de cancelación: ${item.cancellationOdds?.times(100)}%", color = color)
         Text(text = "Metodo de pago: ${item.paymentMethod}", style = MaterialTheme.typography.bodyMedium)
 
-        if (item.status == "PENDIENTE") {
+        if (normalizeState(item.status) == "PENDIENTE" && canManageReservation) {
             Spacer(modifier = Modifier.height(8.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 SmallActionButton(
@@ -897,6 +972,13 @@ private fun DriverReservationRow(
                     color = Color(0xFFB45309)
                 )
             }
+        } else if (normalizeState(item.status) == "PENDIENTE" && !canManageReservation) {
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = "No puedes gestionar reservas con el viaje en curso.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = Color(0xFF64748B)
+            )
         }
     }
 }

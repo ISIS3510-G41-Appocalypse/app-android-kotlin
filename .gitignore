@@ -14,3 +14,11 @@
 .externalNativeBuild
 .cxx
 local.properties
+
+# Android release generated files
+app/release/
+app/build/
+
+# Signing keys
+*.jks
+*.keystore

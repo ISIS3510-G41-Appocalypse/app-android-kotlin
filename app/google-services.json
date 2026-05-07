@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "823977833543",
+    "project_id": "alejandro-e1ffa",
+    "storage_bucket": "alejandro-e1ffa.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:823977833543:android:7f2d3fd30a78157b786d62",
+        "android_client_info": {
+          "package_name": "com.gn41.appandroidkotlin"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDlDwwM2dNAOmAKyBeINRkBdNREa5OAkF4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
