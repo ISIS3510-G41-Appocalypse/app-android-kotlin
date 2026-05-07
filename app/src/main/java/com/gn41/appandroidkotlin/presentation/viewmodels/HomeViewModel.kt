@@ -208,6 +208,7 @@ class HomeViewModel(
 
         val filteredRides = allRides.filter { ride ->
             val isOfferedRide = isRideOffered(ride.state)
+            val hasAvailableSeats = isRideWithAvailableSeats(ride)
 
             val isUpcomingRide = isRideUpcoming(
                 ride = ride,
@@ -252,7 +253,7 @@ class HomeViewModel(
                 )
             }
 
-            isOfferedRide && isUpcomingRide && isNotOwnRide && matchesZone && matchesTripType && matchesDay && matchesDepartureTime
+            isOfferedRide && hasAvailableSeats && isUpcomingRide && isNotOwnRide && matchesZone && matchesTripType && matchesDay && matchesDepartureTime
         }
 
         val activeFilterCount = countActiveFilters(
@@ -355,6 +356,15 @@ class HomeViewModel(
 
     private fun isRideOffered(state: String?): Boolean {
         return state?.trim()?.equals("OFERTADO", ignoreCase = true) == true
+    }
+
+    private fun isRideWithAvailableSeats(ride: RideDto): Boolean {
+        val totalSeats = ride.vehicles?.number_slots ?: 0
+        val activeBookedSeats = ride.reservations.orEmpty().count { reservation ->
+            val reservationState = normalizeState(reservation.state)
+            reservationState == "ACEPTADA" || reservationState == "EN_CURSO"
+        }
+        return (totalSeats - activeBookedSeats) > 0
     }
 
     private fun normalizeState(state: String?): String {
