@@ -74,6 +74,9 @@ fun TripScreen(
         var selectedSection by remember { mutableStateOf("Conductor") }
         var reservationToAcceptId by remember { mutableStateOf<Int?>(null) }
         var reservationToRejectId by remember { mutableStateOf<Int?>(null) }
+        var reservationToCancelId by remember { mutableStateOf<Int?>(null) }
+        var showCancelRideDialog by remember { mutableStateOf(false) }
+        var showFinishRideDialog by remember { mutableStateOf(false) }
         val configuration = LocalConfiguration.current
         val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
 
@@ -209,11 +212,11 @@ fun TripScreen(
                             riderTrips = state.activeRiderTrips,
                             onAcceptReservation = { reservationToAcceptId = it },
                             onRejectReservation = { reservationToRejectId = it },
-                            onCancelTrip = viewModel::onCancelTripClicked,
+                            onCancelTrip = { showCancelRideDialog = true },
                             onStartTrip = viewModel::onStartTripClicked,
                             onOpenRoute = viewModel::onOpenRouteClicked,
-                            onFinishTrip = viewModel::onFinishTripClicked,
-                            onCancelReservation = viewModel::onCancelReservationClicked
+                            onFinishTrip = { showFinishRideDialog = true },
+                            onCancelReservation = { reservationToCancelId = it }
                         )
                     }
 
@@ -226,11 +229,11 @@ fun TripScreen(
                             riderTrips = state.activeRiderTrips,
                             onAcceptReservation = { reservationToAcceptId = it },
                             onRejectReservation = { reservationToRejectId = it },
-                            onCancelTrip = viewModel::onCancelTripClicked,
+                            onCancelTrip = { showCancelRideDialog = true },
                             onStartTrip = viewModel::onStartTripClicked,
                             onOpenRoute = viewModel::onOpenRouteClicked,
-                            onFinishTrip = viewModel::onFinishTripClicked,
-                            onCancelReservation = viewModel::onCancelReservationClicked
+                            onFinishTrip = { showFinishRideDialog = true },
+                            onCancelReservation = { reservationToCancelId = it }
                         )
                     }
                 }
@@ -289,6 +292,76 @@ fun TripScreen(
                 dismissButton = {
                     TextButton(onClick = { reservationToRejectId = null }) {
                         Text("Cancelar")
+                    }
+                }
+            )
+        }
+
+        if (showCancelRideDialog) {
+            AlertDialog(
+                onDismissRequest = { showCancelRideDialog = false },
+                title = { Text("Cancelar viaje") },
+                text = { Text("¿Deseas cancelar este viaje? Las reservas activas asociadas serán rechazadas.") },
+                dismissButton = {
+                    TextButton(onClick = { showCancelRideDialog = false }) {
+                        Text("Volver")
+                    }
+                },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            showCancelRideDialog = false
+                            viewModel.onCancelTripClicked()
+                        }
+                    ) {
+                        Text("Cancelar viaje")
+                    }
+                }
+            )
+        }
+
+        if (showFinishRideDialog) {
+            AlertDialog(
+                onDismissRequest = { showFinishRideDialog = false },
+                title = { Text("Finalizar viaje") },
+                text = { Text("¿Deseas finalizar este viaje?") },
+                dismissButton = {
+                    TextButton(onClick = { showFinishRideDialog = false }) {
+                        Text("Volver")
+                    }
+                },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            showFinishRideDialog = false
+                            viewModel.onFinishTripClicked()
+                        }
+                    ) {
+                        Text("Finalizar")
+                    }
+                }
+            )
+        }
+
+        if (reservationToCancelId != null) {
+            AlertDialog(
+                onDismissRequest = { reservationToCancelId = null },
+                title = { Text("Cancelar reserva") },
+                text = { Text("¿Deseas cancelar tu reserva para este viaje?") },
+                dismissButton = {
+                    TextButton(onClick = { reservationToCancelId = null }) {
+                        Text("Volver")
+                    }
+                },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            val reservationId = reservationToCancelId ?: return@TextButton
+                            reservationToCancelId = null
+                            viewModel.onCancelReservationClicked(reservationId)
+                        }
+                    ) {
+                        Text("Cancelar reserva")
                     }
                 }
             )

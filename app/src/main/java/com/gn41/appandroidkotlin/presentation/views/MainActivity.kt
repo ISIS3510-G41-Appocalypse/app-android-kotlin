@@ -93,6 +93,7 @@ class MainActivity : ComponentActivity() {
                     reservationsRepository = reservationsRepository,
                     sessionManager = sessionManager,
                     tripRepository = tripRepository,
+                    zoneRepository = zoneRepository,
                     vehicleRepository = vehicleRepository,
                     networkHelper = networkHelper
                 )
