@@ -221,6 +221,7 @@ fun HomeScreen(
                         item {
                             FilterCard(
                                 selectedZone = state.selectedZone,
+                                preferredZoneName = state.preferredZoneName,
                                 zoneOptions = state.zoneOptions,
                                 selectedDate = state.selectedDate,
                                 selectedTripType = state.selectedTripType,
@@ -293,6 +294,7 @@ fun HomeScreen(
                     item {
                         FilterCard(
                             selectedZone = state.selectedZone,
+                            preferredZoneName = state.preferredZoneName,
                             zoneOptions = state.zoneOptions,
                             selectedDate = state.selectedDate,
                             selectedTripType = state.selectedTripType,
@@ -567,6 +569,7 @@ fun OfertaViajestitle() {
 @OptIn(ExperimentalMaterial3Api::class)
 fun FilterCard(
     selectedZone: String,
+    preferredZoneName: String,
     zoneOptions: List<String>,
     selectedDate: String,
     selectedTripType: String,
@@ -590,7 +593,13 @@ fun FilterCard(
             .background(BrightSnow, shape = RoundedCornerShape(16.dp))
             .padding(16.dp)
     ) {
-        FilterDropdownField(label = "Zona", selectedValue = selectedZone, options = zoneOptions, onValueSelected = onZoneChange)
+        FilterDropdownField(
+            label = "Zona",
+            selectedValue = selectedZone,
+            options = zoneOptions,
+            onValueSelected = onZoneChange,
+            defaultValue = preferredZoneName
+        )
         Spacer(modifier = Modifier.height(8.dp))
         Row(modifier = Modifier.fillMaxWidth()) {
             Column(modifier = Modifier.weight(1f)) {

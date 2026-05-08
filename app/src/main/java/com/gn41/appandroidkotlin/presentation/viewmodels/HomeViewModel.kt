@@ -9,11 +9,13 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.gn41.appandroidkotlin.core.connectivity.NetworkHelper
 import com.gn41.appandroidkotlin.data.dto.rides.RideDto
+import com.gn41.appandroidkotlin.data.dto.zone.ZoneDto
 import com.gn41.appandroidkotlin.data.local.SessionManager
 import com.gn41.appandroidkotlin.data.repositories.ReservationsRepository
 import com.gn41.appandroidkotlin.data.repositories.RidesRepository
 import com.gn41.appandroidkotlin.data.repositories.TripRepository
 import com.gn41.appandroidkotlin.data.repositories.VehicleRepository
+import com.gn41.appandroidkotlin.data.repositories.ZoneRepository
 import com.gn41.appandroidkotlin.data.services.performance.Supervisor
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
@@ -27,6 +29,7 @@ data class HomeUiState(
     val errorMessage: String = "",
     val reservationMessage: String = "",
     val selectedZone: String = "Todos",
+    val preferredZoneName: String = "Todos",
     val zoneOptions: List<String> = listOf("Todos"),
     val selectedTripType: String = "Todos",
     val selectedDate: String = todayDateString(),
@@ -49,6 +52,7 @@ class HomeViewModel(
     private val sessionManager: SessionManager,
     private val reservationsRepository: ReservationsRepository? = null,
     private val tripRepository: TripRepository? = null,
+    private val zoneRepository: ZoneRepository,
     private val vehicleRepository: VehicleRepository,
     private val networkHelper: NetworkHelper
 ) : ViewModel() {
@@ -56,10 +60,16 @@ class HomeViewModel(
     private var allRides: List<RideDto> = emptyList()
     private var recommendationByRideId: Map<Int, Double> = emptyMap()
     private var lastConnectionState: Boolean? = null
-    
-    // IDs resueltos confiably desde el token (no desde SessionManager directo)
+
+    private var defaultZoneApplied = false
+    private var preferredZoneName: String = "Todos"
+    private var preferredZoneId: Int? = null
+
+    // IDs resueltos confiablemente desde el token (no desde SessionManager directo)
     private var currentResolvedUserId: Int? = null
+    private var currentResolvedAuthId: String? = null
     private var currentResolvedDriverId: Int? = null
+    private var currentResolvedZoneId: Int? = null
 
     var uiState by mutableStateOf(HomeUiState())
         private set
@@ -193,7 +203,8 @@ class HomeViewModel(
 
     fun clearFilters() {
         uiState = uiState.copy(
-            selectedZone = "Todos",
+            selectedZone = preferredZoneName,
+            preferredZoneName = preferredZoneName,
             selectedDate = todayDateString(),
             selectedTripType = "Todos",
             selectedDepartureTime = "Todas"
@@ -230,7 +241,7 @@ class HomeViewModel(
 
             val matchesZone = when (uiState.selectedZone) {
                 "Todos" -> true
-                else -> ride.zones?.name == uiState.selectedZone
+                else -> sameZone(ride.zones?.name.orEmpty(), uiState.selectedZone)
             }
 
             val matchesTripType = when (uiState.selectedTripType) {
@@ -244,9 +255,9 @@ class HomeViewModel(
 
             val matchesDepartureTime = when (uiState.selectedDepartureTime) {
                 "Todas" -> true
-                else -> matchesHourSlot(
+                else -> matchesDepartureTimeRange(
                     rideTime = ride.departure_time,
-                    selectedSlot = uiState.selectedDepartureTime
+                    selectedTime = uiState.selectedDepartureTime
                 )
             }
 
@@ -319,7 +330,17 @@ class HomeViewModel(
         sessionManager.clearUserId()
         sessionManager.clearDriverId()
         currentResolvedUserId = null
+        currentResolvedAuthId = null
         currentResolvedDriverId = null
+        currentResolvedZoneId = null
+        preferredZoneId = null
+        preferredZoneName = "Todos"
+        defaultZoneApplied = false
+        uiState = uiState.copy(
+            selectedZone = "Todos",
+            preferredZoneName = "Todos",
+            zoneOptions = listOf("Todos")
+        )
         onNavigateToLogin()
     }
 
@@ -341,16 +362,36 @@ class HomeViewModel(
         departureTime: String
     ): Int {
         var count = 0
-        if (zone != "Todos") count++
+        if (!sameZone(zone, preferredZoneName)) count++
         if (date != todayDateString()) count++
         if (tripType != "Todos") count++
         if (departureTime != "Todas") count++
         return count
     }
 
-    private fun matchesHourSlot(rideTime: String, selectedSlot: String): Boolean {
-        val normalizedRideTime = normalizeRideTime(rideTime) ?: return false
-        return normalizedRideTime == selectedSlot
+    private fun sameZone(a: String, b: String): Boolean {
+        return a.trim().equals(b.trim(), ignoreCase = true)
+    }
+
+    private fun matchesDepartureTimeRange(rideTime: String?, selectedTime: String): Boolean {
+        if (selectedTime == "Todas") return true
+
+        val rideMinutes = parseTimeToMinutes(rideTime) ?: return false
+        val selectedMinutes = parseTimeToMinutes(selectedTime) ?: return false
+        val endMinutes = selectedMinutes + 60
+
+        return rideMinutes in selectedMinutes..endMinutes
+    }
+
+    private fun parseTimeToMinutes(value: String?): Int? {
+        val normalized = normalizeRideTime(value ?: return null) ?: return null
+        val parts = normalized.split(":")
+        if (parts.size < 2) return null
+
+        val hour = parts[0].toIntOrNull() ?: return null
+        val minute = parts[1].toIntOrNull() ?: return null
+
+        return (hour * 60) + minute
     }
 
     private fun isRideOffered(state: String?): Boolean {
@@ -476,11 +517,24 @@ class HomeViewModel(
     private suspend fun resolveCurrentUserFromToken(token: String) {
         try {
             val authId = extractAuthIdFromToken(token) ?: return
+            if (currentResolvedAuthId != null && currentResolvedAuthId != authId) {
+                // Evita arrastrar zona preferida del usuario anterior.
+                defaultZoneApplied = false
+                preferredZoneId = null
+                preferredZoneName = "Todos"
+                currentResolvedUserId = null
+                currentResolvedDriverId = null
+                currentResolvedZoneId = null
+            }
+            currentResolvedAuthId = authId
+
             val resRepo = reservationsRepository ?: return
 
             val user = resRepo.getUserByAuthId(authId, token)
             if (user != null) {
                 currentResolvedUserId = user.id
+                currentResolvedZoneId = user.zone_id
+                preferredZoneId = user.zone_id
                 Log.d("HomeViewModel", "[RESOLVE] currentUserId set to: ${user.id}")
 
                 // Resolver driver si existe
@@ -496,12 +550,49 @@ class HomeViewModel(
                 Log.w("HomeViewModel", "[RESOLVE] Could not resolve user from token")
                 currentResolvedUserId = null
                 currentResolvedDriverId = null
+                currentResolvedZoneId = null
+                preferredZoneId = null
+                preferredZoneName = "Todos"
+                defaultZoneApplied = false
             }
         } catch (e: Exception) {
             Log.e("HomeViewModel", "[RESOLVE] Exception resolving current user", e)
             currentResolvedUserId = null
             currentResolvedDriverId = null
+            currentResolvedZoneId = null
+            preferredZoneId = null
+            preferredZoneName = "Todos"
+            defaultZoneApplied = false
         }
+    }
+
+    private fun loadZoneOptions(
+        allZones: List<ZoneDto>,
+        offeredRides: List<RideDto>
+    ): List<String> {
+        val zoneNamesFromTable = allZones
+            .mapNotNull { it.name.trim() }
+            .filter { it.isNotEmpty() }
+            .distinct()
+            .sorted()
+
+        if (zoneNamesFromTable.isNotEmpty()) {
+            return listOf("Todos") + zoneNamesFromTable
+        }
+
+        // Fallback minimo si falla tabla zones.
+        return buildZoneOptions(offeredRides)
+    }
+
+    private fun resolvePreferredZoneNameFromZones(allZones: List<ZoneDto>, zoneId: Int?): String {
+        if (zoneId == null) return "Todos"
+
+        val zoneName = allZones
+            .firstOrNull { it.id == zoneId }
+            ?.name
+            ?.trim()
+
+        return if (zoneName.isNullOrEmpty()) "Todos" else zoneName
     }
 
     private fun applyOfflineState() {
@@ -545,6 +636,13 @@ class HomeViewModel(
                 // Resolver usuario actual confiably desde el token
                 resolveCurrentUserFromToken(token)
 
+                val allZones = try {
+                    zoneRepository.getZones()
+                } catch (e: Exception) {
+                    Log.e("HomeViewModel", "Exception loading zones", e)
+                    emptyList()
+                }
+
                 val result = ridesRepository.getRides(token)
 
                 if (result != null) {
@@ -560,8 +658,26 @@ class HomeViewModel(
                     uiState = uiState.copy(
                         isLoading = false,
                         errorMessage = "",
-                        zoneOptions = buildZoneOptions(offeredRides)
+                        zoneOptions = loadZoneOptions(
+                            allZones = allZones,
+                            offeredRides = offeredRides
+                        )
                     )
+
+                    if (!defaultZoneApplied) {
+                        preferredZoneName = resolvePreferredZoneNameFromZones(
+                            allZones = allZones,
+                            zoneId = preferredZoneId
+                        )
+                        uiState = uiState.copy(
+                            selectedZone = preferredZoneName,
+                            preferredZoneName = preferredZoneName
+                        )
+                        defaultZoneApplied = true
+                    } else {
+                        uiState = uiState.copy(preferredZoneName = preferredZoneName)
+                    }
+
                     applyFilters()
                     checkBlockingStates()
                 } else {

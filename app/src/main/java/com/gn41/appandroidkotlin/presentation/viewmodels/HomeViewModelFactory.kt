@@ -8,12 +8,14 @@ import com.gn41.appandroidkotlin.data.repositories.ReservationsRepository
 import com.gn41.appandroidkotlin.data.repositories.RidesRepository
 import com.gn41.appandroidkotlin.data.repositories.TripRepository
 import com.gn41.appandroidkotlin.data.repositories.VehicleRepository
+import com.gn41.appandroidkotlin.data.repositories.ZoneRepository
 
 class HomeViewModelFactory(
     private val ridesRepository: RidesRepository,
     private val sessionManager: SessionManager,
     private val reservationsRepository: ReservationsRepository? = null,
     private val tripRepository: TripRepository? = null,
+    private val zoneRepository: ZoneRepository,
     private val vehicleRepository: VehicleRepository,
     private val networkHelper: NetworkHelper
 ) : ViewModelProvider.Factory {
@@ -26,6 +28,7 @@ class HomeViewModelFactory(
                 sessionManager,
                 reservationsRepository,
                 tripRepository,
+                zoneRepository,
                 vehicleRepository,
                 networkHelper
             ) as T
