@@ -10,10 +10,12 @@ import kotlinx.coroutines.launch
 object Supervisor {
 
     val supervisorApi = SupabaseClient.supervisorApi
-    fun addDuration(feature: String, duration: Double) {
+    fun addDuration(feature: String, duration: Double, source: String) {
         val request = AddDurationRequestDto(
             feature = feature,
-            duration = duration
+            duration = duration,
+            source = source,
+            platform = "KOTLIN"
         )
         GlobalScope.launch(Dispatchers.IO) {
             supervisorApi.addDuration(

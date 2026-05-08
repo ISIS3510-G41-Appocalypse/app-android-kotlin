@@ -12,7 +12,9 @@ import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.launch
 import com.gn41.appandroidkotlin.data.local.SessionManager
 import com.gn41.appandroidkotlin.core.connectivity.NetworkHelper
+import com.gn41.appandroidkotlin.data.services.performance.Supervisor
 import kotlinx.coroutines.withTimeoutOrNull
+import kotlin.time.measureTimedValue
 
 class WelcomeViewModel(
     private val authRepository: AuthRepository,
@@ -110,6 +112,7 @@ class WelcomeViewModel(
         }
     }
     fun onLoginSubmit() {
+        val startTime = System.currentTimeMillis()
         val cleanEmail = email.trim().lowercase()
         val cleanPassword = password.trim()
 
@@ -132,8 +135,10 @@ class WelcomeViewModel(
             isLoading = true
             loginError = ""
 
-            val loginResult = withTimeoutOrNull(15000) {
-                authRepository.login(cleanEmail, cleanPassword)
+            val (loginResult, time) = measureTimedValue {
+                withTimeoutOrNull(15000) {
+                    authRepository.login(cleanEmail, cleanPassword)
+                }
             }
 
             if (loginResult != null) {
@@ -149,6 +154,7 @@ class WelcomeViewModel(
                 password = cleanPassword
                 isLoggedIn = true
                 loginError = ""
+                Supervisor.addDuration("Login", time.inWholeMilliseconds.toDouble(), "BACKEND")
             } else {
                 sessionToken = ""
                 isLoggedIn = false
@@ -162,6 +168,10 @@ class WelcomeViewModel(
 
             isLoading = false
             Log.d("WelcomeVM", "Token: $sessionToken")
+            val duration = System.currentTimeMillis() - startTime
+            if (networkHelper.isInternetAvailable()){
+                Supervisor.addDuration("Login", duration.toDouble(), "FRONTEND")
+            }
         }
     }
 

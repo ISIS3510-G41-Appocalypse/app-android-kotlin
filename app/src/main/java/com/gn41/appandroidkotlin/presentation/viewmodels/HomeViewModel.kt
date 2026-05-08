@@ -14,10 +14,12 @@ import com.gn41.appandroidkotlin.data.repositories.ReservationsRepository
 import com.gn41.appandroidkotlin.data.repositories.RidesRepository
 import com.gn41.appandroidkotlin.data.repositories.TripRepository
 import com.gn41.appandroidkotlin.data.repositories.VehicleRepository
+import com.gn41.appandroidkotlin.data.services.performance.Supervisor
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import kotlin.time.measureTimedValue
 
 data class HomeUiState(
     val isLoading: Boolean = false,
@@ -91,6 +93,7 @@ class HomeViewModel(
     }
 
     fun onReserveClicked(rideId: Int) {
+        val startTime = System.currentTimeMillis()
         // FASE 5: bloquear reserva sin internet
         if (uiState.isOffline) {
             uiState = uiState.copy(reservationMessage = "Necesitas conexión a internet para reservar un viaje.")
@@ -148,13 +151,15 @@ class HomeViewModel(
                     return@launch
                 }
 
-                val created = repository.createReservation(
-                    rideId = rideId,
-                    riderId = rider.id,
-                    meetingPoint = meetingPoint,
-                    destinationPoint = destinationPoint,
-                    token = token
-                )
+                val (created, time) = measureTimedValue {
+                    repository.createReservation(
+                        rideId = rideId,
+                        riderId = rider.id,
+                        meetingPoint = meetingPoint,
+                        destinationPoint = destinationPoint,
+                        token = token
+                    )
+                }
 
                 uiState = if (created) {
                     uiState.copy(
@@ -168,10 +173,13 @@ class HomeViewModel(
                 if (created) {
                     checkBlockingStates()
                 }
+                Supervisor.addDuration("CreateReservation", time.inWholeMilliseconds.toDouble(), "BACKEND")
             } catch (e: Exception) {
                 Log.e("HomeViewModel", "Exception creating reservation", e)
                 uiState = uiState.copy(reservationMessage = "No se pudo crear la reserva. Intenta de nuevo.")
             }
+            val duration = System.currentTimeMillis() - startTime
+            Supervisor.addDuration("CreateReservation", duration.toDouble(), "FRONTEND")
         }
     }
 
