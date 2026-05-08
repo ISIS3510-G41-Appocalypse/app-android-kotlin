@@ -29,9 +29,8 @@ data class HomeUiState(
     val selectedZone: String = "Todos",
     val zoneOptions: List<String> = listOf("Todos"),
     val selectedTripType: String = "Todos",
-    val selectedDay: String = "Hoy",
+    val selectedDate: String = todayDateString(),
     val selectedDepartureTime: String = "Todas",
-    val departureTimeOptions: List<String> = buildDepartureTimeOptions(),
     val hasActiveFilters: Boolean = false,
     val activeFilterCount: Int = 0,
     val hasActiveRiderReservation: Boolean = false,
@@ -41,11 +40,8 @@ data class HomeUiState(
     val isOffline: Boolean = false
 )
 
-private fun buildDepartureTimeOptions(): List<String> {
-    val slots = (5..21).map { hour ->
-        String.format(Locale.getDefault(), "%02d:00", hour)
-    }
-    return listOf("Todas") + slots
+private fun todayDateString(): String {
+    return SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
 }
 
 class HomeViewModel(
@@ -82,8 +78,8 @@ class HomeViewModel(
         applyFilters()
     }
 
-    fun onDayChange(value: String) {
-        uiState = uiState.copy(selectedDay = value)
+    fun onDateChange(value: String) {
+        uiState = uiState.copy(selectedDate = value)
         applyFilters()
     }
 
@@ -198,7 +194,7 @@ class HomeViewModel(
     fun clearFilters() {
         uiState = uiState.copy(
             selectedZone = "Todos",
-            selectedDay = "Hoy",
+            selectedDate = todayDateString(),
             selectedTripType = "Todos",
             selectedDepartureTime = "Todas"
         )
@@ -213,8 +209,8 @@ class HomeViewModel(
             isLenient = false
         }
         val now = Date()
-        val today = dateFormatter.format(now)
-
+        // Current implementation loads offered rides and filters them locally.
+        // Backend filtering by date can be added later if the dataset grows.
         val filteredRides = allRides.filter { ride ->
             val isOfferedRide = isRideOffered(ride.state)
             val hasAvailableSeats = isRideWithAvailableSeats(ride)
@@ -244,15 +240,7 @@ class HomeViewModel(
                 else -> true
             }
 
-            val matchesDay = when (uiState.selectedDay) {
-                "Hoy" -> ride.date == today
-                "Próximos viajes" -> {
-                    val rideDate = dateFormatter.parse(ride.date)
-                    val todayDate = dateFormatter.parse(today)
-                    rideDate != null && todayDate != null && rideDate.after(todayDate)
-                }
-                else -> true
-            }
+            val matchesDate = ride.date == uiState.selectedDate
 
             val matchesDepartureTime = when (uiState.selectedDepartureTime) {
                 "Todas" -> true
@@ -262,12 +250,12 @@ class HomeViewModel(
                 )
             }
 
-            isOfferedRide && hasAvailableSeats && isUpcomingRide && isNotOwnRide && matchesZone && matchesTripType && matchesDay && matchesDepartureTime
+            isOfferedRide && hasAvailableSeats && isUpcomingRide && isNotOwnRide && matchesZone && matchesTripType && matchesDate && matchesDepartureTime
         }
 
         val activeFilterCount = countActiveFilters(
             zone = uiState.selectedZone,
-            day = uiState.selectedDay,
+            date = uiState.selectedDate,
             tripType = uiState.selectedTripType,
             departureTime = uiState.selectedDepartureTime
         )
@@ -348,23 +336,21 @@ class HomeViewModel(
 
     private fun countActiveFilters(
         zone: String,
-        day: String,
+        date: String,
         tripType: String,
         departureTime: String
     ): Int {
         var count = 0
         if (zone != "Todos") count++
-        if (day != "Hoy") count++
+        if (date != todayDateString()) count++
         if (tripType != "Todos") count++
         if (departureTime != "Todas") count++
         return count
     }
 
     private fun matchesHourSlot(rideTime: String, selectedSlot: String): Boolean {
-        // valida que la hora coincida
-        val rideHour = rideTime.split(":").firstOrNull()?.toIntOrNull() ?: return false
-        val slotHour = selectedSlot.split(":").firstOrNull()?.toIntOrNull() ?: return false
-        return rideHour == slotHour
+        val normalizedRideTime = normalizeRideTime(rideTime) ?: return false
+        return normalizedRideTime == selectedSlot
     }
 
     private fun isRideOffered(state: String?): Boolean {

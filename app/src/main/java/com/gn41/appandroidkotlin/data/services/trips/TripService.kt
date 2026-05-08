@@ -187,6 +187,36 @@ class TripService {
             false
         }
     }
+
+    suspend fun rejectActiveReservationsForRide(rideId: Int, token: String): Boolean = withContext(Dispatchers.IO) {
+        return@withContext try {
+            val response = tripApi.rejectActiveReservationsForRide(
+                token = "Bearer $token",
+                apiKey = BuildConfig.SUPABASE_KEY,
+                rideId = "eq.$rideId",
+                states = "in.(PENDIENTE,ACEPTADA,EN_CURSO)",
+                body = mapOf("state" to "RECHAZADA")
+            )
+
+            if (response.isSuccessful) {
+                val updatedCount = response.body()?.size ?: 0
+                Log.d("TripCancel", "Updated reservations count=$updatedCount for rideId=$rideId")
+                if (updatedCount == 0) {
+                    Log.d("TripCancel", "No active reservations were updated for rideId=$rideId")
+                }
+                true
+            } else {
+                Log.e(
+                    "TripCancel",
+                    "rejectActiveReservationsForRide failed code=${response.code()} error=${response.errorBody()?.string()} rideId=$rideId"
+                )
+                false
+            }
+        } catch (e: Exception) {
+            Log.e("TripCancel", "rejectActiveReservationsForRide exception for rideId=$rideId", e)
+            false
+        }
+    }
 }
 
 
