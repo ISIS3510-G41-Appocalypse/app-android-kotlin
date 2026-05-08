@@ -85,5 +85,16 @@ interface TripApi {
         @Query("id") rideId: String,
         @Body body: Map<String, String>
     ): Response<Unit>
+
+    @PATCH("rest/v1/reservations")
+    suspend fun rejectActiveReservationsForRide(
+        @Header("Authorization") token: String,
+        @Header("apikey") apiKey: String,
+        @Header("Content-Type") contentType: String = "application/json",
+        @Header("Prefer") prefer: String = "return=representation",
+        @Query("ride_id") rideId: String,
+        @Query("state") states: String,
+        @Body body: Map<String, String>
+    ): Response<List<TripReservationDto>>
 }
 

@@ -28,12 +28,20 @@ import androidx.compose.material.icons.filled.Logout
 import androidx.compose.material.icons.filled.SearchOff
 import androidx.compose.material.icons.filled.WifiOff
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SelectableDates
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TimeInput
+import androidx.compose.material3.rememberDatePickerState
+import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -60,6 +68,11 @@ import com.gn41.appandroidkotlin.ui.theme.CoolSteel
 import com.gn41.appandroidkotlin.ui.theme.DarkCyan
 import com.gn41.appandroidkotlin.ui.theme.PrussianBlue
 import kotlinx.coroutines.delay
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Date
+import java.util.Locale
+import java.util.TimeZone
 
 val darkBlue = Color(0xFF0B1E3B)
 val headerBlue = Color(0xFF1A2744)
@@ -209,14 +222,13 @@ fun HomeScreen(
                             FilterCard(
                                 selectedZone = state.selectedZone,
                                 zoneOptions = state.zoneOptions,
-                                selectedDay = state.selectedDay,
+                                selectedDate = state.selectedDate,
                                 selectedTripType = state.selectedTripType,
                                 selectedDepartureTime = state.selectedDepartureTime,
-                                departureOptions = state.departureTimeOptions,
                                 hasActiveFilters = state.hasActiveFilters,
                                 activeFilterCount = state.activeFilterCount,
                                 onZoneChange = viewModel::onZoneChange,
-                                onDayChange = viewModel::onDayChange,
+                                onDateChange = viewModel::onDateChange,
                                 onTripTypeChange = viewModel::onTripTypeChange,
                                 onDepartureTimeChange = viewModel::onDepartureTimeChange,
                                 onClearFilters = viewModel::clearFilters
@@ -282,14 +294,13 @@ fun HomeScreen(
                         FilterCard(
                             selectedZone = state.selectedZone,
                             zoneOptions = state.zoneOptions,
-                            selectedDay = state.selectedDay,
+                            selectedDate = state.selectedDate,
                             selectedTripType = state.selectedTripType,
                             selectedDepartureTime = state.selectedDepartureTime,
-                            departureOptions = state.departureTimeOptions,
                             hasActiveFilters = state.hasActiveFilters,
                             activeFilterCount = state.activeFilterCount,
                             onZoneChange = viewModel::onZoneChange,
-                            onDayChange = viewModel::onDayChange,
+                            onDateChange = viewModel::onDateChange,
                             onTripTypeChange = viewModel::onTripTypeChange,
                             onDepartureTimeChange = viewModel::onDepartureTimeChange,
                             onClearFilters = viewModel::clearFilters
@@ -553,22 +564,24 @@ fun OfertaViajestitle() {
 // ─────────────────────────────────────────────────────────────────────────────
 
 @Composable
+@OptIn(ExperimentalMaterial3Api::class)
 fun FilterCard(
     selectedZone: String,
     zoneOptions: List<String>,
-    selectedDay: String,
+    selectedDate: String,
     selectedTripType: String,
     selectedDepartureTime: String,
-    departureOptions: List<String>,
     hasActiveFilters: Boolean,
     activeFilterCount: Int,
     onZoneChange: (String) -> Unit,
-    onDayChange: (String) -> Unit,
+    onDateChange: (String) -> Unit,
     onTripTypeChange: (String) -> Unit,
     onDepartureTimeChange: (String) -> Unit,
     onClearFilters: () -> Unit
 ) {
-    val dayOptions = listOf("Hoy", "Próximos viajes")
+    var showDatePicker by remember { mutableStateOf(false) }
+    var showTimePicker by remember { mutableStateOf(false) }
+
     val tripTypeOptions = listOf("Todos", "Hacia la universidad", "Desde la universidad")
 
     Column(
@@ -581,12 +594,11 @@ fun FilterCard(
         Spacer(modifier = Modifier.height(8.dp))
         Row(modifier = Modifier.fillMaxWidth()) {
             Column(modifier = Modifier.weight(1f)) {
-                FilterDropdownField(
-                    label = "Dia",
-                    selectedValue = selectedDay,
-                    options = dayOptions,
-                    onValueSelected = onDayChange,
-                    defaultValue = "Hoy",
+                FilterPickerField(
+                    label = "Fecha",
+                    selectedValue = formatDateForUi(selectedDate),
+                    onClick = { showDatePicker = true },
+                    isActive = selectedDate != todayDateString(),
                     neutralLabelColor = PrussianBlue
                 )
             }
@@ -601,13 +613,21 @@ fun FilterCard(
             }
         }
         Spacer(modifier = Modifier.height(8.dp))
-        FilterDropdownField(
+        FilterPickerField(
             label = "Hora de salida",
-            selectedValue = selectedDepartureTime,
-            options = departureOptions,
-            onValueSelected = onDepartureTimeChange,
-            defaultValue = "Todas"
+            selectedValue = if (selectedDepartureTime == "Todas") "Todas" else selectedDepartureTime,
+            onClick = { showTimePicker = true },
+            isActive = selectedDepartureTime != "Todas"
         )
+        if (selectedDepartureTime != "Todas") {
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = "Limpiar hora",
+                color = DarkCyan,
+                style = MaterialTheme.typography.bodySmall,
+                modifier = Modifier.clickable { onDepartureTimeChange("Todas") }
+            )
+        }
         Spacer(modifier = Modifier.height(10.dp))
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -629,6 +649,104 @@ fun FilterCard(
             }
         }
     }
+
+    if (showDatePicker) {
+        val utcTimeZone = TimeZone.getTimeZone("UTC")
+        val minDateUtcMillis = remember {
+            Calendar.getInstance(utcTimeZone).apply {
+                set(Calendar.HOUR_OF_DAY, 0)
+                set(Calendar.MINUTE, 0)
+                set(Calendar.SECOND, 0)
+                set(Calendar.MILLISECOND, 0)
+            }.timeInMillis
+        }
+
+        val initialSelectedDateMillis = remember(selectedDate) {
+            runCatching {
+                SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).apply {
+                    isLenient = false
+                    timeZone = utcTimeZone
+                }.parse(selectedDate)?.time
+            }.getOrNull()
+        }
+
+        val datePickerState = rememberDatePickerState(
+            initialSelectedDateMillis = initialSelectedDateMillis,
+            selectableDates = object : SelectableDates {
+                override fun isSelectableDate(utcTimeMillis: Long): Boolean {
+                    return utcTimeMillis >= minDateUtcMillis
+                }
+            }
+        )
+
+        DatePickerDialog(
+            onDismissRequest = { showDatePicker = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    datePickerState.selectedDateMillis?.let { millis ->
+                        val formattedDate = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).apply {
+                            timeZone = utcTimeZone
+                        }.format(Date(millis))
+                        onDateChange(formattedDate)
+                    }
+                    showDatePicker = false
+                }) {
+                    Text("Aceptar")
+                }
+            }
+        ) {
+            DatePicker(state = datePickerState, showModeToggle = false)
+        }
+    }
+
+    if (showTimePicker) {
+        val parsedHour = selectedDepartureTime.takeIf { it != "Todas" }
+            ?.split(":")
+            ?.getOrNull(0)
+            ?.toIntOrNull()
+            ?: 8
+        val parsedMinute = selectedDepartureTime.takeIf { it != "Todas" }
+            ?.split(":")
+            ?.getOrNull(1)
+            ?.toIntOrNull()
+            ?: 0
+
+        val timeState = rememberTimePickerState(
+            initialHour = parsedHour,
+            initialMinute = parsedMinute,
+            is24Hour = true
+        )
+
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { showTimePicker = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    val time = String.format(Locale.getDefault(), "%02d:%02d", timeState.hour, timeState.minute)
+                    onDepartureTimeChange(time)
+                    showTimePicker = false
+                }) {
+                    Text("Aceptar")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showTimePicker = false }) {
+                    Text("Cancelar")
+                }
+            },
+            text = { TimeInput(state = timeState) }
+        )
+    }
+}
+
+private fun formatDateForUi(date: String): String {
+    val input = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).apply { isLenient = false }
+    val output = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+    val parsedDate = runCatching { input.parse(date) }.getOrNull() ?: return date
+    return output.format(parsedDate)
+}
+
+private fun todayDateString(): String {
+    return SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
 }
 
 @Composable
@@ -714,5 +832,39 @@ fun BottomNavigationBar(
                 )
             }
         }
+    }
+}
+
+@Composable
+fun FilterPickerField(
+    label: String,
+    selectedValue: String,
+    onClick: () -> Unit,
+    isActive: Boolean,
+    neutralLabelColor: Color = Color.Unspecified
+) {
+    val backgroundColor = if (isActive) Color(0xFFCCFBF1) else Color(0xFFF0F4F8)
+    val borderColor = if (isActive) DarkCyan.copy(alpha = 0.35f) else Color.Transparent
+
+    Text(
+        text = label,
+        color = if (neutralLabelColor == Color.Unspecified) PrussianBlue else neutralLabelColor,
+        style = MaterialTheme.typography.titleSmall,
+        fontWeight = FontWeight.SemiBold
+    )
+    Spacer(modifier = Modifier.height(4.dp))
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .border(1.dp, borderColor, RoundedCornerShape(8.dp))
+            .background(backgroundColor, RoundedCornerShape(8.dp))
+            .clickable { onClick() }
+            .padding(horizontal = 10.dp, vertical = 10.dp)
+    ) {
+        Text(
+            text = selectedValue,
+            style = MaterialTheme.typography.bodyMedium,
+            color = PrussianBlue
+        )
     }
 }

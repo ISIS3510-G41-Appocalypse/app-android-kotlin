@@ -15,6 +15,7 @@ interface TripRepository {
     suspend fun getReservationsForRide(rideId: Int, token: String): List<TripReservationDto>
     suspend fun updateReservationState(reservationId: Int, newState: String, token: String): Boolean
     suspend fun updateRideState(rideId: Int, newState: String, token: String): Boolean
+    suspend fun rejectActiveReservationsForRide(rideId: Int, token: String): Boolean
     fun availableConnection(): Boolean
 }
 
