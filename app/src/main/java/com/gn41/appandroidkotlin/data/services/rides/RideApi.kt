@@ -2,7 +2,6 @@ package com.gn41.appandroidkotlin.data.services.rides
 
 import com.gn41.appandroidkotlin.data.dto.createRide.ActiveRideDto
 import com.gn41.appandroidkotlin.data.dto.createRide.CreateRideRequestDto
-import com.gn41.appandroidkotlin.data.dto.createRide.RideUserDto
 import com.gn41.appandroidkotlin.data.dto.createRide.RiderCancellationOddsDto
 import com.gn41.appandroidkotlin.data.dto.createRide.RiderIdDto
 import com.gn41.appandroidkotlin.data.dto.createRide.RiderUserInfoDto

@@ -3,6 +3,7 @@ package com.gn41.appandroidkotlin.data.services
 import com.gn41.appandroidkotlin.BuildConfig
 import com.gn41.appandroidkotlin.data.services.auth.AuthApi
 import com.gn41.appandroidkotlin.data.services.location.LocationApi
+import com.gn41.appandroidkotlin.data.services.performance.SupervisorApi
 import com.gn41.appandroidkotlin.data.services.reservations.ReservationsApi
 import com.gn41.appandroidkotlin.data.services.rides.RideApi
 import com.gn41.appandroidkotlin.data.services.rides.RidesApi
@@ -61,6 +62,10 @@ object SupabaseClient {
 
     val locationApi: LocationApi by lazy {
         retrofit.create(LocationApi::class.java)
+    }
+
+    val supervisorApi: SupervisorApi by lazy {
+        retrofit.create(SupervisorApi::class.java)
     }
 
 }
