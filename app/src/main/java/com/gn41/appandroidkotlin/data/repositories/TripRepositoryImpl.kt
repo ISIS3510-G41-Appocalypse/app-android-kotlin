@@ -45,6 +45,10 @@ class TripRepositoryImpl(
         return tripService.updateRideState(rideId, newState, token)
     }
 
+    override suspend fun rejectActiveReservationsForRide(rideId: Int, token: String): Boolean {
+        return tripService.rejectActiveReservationsForRide(rideId, token)
+    }
+
     override fun availableConnection(): Boolean {
         return networkHelper.isInternetAvailable()
     }

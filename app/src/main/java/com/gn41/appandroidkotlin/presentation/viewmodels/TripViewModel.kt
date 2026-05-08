@@ -321,10 +321,12 @@ class TripViewModel(
         connectivity = tripRepository.availableConnection()
         if (connectivity) {
             val current = uiState.activeDriverTrip ?: return
+            Log.d("TripCancel", "Driver cancel rideId=${current.rideId}")
             changeRideState(
                 rideId = current.rideId,
                 newState = "CANCELADO",
-                successMessage = "Viaje cancelado."
+                successMessage = "Viaje cancelado.",
+                rejectActiveReservations = true
             )
         }
     }
@@ -515,7 +517,8 @@ private fun changeReservationState(
     private fun changeRideState(
         rideId: Int,
         newState: String,
-        successMessage: String
+        successMessage: String,
+        rejectActiveReservations: Boolean = false
     ) {
         val token = sessionManager.getToken()
         if (token.isEmpty()) {
@@ -525,6 +528,15 @@ private fun changeReservationState(
 
         viewModelScope.launch {
             val success = tripRepository.updateRideState(rideId, newState, token)
+            if (newState == "CANCELADO") {
+                Log.d("TripCancel", "Ride cancelled result=$success for rideId=$rideId")
+            }
+
+            if (success && rejectActiveReservations) {
+                val rejectResult = tripRepository.rejectActiveReservationsForRide(rideId, token)
+                Log.d("TripCancel", "Reject reservations result=$rejectResult for rideId=$rideId")
+            }
+
             uiState = if (success) {
                 uiState.copy(infoMessage = successMessage)
             } else {
