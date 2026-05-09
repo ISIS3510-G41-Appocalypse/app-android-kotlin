@@ -12,9 +12,11 @@ import java.io.FileOutputStream
 
 class LocalStorageManager (private val context: Context) {
 
+    private val gson = Gson()
+    private val tripFileName = "trip_state.json"
+
     suspend fun saveFormState() = withContext(Dispatchers.IO) {
         val formState = CacheManager.getForm()
-        val gson = Gson()
 
         val jsonString = gson.toJson(formState)
 
@@ -33,7 +35,6 @@ class LocalStorageManager (private val context: Context) {
         if (file.exists()) {
 
             val jsonString = file.readText()
-            val gson = Gson()
 
             val type = object : TypeToken<ArrayMap<String, String>>() {}.type
 
@@ -53,5 +54,35 @@ class LocalStorageManager (private val context: Context) {
         val fileName = "form_state.json"
         val file = File(context.filesDir, fileName)
         file.delete()
+    }
+
+    fun saveTripState(state: TripStorageDto) {
+        val file = File(context.filesDir, tripFileName)
+        val jsonString = gson.toJson(state)
+        FileOutputStream(file).use { stream ->
+            stream.write(jsonString.toByteArray())
+        }
+    }
+
+    fun readTripState(authId: String): TripStorageDto? {
+        val file = File(context.filesDir, tripFileName)
+        if (!file.exists()) {
+            return null
+        }
+
+        return try {
+            val jsonString = file.readText()
+            val state = gson.fromJson(jsonString, TripStorageDto::class.java)
+            if (state?.authId == authId) state else null
+        } catch (_: Exception) {
+            null
+        }
+    }
+
+    fun clearTripState() {
+        val file = File(context.filesDir, tripFileName)
+        if (file.exists()) {
+            file.delete()
+        }
     }
 }

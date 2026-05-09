@@ -77,7 +77,8 @@ class MainActivity : ComponentActivity() {
                     tripRepository = tripRepository,
                     sessionManager = sessionManager,
                     locationRepository = locationRepository,
-                    networkHelper = networkHelper
+                    networkHelper = networkHelper,
+                    localStorageManager = localStorageManager
                 )
 
                 val userIdService = UserIdService(sessionManager)
@@ -96,7 +97,8 @@ class MainActivity : ComponentActivity() {
                     tripRepository = tripRepository,
                     zoneRepository = zoneRepository,
                     vehicleRepository = vehicleRepository,
-                    networkHelper = networkHelper
+                    networkHelper = networkHelper,
+                    localStorageManager = localStorageManager
                 )
 
 
@@ -118,6 +120,7 @@ class MainActivity : ComponentActivity() {
                         sessionManager.clearToken()
                         sessionManager.clearUserId()
                         TripMemoryCache.clear()
+                        localStorageManager.clearTripState()
 
                         welcomeViewModel.resetLoginState()
 
