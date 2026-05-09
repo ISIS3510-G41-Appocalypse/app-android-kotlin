@@ -25,6 +25,7 @@ import com.gn41.appandroidkotlin.data.services.userId.UserIdService
 import com.gn41.appandroidkotlin.data.services.vehicles.VehicleService
 import com.gn41.appandroidkotlin.data.services.zones.ZoneService
 import com.gn41.appandroidkotlin.presentation.navigation.AppNavigation
+import com.gn41.appandroidkotlin.presentation.cache.TripMemoryCache
 import com.gn41.appandroidkotlin.presentation.viewmodels.CreateRideViewModelFactory
 import com.gn41.appandroidkotlin.presentation.viewmodels.HomeViewModelFactory
 import com.gn41.appandroidkotlin.presentation.viewmodels.TripViewModelFactory
@@ -116,6 +117,7 @@ class MainActivity : ComponentActivity() {
                     com.gn41.appandroidkotlin.data.local.SessionEvents.onSessionExpired.collect {
                         sessionManager.clearToken()
                         sessionManager.clearUserId()
+                        TripMemoryCache.clear()
 
                         welcomeViewModel.resetLoginState()
 

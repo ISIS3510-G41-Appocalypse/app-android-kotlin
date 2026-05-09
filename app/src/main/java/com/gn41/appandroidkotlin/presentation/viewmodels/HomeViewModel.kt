@@ -17,6 +17,7 @@ import com.gn41.appandroidkotlin.data.repositories.TripRepository
 import com.gn41.appandroidkotlin.data.repositories.VehicleRepository
 import com.gn41.appandroidkotlin.data.repositories.ZoneRepository
 import com.gn41.appandroidkotlin.data.services.performance.Supervisor
+import com.gn41.appandroidkotlin.presentation.cache.TripMemoryCache
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -329,6 +330,7 @@ class HomeViewModel(
         sessionManager.clearToken()
         sessionManager.clearUserId()
         sessionManager.clearDriverId()
+        TripMemoryCache.clear()
         currentResolvedUserId = null
         currentResolvedAuthId = null
         currentResolvedDriverId = null

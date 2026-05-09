@@ -9,21 +9,32 @@ object TripMemoryCache {
     private var cachedDriverTrip: ActiveDriverTripUiModel? = null
     private var cachedCurrentUserId: Int? = null
     private var cachedCurrentRideId: Int? = null
+    private var cachedAuthId: String? = null
 
     fun save(
         activeRiderTrips: List<ActiveRiderTripUiModel>,
         activeDriverTrip: ActiveDriverTripUiModel?,
         currentUserId: Int?,
-        currentRideId: Int?
+        currentRideId: Int?,
+        authId: String?
     ) {
         cachedRiderTrips = activeRiderTrips
         cachedDriverTrip = activeDriverTrip
         cachedCurrentUserId = currentUserId
         cachedCurrentRideId = currentRideId
+        cachedAuthId = authId
     }
 
-    fun getSavedState(): CachedTripState? {
+    fun getSavedState(authId: String?): CachedTripState? {
         if (!hasData()) {
+            return null
+        }
+
+        if (authId.isNullOrBlank() || cachedAuthId.isNullOrBlank()) {
+            return null
+        }
+
+        if (!cachedAuthId.equals(authId, ignoreCase = false)) {
             return null
         }
 
@@ -31,7 +42,8 @@ object TripMemoryCache {
             activeRiderTrips = cachedRiderTrips,
             activeDriverTrip = cachedDriverTrip,
             currentUserId = cachedCurrentUserId,
-            currentRideId = cachedCurrentRideId
+            currentRideId = cachedCurrentRideId,
+            authId = cachedAuthId
         )
     }
 
@@ -44,6 +56,7 @@ object TripMemoryCache {
         cachedDriverTrip = null
         cachedCurrentUserId = null
         cachedCurrentRideId = null
+        cachedAuthId = null
     }
 }
 
@@ -51,6 +64,7 @@ data class CachedTripState(
     val activeRiderTrips: List<ActiveRiderTripUiModel>,
     val activeDriverTrip: ActiveDriverTripUiModel?,
     val currentUserId: Int?,
-    val currentRideId: Int?
+    val currentRideId: Int?,
+    val authId: String?
 )
 

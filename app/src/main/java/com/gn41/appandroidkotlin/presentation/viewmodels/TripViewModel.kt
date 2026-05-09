@@ -70,7 +70,35 @@ class TripViewModel(
     private fun applyOfflineState() {
         connectivity = false
 
-        val cachedState = TripMemoryCache.getSavedState()
+        val token = sessionManager.getToken()
+        if (token.isEmpty()) {
+            TripMemoryCache.clear()
+            uiState = uiState.copy(
+                isLoading = false,
+                errorMessage = "No hay una sesion activa.",
+                activeRiderTrips = emptyList(),
+                activeDriverTrip = null,
+                isOfflineData = false,
+                offlineMessage = ""
+            )
+            return
+        }
+
+        val authId = extractAuthIdFromToken(token)
+        if (authId.isNullOrEmpty()) {
+            TripMemoryCache.clear()
+            uiState = uiState.copy(
+                isLoading = false,
+                errorMessage = "No se pudo validar el usuario.",
+                activeRiderTrips = emptyList(),
+                activeDriverTrip = null,
+                isOfflineData = false,
+                offlineMessage = ""
+            )
+            return
+        }
+
+        val cachedState = TripMemoryCache.getSavedState(authId = authId)
 
         if (cachedState != null) {
             // Restore from cache and mark as offline data
@@ -107,6 +135,7 @@ class TripViewModel(
 
         val token = sessionManager.getToken()
         if (token.isEmpty()) {
+            TripMemoryCache.clear()
             uiState = uiState.copy(
                 isLoading = false,
                 errorMessage = "No hay una sesion activa."
@@ -116,6 +145,7 @@ class TripViewModel(
 
         val authId = extractAuthIdFromToken(token)
         if (authId.isNullOrEmpty()) {
+            TripMemoryCache.clear()
             uiState = uiState.copy(
                 isLoading = false,
                 errorMessage = "No se pudo validar el usuario."
@@ -271,7 +301,8 @@ class TripViewModel(
                     activeRiderTrips = riderTrips,
                     activeDriverTrip = driverTripForCache,
                     currentUserId = user.id,
-                    currentRideId = currentRideId
+                    currentRideId = currentRideId,
+                    authId = authId
                 )
 
                 if (currentRideId != null) {
@@ -428,7 +459,7 @@ class TripViewModel(
     }
 
     fun onToggleLocationSharing(enabled: Boolean) {
-        if (!canRunOnlineAction("Necesitas conexión a internet para cambiar el compartir ubicación.")) {
+        if (!canRunOnlineAction("Necesitas conexión para compartir tu ubicación.")) {
             return
         }
 

@@ -30,8 +30,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.WifiOff
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -78,8 +76,7 @@ fun TripScreen(
     var showFinishRideDialog by remember { mutableStateOf(false) }
     val configuration = LocalConfiguration.current
     val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
-
-    if (viewModel.connectivity || state.isOfflineData) {
+    val canAutoRefresh = viewModel.connectivity && !state.isOfflineData
 
         val locationPermissionLauncher = rememberLauncherForActivityResult(
             contract = ActivityResultContracts.RequestPermission()
@@ -98,7 +95,8 @@ fun TripScreen(
             }
         }
 
-        LaunchedEffect(Unit) {
+        LaunchedEffect(canAutoRefresh) {
+            if (!canAutoRefresh) return@LaunchedEffect
             while (true) {
                 delay(8000)
                 viewModel.refreshTrips()
@@ -382,60 +380,6 @@ fun TripScreen(
                 }
             )
         }
-    }
-    else {
-        val scrollState = rememberScrollState()
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(darkBlue)
-                .statusBarsPadding()
-                .navigationBarsPadding()
-                .background(darkBlue)
-                .padding(16.dp)
-                .verticalScroll(scrollState),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text(
-                text = "Mis viajes",
-                style = MaterialTheme.typography.titleLarge,
-                color = Color.White
-            )
-
-            Spacer(modifier = Modifier.height(6.dp))
-
-            Text(
-                text = "Revisa tu viaje como conductor o pasajero.",
-                style = MaterialTheme.typography.bodyMedium,
-                color = Color.LightGray
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            LazyColumn(
-                modifier = Modifier
-                .weight(1f)
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                item{
-                    EmptyStateCard(
-                        icon = Icons.Default.WifiOff,
-                        iconTint = MaterialTheme.colorScheme.primary,
-                        title = "Sin conexión a internet",
-                        message = "No puedes gestionar tus viajes ahora mismo.\nRevisa tu conexión e intenta de nuevo."
-                    )
-                }
-            }
-
-            BottomNavigationBar(
-                selectedTab = "Viajes",
-                onTabClick = {
-                    if (it == "Inicio") onHomeClick()
-                }
-            )
-        }
-    }
 }
 
 @Composable
@@ -585,7 +529,8 @@ private fun LandscapeTripsContent(
                         isUsingCachedLocations = state.isUsingCachedLocations,
                         cachedLocationMessage = state.cachedLocationMessage,
                         onRefreshLocations = viewModel::loadLocationsForCurrentRide,
-                        mapMarkers = viewModel.getMapMarkers()
+                        mapMarkers = viewModel.getMapMarkers(),
+                        isOfflineMode = isOfflineMode
                     )
                 } else {
                     EmptyStateCardTrip(message = "No hay un viaje activo para mostrar en el mapa.")
@@ -607,7 +552,8 @@ private fun LandscapeTripsContent(
                         isUsingCachedLocations = state.isUsingCachedLocations,
                         cachedLocationMessage = state.cachedLocationMessage,
                         onRefreshLocations = viewModel::loadLocationsForCurrentRide,
-                        mapMarkers = viewModel.getMapMarkers()
+                        mapMarkers = viewModel.getMapMarkers(),
+                        isOfflineMode = isOfflineMode
 
                     )
                 } else {
@@ -709,7 +655,8 @@ private fun RiderSection(
                     isUsingCachedLocations = state.isUsingCachedLocations,
                     cachedLocationMessage = state.cachedLocationMessage,
                     onRefreshLocations = viewModel::loadLocationsForCurrentRide,
-                    mapMarkers = viewModel.getMapMarkers()
+                    mapMarkers = viewModel.getMapMarkers(),
+                    isOfflineMode = isOfflineMode
 
                 )
             }
@@ -889,7 +836,8 @@ private fun DriverSection(
                     isUsingCachedLocations = state.isUsingCachedLocations,
                     cachedLocationMessage = state.cachedLocationMessage,
                     onRefreshLocations = viewModel::loadLocationsForCurrentRide,
-                    mapMarkers = viewModel.getMapMarkers()
+                    mapMarkers = viewModel.getMapMarkers(),
+                    isOfflineMode = isOfflineMode
                 )
             }
         }
