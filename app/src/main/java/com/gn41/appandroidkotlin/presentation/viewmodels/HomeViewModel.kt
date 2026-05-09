@@ -19,7 +19,12 @@ import com.gn41.appandroidkotlin.data.repositories.ZoneRepository
 import com.gn41.appandroidkotlin.data.services.performance.Supervisor
 import com.gn41.appandroidkotlin.localStorage.LocalStorageManager
 import com.gn41.appandroidkotlin.presentation.cache.TripMemoryCache
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -48,6 +53,14 @@ data class HomeUiState(
 private fun todayDateString(): String {
     return SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
 }
+
+// Data class to group results from parallel Home data loading
+private data class HomeDataResult(
+    val rides: List<RideDto>?,
+    val zones: List<ZoneDto>,
+    val vehicles: List<Any>,
+    val isDriver: Boolean
+)
 
 class HomeViewModel(
     private val ridesRepository: RidesRepository,
@@ -633,22 +646,19 @@ class HomeViewModel(
 
         viewModelScope.launch {
             try {
-                val userVehicles = vehicleRepository.getUserVehicles()
-                val isDriver = userVehicles.isNotEmpty()
-
-                uiState = uiState.copy(isDriver = isDriver)
-
-                // Resolver usuario actual confiably desde el token
-                resolveCurrentUserFromToken(token)
-
-                val allZones = try {
-                    zoneRepository.getZones()
-                } catch (e: Exception) {
-                    Log.e("HomeViewModel", "Exception loading zones", e)
-                    emptyList()
+                // Move IO operations to Dispatchers.IO and load independent data in parallel
+                val homeData = withContext(Dispatchers.IO) {
+                    loadHomeDataInParallel(token)
                 }
 
-                val result = ridesRepository.getRides(token)
+                // Resolve current user from token (sequential, depends on token)
+                resolveCurrentUserFromToken(token)
+
+                val isDriver = homeData.isDriver
+                uiState = uiState.copy(isDriver = isDriver)
+
+                val allZones = homeData.zones
+                val result = homeData.rides
 
                 if (result != null) {
                     val offeredRides = result.filter { ride -> isRideOffered(ride.state) }
@@ -656,10 +666,15 @@ class HomeViewModel(
                     Log.d("HomeViewModel", "[FILTRO] OFERTADO rides: ${offeredRides.size}")
                     Log.d("HomeViewModel", "[FILTRO] Resolved userId: $currentResolvedUserId, driverId: $currentResolvedDriverId")
                     allRides = offeredRides
-                    recommendationByRideId = loadRecommendationsForRides(
-                        rides = offeredRides,
-                        token = token
-                    )
+
+                    // Load recommendations in parallel for all rides
+                    recommendationByRideId = withContext(Dispatchers.IO) {
+                        loadRecommendationsForRides(
+                            rides = offeredRides,
+                            token = token
+                        )
+                    }
+
                     uiState = uiState.copy(
                         isLoading = false,
                         errorMessage = "",
@@ -704,33 +719,79 @@ class HomeViewModel(
         }
     }
 
-    private suspend fun loadRecommendationsForRides(
-        rides: List<RideDto>,
-        token: String
-    ): Map<Int, Double> {
-        val repository = reservationsRepository ?: return emptyMap()
-        val currentUserId = currentResolvedUserId ?: return emptyMap()
-        val rider = repository.getRiderByUserId(currentUserId, token) ?: return emptyMap()
-
-        val recommendationMap = mutableMapOf<Int, Double>()
-
-        rides.forEach { ride ->
-            val rating = try {
-                ridesRepository.getRiderDriverRecommendation(
-                    riderId = rider.id,
-                    driverId = ride.driver_id,
-                    token = token
-                )
-            } catch (_: Exception) {
-                null
-            }
-
-            if (rating != null) {
-                recommendationMap[ride.id] = rating.coerceIn(0.0, 5.0)
+    // Runs independent Home data requests in parallel using coroutineScope and async.
+    // Vehicles, zones, and rides are fetched concurrently since they don't depend on each other.
+    private suspend fun loadHomeDataInParallel(token: String): HomeDataResult = coroutineScope {
+        val vehiclesJob = async {
+            try {
+                vehicleRepository.getUserVehicles()
+            } catch (e: Exception) {
+                Log.e("HomeViewModel", "Exception loading vehicles", e)
+                emptyList<Any>()
             }
         }
 
-        return recommendationMap
+        val zonesJob = async {
+            try {
+                zoneRepository.getZones()
+            } catch (e: Exception) {
+                Log.e("HomeViewModel", "Exception loading zones", e)
+                emptyList<ZoneDto>()
+            }
+        }
+
+        val ridesJob = async {
+            try {
+                ridesRepository.getRides(token)
+            } catch (e: Exception) {
+                Log.e("HomeViewModel", "Exception loading rides", e)
+                null
+            }
+        }
+
+        // Wait for all parallel tasks to complete
+        val vehicles = vehiclesJob.await()
+        val zones = zonesJob.await()
+        val rides = ridesJob.await()
+        val isDriver = vehicles.isNotEmpty()
+
+        HomeDataResult(
+            rides = rides,
+            zones = zones,
+            vehicles = vehicles,
+            isDriver = isDriver
+        )
+    }
+
+    // Loads recommendations for all rides in parallel using async + awaitAll.
+    // Each ride recommendation request is independent, so they can be executed concurrently.
+    private suspend fun loadRecommendationsForRides(
+        rides: List<RideDto>,
+        token: String
+    ): Map<Int, Double> = coroutineScope {
+        val repository = reservationsRepository ?: return@coroutineScope emptyMap()
+        val currentUserId = currentResolvedUserId ?: return@coroutineScope emptyMap()
+        val rider = repository.getRiderByUserId(currentUserId, token) ?: return@coroutineScope emptyMap()
+
+        // Launch parallel async tasks for each ride recommendation
+        rides.map { ride ->
+            async {
+                try {
+                    val rating = ridesRepository.getRiderDriverRecommendation(
+                        riderId = rider.id,
+                        driverId = ride.driver_id,
+                        token = token
+                    )
+                    ride.id to rating
+                } catch (_: Exception) {
+                    ride.id to null
+                }
+            }
+        }.awaitAll()
+            .mapNotNull { (rideId, rating) ->
+                rating?.let { rideId to it.coerceIn(0.0, 5.0) }
+            }
+            .toMap()
     }
 
     // verifica si el usuario ya tiene reserva activa o viaje activo como conductor
