@@ -9,6 +9,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.gn41.appandroidkotlin.core.connectivity.NetworkHelper
 import com.gn41.appandroidkotlin.data.dto.rides.RideDto
+import com.gn41.appandroidkotlin.data.dto.vehicle.VehicleDto
 import com.gn41.appandroidkotlin.data.dto.zone.ZoneDto
 import com.gn41.appandroidkotlin.data.local.SessionManager
 import com.gn41.appandroidkotlin.data.repositories.ReservationsRepository
@@ -58,7 +59,7 @@ private fun todayDateString(): String {
 private data class HomeDataResult(
     val rides: List<RideDto>?,
     val zones: List<ZoneDto>,
-    val vehicles: List<Any>,
+    val vehicles: List<VehicleDto>,
     val isDriver: Boolean
 )
 
@@ -651,8 +652,10 @@ class HomeViewModel(
                     loadHomeDataInParallel(token)
                 }
 
-                // Resolve current user from token (sequential, depends on token)
-                resolveCurrentUserFromToken(token)
+                withContext(Dispatchers.IO) {
+                    // resolve user/driver data in IO because it queries repositories
+                    resolveCurrentUserFromToken(token)
+                }
 
                 val isDriver = homeData.isDriver
                 uiState = uiState.copy(isDriver = isDriver)
@@ -727,7 +730,7 @@ class HomeViewModel(
                 vehicleRepository.getUserVehicles()
             } catch (e: Exception) {
                 Log.e("HomeViewModel", "Exception loading vehicles", e)
-                emptyList<Any>()
+                emptyList<VehicleDto>()
             }
         }
 
