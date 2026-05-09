@@ -731,6 +731,8 @@ private fun RiderReservationCard(
 
         Text("Estado reserva: ${mapStateLabel(trip.status)}", style = MaterialTheme.typography.bodyMedium)
         Text("Estado viaje: ${mapStateLabel(trip.rideStatus)}", style = MaterialTheme.typography.bodyMedium)
+        Text("Conductor: ${trip.driverName}", style = MaterialTheme.typography.bodyMedium)
+        Text("Fecha de salida: ${trip.departureDate}", style = MaterialTheme.typography.bodyMedium)
         Text("Hora de salida: ${formatTimeText(trip.departureTime)}", style = MaterialTheme.typography.bodyMedium)
 
         Spacer(modifier = Modifier.height(10.dp))
@@ -958,6 +960,7 @@ private fun DriverMainCard(
         Text("Origen: ${trip.source}", style = MaterialTheme.typography.bodyMedium)
         Text("Destino: ${trip.destination}", style = MaterialTheme.typography.bodyMedium)
         Text("Estado: ${mapStateLabel(trip.status)}", style = MaterialTheme.typography.bodyMedium)
+        Text("Fecha de salida: ${trip.departureDate}", style = MaterialTheme.typography.bodyMedium)
         Text("Hora de salida: ${formatTimeText(trip.departureTime)}", style = MaterialTheme.typography.bodyMedium)
         Text("Reservas: ${trip.reservationsCount}", style = MaterialTheme.typography.bodyMedium)
         Text("Cupos disponibles: ${trip.availableSeats}/${trip.totalSeats}", style = MaterialTheme.typography.bodyMedium)

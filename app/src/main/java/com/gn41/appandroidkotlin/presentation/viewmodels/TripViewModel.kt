@@ -29,6 +29,10 @@ class TripViewModel(
     private val localStorageManager: LocalStorageManager
 ) : ViewModel() {
 
+    companion object {
+        private const val TAG = "TripCache"
+    }
+
     var uiState by mutableStateOf(TripUiState())
         private set
 
@@ -77,6 +81,7 @@ class TripViewModel(
         if (token.isEmpty()) {
             TripMemoryCache.clear()
             localStorageManager.clearTripState()
+            Log.d(TAG, "clear caches: no session token")
             uiState = uiState.copy(
                 isLoading = false,
                 errorMessage = "No hay una sesion activa.",
@@ -92,6 +97,7 @@ class TripViewModel(
         if (authId.isNullOrEmpty()) {
             TripMemoryCache.clear()
             localStorageManager.clearTripState()
+            Log.d(TAG, "clear caches: invalid auth id from token")
             uiState = uiState.copy(
                 isLoading = false,
                 errorMessage = "No se pudo validar el usuario.",
@@ -106,6 +112,10 @@ class TripViewModel(
         val cachedState = TripMemoryCache.getSavedState(authId = authId)
 
         if (cachedState != null) {
+            Log.d(
+                TAG,
+                "offline restore from RAM authIdPresent=true rider=${cachedState.activeRiderTrips.size} driverRes=${cachedState.activeDriverTrip?.reservations?.size ?: 0}"
+            )
             // Restore from cache and mark as offline data
             uiState = uiState.copy(
                 isLoading = false,
@@ -118,8 +128,13 @@ class TripViewModel(
                 offlineMessage = "Estás viendo información guardada. Necesitas conexión para realizar acciones."
             )
         } else {
+            Log.d(TAG, "offline RAM miss, reading local storage")
             val localState = localStorageManager.readTripState(authId)
             if (localState != null) {
+                Log.d(
+                    TAG,
+                    "offline restore from FILE authIdPresent=true rider=${localState.activeRiderTrips.size} driverRes=${localState.activeDriverTrip?.reservations?.size ?: 0} savedAt=${localState.savedAt}"
+                )
                 uiState = uiState.copy(
                     isLoading = false,
                     errorMessage = "",
@@ -131,6 +146,50 @@ class TripViewModel(
                     offlineMessage = "Estás viendo información guardada. Necesitas conexión para realizar acciones."
                 )
             } else {
+                // If offline happened right after a successful render, keep in-memory uiState as last resort.
+                val inMemoryRiderTrips = uiState.activeRiderTrips.filter { riderTrip ->
+                    val reservationState = normalizeState(riderTrip.status)
+                    val rideState = normalizeState(riderTrip.rideStatus)
+                    val reservationIsActive = reservationState == "PENDIENTE" ||
+                        reservationState == "ACEPTADA" || reservationState == "EN_CURSO"
+                    val rideIsActive = rideState != "FINALIZADO" && rideState != "CANCELADO"
+                    reservationIsActive && rideIsActive
+                }
+                val inMemoryDriverTrip = buildDriverTripForStorage(uiState.activeDriverTrip)
+                if (inMemoryRiderTrips.isNotEmpty() || inMemoryDriverTrip != null) {
+                    Log.d(
+                        TAG,
+                        "offline restore from CURRENT_UI (timing fallback) authIdPresent=true rider=${inMemoryRiderTrips.size} driverRes=${inMemoryDriverTrip?.reservations?.size ?: 0}"
+                    )
+                    TripMemoryCache.save(
+                        activeRiderTrips = inMemoryRiderTrips,
+                        activeDriverTrip = inMemoryDriverTrip,
+                        currentUserId = uiState.currentUserId,
+                        currentRideId = uiState.currentRideId,
+                        authId = authId
+                    )
+                    localStorageManager.saveTripState(
+                        TripStorageDto(
+                            authId = authId,
+                            currentUserId = uiState.currentUserId,
+                            currentRideId = uiState.currentRideId,
+                            activeRiderTrips = inMemoryRiderTrips,
+                            activeDriverTrip = inMemoryDriverTrip,
+                            savedAt = System.currentTimeMillis()
+                        )
+                    )
+                    uiState = uiState.copy(
+                        isLoading = false,
+                        errorMessage = "",
+                        activeRiderTrips = inMemoryRiderTrips,
+                        activeDriverTrip = inMemoryDriverTrip,
+                        isOfflineData = true,
+                        offlineMessage = "Estás viendo información guardada. Necesitas conexión para realizar acciones."
+                    )
+                    return
+                }
+
+                Log.d(TAG, "offline no cache found in RAM/FILE")
                 // No cache available in memory or local storage
                 uiState = uiState.copy(
                     isLoading = false,
@@ -156,6 +215,7 @@ class TripViewModel(
         if (token.isEmpty()) {
             TripMemoryCache.clear()
             localStorageManager.clearTripState()
+            Log.d(TAG, "clear caches: no session token during loadTrips")
             uiState = uiState.copy(
                 isLoading = false,
                 errorMessage = "No hay una sesion activa."
@@ -167,6 +227,7 @@ class TripViewModel(
         if (authId.isNullOrEmpty()) {
             TripMemoryCache.clear()
             localStorageManager.clearTripState()
+            Log.d(TAG, "clear caches: invalid auth id during loadTrips")
             uiState = uiState.copy(
                 isLoading = false,
                 errorMessage = "No se pudo validar el usuario."
@@ -184,8 +245,7 @@ class TripViewModel(
             try {
                 val user = tripRepository.getUserByAuthId(authId, token)
                 if (user == null) {
-                    TripMemoryCache.clear()
-                    localStorageManager.clearTripState()
+                    Log.w(TAG, "loadTrips user not found from backend; keeping previous cache")
                     uiState = uiState.copy(
                         isLoading = false,
                         errorMessage = "No se encontro el usuario."
@@ -232,7 +292,16 @@ class TripViewModel(
                                         "No puedes cancelar un viaje en curso."
                                     } else {
                                         null
-                                    }
+                                    },
+                                    driverName = run {
+                                        val firstName = ride.drivers?.users?.first_name.orEmpty()
+                                        val lastName = ride.drivers?.users?.last_name.orEmpty()
+                                        listOf(firstName, lastName)
+                                            .filter { it.isNotBlank() }
+                                            .joinToString(" ")
+                                            .ifBlank { "Conductor" }
+                                    },
+                                    departureDate = extractDateFromDateTime(ride.date)
                                 )
                             }
                         }
@@ -280,7 +349,8 @@ class TripViewModel(
                             totalSeats = totalSeats,
                             acceptedReservations = acceptedReservations,
                             availableSeats = availableSeats,
-                            reservations = reservationItems
+                            reservations = reservationItems,
+                            departureDate = extractDateFromDateTime(activeRide.date)
                         )
                     } else {
                         null
@@ -325,6 +395,10 @@ class TripViewModel(
                     currentRideId = currentRideId,
                     authId = authId
                 )
+                Log.d(
+                    TAG,
+                    "saved RAM authIdPresent=true rider=${riderTripsForStorage.size} driverRes=${driverTripForStorage?.reservations?.size ?: 0}"
+                )
 
                 localStorageManager.saveTripState(
                     TripStorageDto(
@@ -335,6 +409,10 @@ class TripViewModel(
                         activeDriverTrip = driverTripForStorage,
                         savedAt = System.currentTimeMillis()
                     )
+                )
+                Log.d(
+                    TAG,
+                    "saved FILE authIdPresent=true rider=${riderTripsForStorage.size} driverRes=${driverTripForStorage?.reservations?.size ?: 0}"
                 )
 
                 if (currentRideId != null) {
@@ -678,6 +756,15 @@ class TripViewModel(
                 uiState.copy(infoMessage = "No se pudo actualizar el viaje.")
             }
             if (success) loadTrips(showLoading = false)
+        }
+    }
+
+    private fun extractDateFromDateTime(dateTime: String): String {
+        return try {
+            // dateTime is expected to be in format like "2025-05-09 14:30:00" or "2025-05-09"
+            dateTime.split(" ").firstOrNull() ?: "Por definir"
+        } catch (_: Exception) {
+            "Por definir"
         }
     }
 
