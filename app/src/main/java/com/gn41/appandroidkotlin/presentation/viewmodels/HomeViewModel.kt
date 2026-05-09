@@ -17,6 +17,8 @@ import com.gn41.appandroidkotlin.data.repositories.TripRepository
 import com.gn41.appandroidkotlin.data.repositories.VehicleRepository
 import com.gn41.appandroidkotlin.data.repositories.ZoneRepository
 import com.gn41.appandroidkotlin.data.services.performance.Supervisor
+import com.gn41.appandroidkotlin.localStorage.LocalStorageManager
+import com.gn41.appandroidkotlin.presentation.cache.TripMemoryCache
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -54,7 +56,8 @@ class HomeViewModel(
     private val tripRepository: TripRepository? = null,
     private val zoneRepository: ZoneRepository,
     private val vehicleRepository: VehicleRepository,
-    private val networkHelper: NetworkHelper
+    private val networkHelper: NetworkHelper,
+    private val localStorageManager: LocalStorageManager
 ) : ViewModel() {
 
     private var allRides: List<RideDto> = emptyList()
@@ -329,6 +332,8 @@ class HomeViewModel(
         sessionManager.clearToken()
         sessionManager.clearUserId()
         sessionManager.clearDriverId()
+        TripMemoryCache.clear()
+        localStorageManager.clearTripState()
         currentResolvedUserId = null
         currentResolvedAuthId = null
         currentResolvedDriverId = null

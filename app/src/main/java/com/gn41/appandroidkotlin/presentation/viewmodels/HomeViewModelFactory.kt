@@ -9,6 +9,7 @@ import com.gn41.appandroidkotlin.data.repositories.RidesRepository
 import com.gn41.appandroidkotlin.data.repositories.TripRepository
 import com.gn41.appandroidkotlin.data.repositories.VehicleRepository
 import com.gn41.appandroidkotlin.data.repositories.ZoneRepository
+import com.gn41.appandroidkotlin.localStorage.LocalStorageManager
 
 class HomeViewModelFactory(
     private val ridesRepository: RidesRepository,
@@ -17,7 +18,8 @@ class HomeViewModelFactory(
     private val tripRepository: TripRepository? = null,
     private val zoneRepository: ZoneRepository,
     private val vehicleRepository: VehicleRepository,
-    private val networkHelper: NetworkHelper
+    private val networkHelper: NetworkHelper,
+    private val localStorageManager: LocalStorageManager
 ) : ViewModelProvider.Factory {
 
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
@@ -30,7 +32,8 @@ class HomeViewModelFactory(
                 tripRepository,
                 zoneRepository,
                 vehicleRepository,
-                networkHelper
+                networkHelper,
+                localStorageManager
             ) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")

@@ -12,6 +12,9 @@ import com.gn41.appandroidkotlin.data.local.SessionManager
 import com.gn41.appandroidkotlin.data.repositories.LocationRepository
 import com.gn41.appandroidkotlin.data.repositories.TripRepository
 import com.gn41.appandroidkotlin.domain.UserSharedLocation
+import com.gn41.appandroidkotlin.localStorage.LocalStorageManager
+import com.gn41.appandroidkotlin.localStorage.TripStorageDto
+import com.gn41.appandroidkotlin.presentation.cache.TripMemoryCache
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -22,8 +25,13 @@ class TripViewModel(
     private val tripRepository: TripRepository,
     private val sessionManager: SessionManager,
     private val locationRepository: LocationRepository,
-    private val networkHelper: NetworkHelper
+    private val networkHelper: NetworkHelper,
+    private val localStorageManager: LocalStorageManager
 ) : ViewModel() {
+
+    companion object {
+        private const val TAG = "TripCache"
+    }
 
     var uiState by mutableStateOf(TripUiState())
         private set
@@ -68,10 +76,131 @@ class TripViewModel(
 
     private fun applyOfflineState() {
         connectivity = false
-        uiState = uiState.copy(
-            isLoading = false,
-            errorMessage = ""
-        )
+
+        val token = sessionManager.getToken()
+        if (token.isEmpty()) {
+            TripMemoryCache.clear()
+            localStorageManager.clearTripState()
+            Log.d(TAG, "clear caches: no session token")
+            uiState = uiState.copy(
+                isLoading = false,
+                errorMessage = "No hay una sesion activa.",
+                activeRiderTrips = emptyList(),
+                activeDriverTrip = null,
+                isOfflineData = false,
+                offlineMessage = ""
+            )
+            return
+        }
+
+        val authId = extractAuthIdFromToken(token)
+        if (authId.isNullOrEmpty()) {
+            TripMemoryCache.clear()
+            localStorageManager.clearTripState()
+            Log.d(TAG, "clear caches: invalid auth id from token")
+            uiState = uiState.copy(
+                isLoading = false,
+                errorMessage = "No se pudo validar el usuario.",
+                activeRiderTrips = emptyList(),
+                activeDriverTrip = null,
+                isOfflineData = false,
+                offlineMessage = ""
+            )
+            return
+        }
+
+        val cachedState = TripMemoryCache.getSavedState(authId = authId)
+
+        if (cachedState != null) {
+            Log.d(
+                TAG,
+                "offline restore from RAM authIdPresent=true rider=${cachedState.activeRiderTrips.size} driverRes=${cachedState.activeDriverTrip?.reservations?.size ?: 0}"
+            )
+            // Restore from cache and mark as offline data
+            uiState = uiState.copy(
+                isLoading = false,
+                errorMessage = "",
+                activeRiderTrips = cachedState.activeRiderTrips,
+                activeDriverTrip = cachedState.activeDriverTrip,
+                currentUserId = cachedState.currentUserId,
+                currentRideId = cachedState.currentRideId,
+                isOfflineData = true,
+                offlineMessage = "Estás viendo información guardada. Necesitas conexión para realizar acciones."
+            )
+        } else {
+            Log.d(TAG, "offline RAM miss, reading local storage")
+            val localState = localStorageManager.readTripState(authId)
+            if (localState != null) {
+                Log.d(
+                    TAG,
+                    "offline restore from FILE authIdPresent=true rider=${localState.activeRiderTrips.size} driverRes=${localState.activeDriverTrip?.reservations?.size ?: 0} savedAt=${localState.savedAt}"
+                )
+                uiState = uiState.copy(
+                    isLoading = false,
+                    errorMessage = "",
+                    activeRiderTrips = localState.activeRiderTrips,
+                    activeDriverTrip = localState.activeDriverTrip,
+                    currentUserId = localState.currentUserId,
+                    currentRideId = localState.currentRideId,
+                    isOfflineData = true,
+                    offlineMessage = "Estás viendo información guardada. Necesitas conexión para realizar acciones."
+                )
+            } else {
+                // If offline happened right after a successful render, keep in-memory uiState as last resort.
+                val inMemoryRiderTrips = uiState.activeRiderTrips.filter { riderTrip ->
+                    val reservationState = normalizeState(riderTrip.status)
+                    val rideState = normalizeState(riderTrip.rideStatus)
+                    val reservationIsActive = reservationState == "PENDIENTE" ||
+                        reservationState == "ACEPTADA" || reservationState == "EN_CURSO"
+                    val rideIsActive = rideState != "FINALIZADO" && rideState != "CANCELADO"
+                    reservationIsActive && rideIsActive
+                }
+                val inMemoryDriverTrip = buildDriverTripForStorage(uiState.activeDriverTrip)
+                if (inMemoryRiderTrips.isNotEmpty() || inMemoryDriverTrip != null) {
+                    Log.d(
+                        TAG,
+                        "offline restore from CURRENT_UI (timing fallback) authIdPresent=true rider=${inMemoryRiderTrips.size} driverRes=${inMemoryDriverTrip?.reservations?.size ?: 0}"
+                    )
+                    TripMemoryCache.save(
+                        activeRiderTrips = inMemoryRiderTrips,
+                        activeDriverTrip = inMemoryDriverTrip,
+                        currentUserId = uiState.currentUserId,
+                        currentRideId = uiState.currentRideId,
+                        authId = authId
+                    )
+                    localStorageManager.saveTripState(
+                        TripStorageDto(
+                            authId = authId,
+                            currentUserId = uiState.currentUserId,
+                            currentRideId = uiState.currentRideId,
+                            activeRiderTrips = inMemoryRiderTrips,
+                            activeDriverTrip = inMemoryDriverTrip,
+                            savedAt = System.currentTimeMillis()
+                        )
+                    )
+                    uiState = uiState.copy(
+                        isLoading = false,
+                        errorMessage = "",
+                        activeRiderTrips = inMemoryRiderTrips,
+                        activeDriverTrip = inMemoryDriverTrip,
+                        isOfflineData = true,
+                        offlineMessage = "Estás viendo información guardada. Necesitas conexión para realizar acciones."
+                    )
+                    return
+                }
+
+                Log.d(TAG, "offline no cache found in RAM/FILE")
+                // No cache available in memory or local storage
+                uiState = uiState.copy(
+                    isLoading = false,
+                    errorMessage = "Sin conexión a internet. No hay datos guardados disponibles.",
+                    activeRiderTrips = emptyList(),
+                    activeDriverTrip = null,
+                    isOfflineData = false,
+                    offlineMessage = ""
+                )
+            }
+        }
     }
 
     fun loadTrips(showLoading: Boolean = true) {
@@ -84,6 +213,9 @@ class TripViewModel(
 
         val token = sessionManager.getToken()
         if (token.isEmpty()) {
+            TripMemoryCache.clear()
+            localStorageManager.clearTripState()
+            Log.d(TAG, "clear caches: no session token during loadTrips")
             uiState = uiState.copy(
                 isLoading = false,
                 errorMessage = "No hay una sesion activa."
@@ -93,6 +225,9 @@ class TripViewModel(
 
         val authId = extractAuthIdFromToken(token)
         if (authId.isNullOrEmpty()) {
+            TripMemoryCache.clear()
+            localStorageManager.clearTripState()
+            Log.d(TAG, "clear caches: invalid auth id during loadTrips")
             uiState = uiState.copy(
                 isLoading = false,
                 errorMessage = "No se pudo validar el usuario."
@@ -110,6 +245,7 @@ class TripViewModel(
             try {
                 val user = tripRepository.getUserByAuthId(authId, token)
                 if (user == null) {
+                    Log.w(TAG, "loadTrips user not found from backend; keeping previous cache")
                     uiState = uiState.copy(
                         isLoading = false,
                         errorMessage = "No se encontro el usuario."
@@ -156,7 +292,16 @@ class TripViewModel(
                                         "No puedes cancelar un viaje en curso."
                                     } else {
                                         null
-                                    }
+                                    },
+                                    driverName = run {
+                                        val firstName = ride.drivers?.users?.first_name.orEmpty()
+                                        val lastName = ride.drivers?.users?.last_name.orEmpty()
+                                        listOf(firstName, lastName)
+                                            .filter { it.isNotBlank() }
+                                            .joinToString(" ")
+                                            .ifBlank { "Conductor" }
+                                    },
+                                    departureDate = extractDateFromDateTime(ride.date)
                                 )
                             }
                         }
@@ -204,7 +349,8 @@ class TripViewModel(
                             totalSeats = totalSeats,
                             acceptedReservations = acceptedReservations,
                             availableSeats = availableSeats,
-                            reservations = reservationItems
+                            reservations = reservationItems,
+                            departureDate = extractDateFromDateTime(activeRide.date)
                         )
                     } else {
                         null
@@ -225,7 +371,48 @@ class TripViewModel(
                     activeRiderTrips = riderTrips,
                     activeDriverTrip = driverTrip,
                     currentUserId = user.id,
-                    currentRideId = currentRideId
+                    currentRideId = currentRideId,
+                    isOfflineData = false,
+                    offlineMessage = ""
+                )
+
+                // Save to memory cache with filtered driver reservations
+                val riderTripsForStorage = riderTrips.filter { riderTrip ->
+                    val reservationState = normalizeState(riderTrip.status)
+                    val rideState = normalizeState(riderTrip.rideStatus)
+                    val reservationIsActive = reservationState == "PENDIENTE" ||
+                        reservationState == "ACEPTADA" || reservationState == "EN_CURSO"
+                    val rideIsActive = rideState != "FINALIZADO" && rideState != "CANCELADO"
+                    reservationIsActive && rideIsActive
+                }
+
+                val driverTripForStorage = buildDriverTripForStorage(driverTrip)
+
+                TripMemoryCache.save(
+                    activeRiderTrips = riderTripsForStorage,
+                    activeDriverTrip = driverTripForStorage,
+                    currentUserId = user.id,
+                    currentRideId = currentRideId,
+                    authId = authId
+                )
+                Log.d(
+                    TAG,
+                    "saved RAM authIdPresent=true rider=${riderTripsForStorage.size} driverRes=${driverTripForStorage?.reservations?.size ?: 0}"
+                )
+
+                localStorageManager.saveTripState(
+                    TripStorageDto(
+                        authId = authId,
+                        currentUserId = user.id,
+                        currentRideId = currentRideId,
+                        activeRiderTrips = riderTripsForStorage,
+                        activeDriverTrip = driverTripForStorage,
+                        savedAt = System.currentTimeMillis()
+                    )
+                )
+                Log.d(
+                    TAG,
+                    "saved FILE authIdPresent=true rider=${riderTripsForStorage.size} driverRes=${driverTripForStorage?.reservations?.size ?: 0}"
                 )
 
                 if (currentRideId != null) {
@@ -244,116 +431,122 @@ class TripViewModel(
     }
 
     fun onCancelReservationClicked(reservationId: Int) {
-        connectivity = tripRepository.availableConnection()
-        if (connectivity) {
-            changeReservationState(
-                reservationId = reservationId,
-                newState = "CANCELADA",
-                successMessage = "Reserva cancelada correctamente."
-            )
+        if (!canRunOnlineAction("Necesitas conexión a internet para cancelar esta reserva.")) {
+            return
         }
+
+        changeReservationState(
+            reservationId = reservationId,
+            newState = "CANCELADA",
+            successMessage = "Reserva cancelada correctamente."
+        )
     }
 
     fun onAcceptReservationClicked(reservationId: Int) {
-        connectivity = tripRepository.availableConnection()
-        if (connectivity) {
-            val currentTrip = uiState.activeDriverTrip
-            if (currentTrip == null) {
-                uiState = uiState.copy(infoMessage = "No tienes un viaje activo como conductor.")
-                return
-            }
-
-            if (!canManageReservation(currentTrip.status)) {
-                uiState = uiState.copy(infoMessage = "Solo puedes gestionar reservas cuando el viaje esta ofertado.")
-                return
-            }
-
-            val reservation = currentTrip.reservations.firstOrNull { it.id == reservationId }
-            if (reservation == null || !isPendingReservation(reservation.status)) {
-                uiState = uiState.copy(infoMessage = "La reserva ya no esta pendiente.")
-                return
-            }
-
-            val acceptedCount = currentTrip.reservations.count { isAcceptedReservation(it.status) }
-            if (!canAcceptMoreReservations(acceptedCount, currentTrip.totalSeats)) {
-                uiState =
-                    uiState.copy(infoMessage = "No hay cupos disponibles para aceptar mas reservas.")
-                return
-            }
-
-            changeReservationState(
-                reservationId = reservationId,
-                newState = "ACEPTADA",
-                successMessage = "Reserva aceptada."
-            )
+        if (!canRunOnlineAction("Necesitas conexión a internet para aceptar esta reserva.")) {
+            return
         }
+
+        val currentTrip = uiState.activeDriverTrip
+        if (currentTrip == null) {
+            uiState = uiState.copy(infoMessage = "No tienes un viaje activo como conductor.")
+            return
+        }
+
+        if (!canManageReservation(currentTrip.status)) {
+            uiState = uiState.copy(infoMessage = "Solo puedes gestionar reservas cuando el viaje esta ofertado.")
+            return
+        }
+
+        val reservation = currentTrip.reservations.firstOrNull { it.id == reservationId }
+        if (reservation == null || !isPendingReservation(reservation.status)) {
+            uiState = uiState.copy(infoMessage = "La reserva ya no esta pendiente.")
+            return
+        }
+
+        val acceptedCount = currentTrip.reservations.count { isAcceptedReservation(it.status) }
+        if (!canAcceptMoreReservations(acceptedCount, currentTrip.totalSeats)) {
+            uiState =
+                uiState.copy(infoMessage = "No hay cupos disponibles para aceptar mas reservas.")
+            return
+        }
+
+        changeReservationState(
+            reservationId = reservationId,
+            newState = "ACEPTADA",
+            successMessage = "Reserva aceptada."
+        )
     }
 
     fun onRejectReservationClicked(reservationId: Int) {
-        connectivity = tripRepository.availableConnection()
-        if (connectivity) {
-            val currentTrip = uiState.activeDriverTrip
-            if (currentTrip == null) {
-                uiState = uiState.copy(infoMessage = "No tienes un viaje activo como conductor.")
-                return
-            }
-
-            if (!canManageReservation(currentTrip.status)) {
-                uiState = uiState.copy(infoMessage = "Solo puedes gestionar reservas cuando el viaje esta ofertado.")
-                return
-            }
-
-            val reservation = currentTrip.reservations.firstOrNull { it.id == reservationId }
-            if (reservation == null || !isPendingReservation(reservation.status)) {
-                uiState = uiState.copy(infoMessage = "La reserva ya no esta pendiente.")
-                return
-            }
-
-            changeReservationState(
-                reservationId = reservationId,
-                newState = "RECHAZADA",
-                successMessage = "Reserva rechazada."
-            )
+        if (!canRunOnlineAction("Necesitas conexión a internet para rechazar esta reserva.")) {
+            return
         }
+
+        val currentTrip = uiState.activeDriverTrip
+        if (currentTrip == null) {
+            uiState = uiState.copy(infoMessage = "No tienes un viaje activo como conductor.")
+            return
+        }
+
+        if (!canManageReservation(currentTrip.status)) {
+            uiState = uiState.copy(infoMessage = "Solo puedes gestionar reservas cuando el viaje esta ofertado.")
+            return
+        }
+
+        val reservation = currentTrip.reservations.firstOrNull { it.id == reservationId }
+        if (reservation == null || !isPendingReservation(reservation.status)) {
+            uiState = uiState.copy(infoMessage = "La reserva ya no esta pendiente.")
+            return
+        }
+
+        changeReservationState(
+            reservationId = reservationId,
+            newState = "RECHAZADA",
+            successMessage = "Reserva rechazada."
+        )
     }
 
     fun onCancelTripClicked() {
-        connectivity = tripRepository.availableConnection()
-        if (connectivity) {
-            val current = uiState.activeDriverTrip ?: return
-            Log.d("TripCancel", "Driver cancel rideId=${current.rideId}")
-            changeRideState(
-                rideId = current.rideId,
-                newState = "CANCELADO",
-                successMessage = "Viaje cancelado.",
-                rejectActiveReservations = true
-            )
+        if (!canRunOnlineAction("Necesitas conexión a internet para cancelar este viaje.")) {
+            return
         }
+
+        val current = uiState.activeDriverTrip ?: return
+        Log.d("TripCancel", "Driver cancel rideId=${current.rideId}")
+        changeRideState(
+            rideId = current.rideId,
+            newState = "CANCELADO",
+            successMessage = "Viaje cancelado.",
+            rejectActiveReservations = true
+        )
     }
 
     fun onStartTripClicked() {
-        connectivity = tripRepository.availableConnection()
-        if (connectivity) {
-            val current = uiState.activeDriverTrip ?: return
-            if (!canManageReservation(current.status)) {
-                uiState = uiState.copy(infoMessage = "Solo puedes iniciar un viaje ofertado.")
-                return
-            }
-
-            startTripAndCleanPendingReservations(current)
+        if (!canRunOnlineAction("Necesitas conexión a internet para iniciar este viaje.")) {
+            return
         }
+
+        val current = uiState.activeDriverTrip ?: return
+        if (!canManageReservation(current.status)) {
+            uiState = uiState.copy(infoMessage = "Solo puedes iniciar un viaje ofertado.")
+            return
+        }
+
+        startTripAndCleanPendingReservations(current)
     }
 
     fun onFinishTripClicked() {
-        connectivity = tripRepository.availableConnection()
-        if (connectivity) {
-            val current = uiState.activeDriverTrip ?: return
-            changeRideState(
-                rideId = current.rideId,
-                newState = "FINALIZADO",
-                successMessage = "Viaje finalizado."
-            )
+        if (!canRunOnlineAction("Necesitas conexión a internet para finalizar este viaje.")) {
+            return
         }
+
+        val current = uiState.activeDriverTrip ?: return
+        changeRideState(
+            rideId = current.rideId,
+            newState = "FINALIZADO",
+            successMessage = "Viaje finalizado."
+        )
     }
 
     fun refreshTrips() {
@@ -361,10 +554,11 @@ class TripViewModel(
     }
 
     fun onOpenRouteClicked() {
-        connectivity = tripRepository.availableConnection()
-        if (connectivity) {
-            uiState = uiState.copy(infoMessage = "Abrir ruta disponible pronto.")
+        if (!canRunOnlineAction("Necesitas conexión a internet para abrir la ruta.")) {
+            return
         }
+
+        uiState = uiState.copy(infoMessage = "Abrir ruta disponible pronto.")
     }
 
     fun clearInfoMessage() {
@@ -375,77 +569,82 @@ class TripViewModel(
     }
 
     fun onToggleLocationSharing(enabled: Boolean) {
-        connectivity = tripRepository.availableConnection()
-        if (connectivity) {
-            sessionManager.saveLocationSharingEnabled(enabled)
+        if (!canRunOnlineAction("Necesitas conexión para compartir tu ubicación.")) {
+            return
+        }
 
-            uiState = if (enabled) {
-                uiState.copy(
-                    isLocationSharingEnabled = true,
-                    locationErrorMessage = "",
-                    locationStatusMessage = "Compartiendo ubicación."
-                )
-            } else {
-                uiState.copy(
-                    isLocationSharingEnabled = false,
-                    currentLatitude = null,
-                    currentLongitude = null,
-                    isLocationLoading = false,
-                    lastLocationTimestamp = null,
-                    locationErrorMessage = "",
-                    locationStatusMessage = "Ubicación compartida desactivada."
-                )
-            }
+        sessionManager.saveLocationSharingEnabled(enabled)
+
+        uiState = if (enabled) {
+            uiState.copy(
+                isLocationSharingEnabled = true,
+                locationErrorMessage = "",
+                locationStatusMessage = "Compartiendo ubicación."
+            )
+        } else {
+            uiState.copy(
+                isLocationSharingEnabled = false,
+                currentLatitude = null,
+                currentLongitude = null,
+                isLocationLoading = false,
+                lastLocationTimestamp = null,
+                locationErrorMessage = "",
+                locationStatusMessage = "Ubicación compartida desactivada."
+            )
         }
     }
 
     fun onLocationPermissionResult(granted: Boolean) {
-        connectivity = tripRepository.availableConnection()
-        if (connectivity) {
-            uiState = uiState.copy(
-                hasLocationPermission = granted,
-                locationErrorMessage = if (granted) "" else "Permiso de ubicación denegado.",
-                locationStatusMessage = if (granted) uiState.locationStatusMessage else "No se concedió el permiso de ubicación."
-            )
+        if (!canRunOnlineAction()) {
+            return
         }
+
+        uiState = uiState.copy(
+            hasLocationPermission = granted,
+            locationErrorMessage = if (granted) "" else "Permiso de ubicación denegado.",
+            locationStatusMessage = if (granted) uiState.locationStatusMessage else "No se concedió el permiso de ubicación."
+        )
     }
 
     fun onLocationRequestStarted() {
-        connectivity = tripRepository.availableConnection()
-        if (connectivity) {
-            uiState = uiState.copy(
-                isLocationLoading = true,
-                locationErrorMessage = "",
-                locationStatusMessage = "Obteniendo ubicación..."
-            )
+        if (!canRunOnlineAction()) {
+            return
         }
+
+        uiState = uiState.copy(
+            isLocationLoading = true,
+            locationErrorMessage = "",
+            locationStatusMessage = "Obteniendo ubicación..."
+        )
     }
 
     fun onLocationUpdated(latitude: Double, longitude: Double) {
-        connectivity = tripRepository.availableConnection()
-        if (connectivity) {
-            uiState = uiState.copy(
-                currentLatitude = latitude,
-                currentLongitude = longitude,
-                isLocationLoading = false,
-                lastLocationTimestamp = System.currentTimeMillis(),
-                locationErrorMessage = "",
-                locationStatusMessage = "Ubicación actualizada."
-            )
-
-            saveCurrentLocationToBackend(latitude, longitude)
+        if (!canRunOnlineAction()) {
+            return
         }
+
+        uiState = uiState.copy(
+            currentLatitude = latitude,
+            currentLongitude = longitude,
+            isLocationLoading = false,
+            lastLocationTimestamp = System.currentTimeMillis(),
+            locationErrorMessage = "",
+            locationStatusMessage = "Ubicación actualizada."
+        )
+
+        saveCurrentLocationToBackend(latitude, longitude)
     }
 
     fun onLocationRequestFailed(message: String) {
-        connectivity = tripRepository.availableConnection()
-        if (connectivity) {
-            uiState = uiState.copy(
-                isLocationLoading = false,
-                locationErrorMessage = message,
-                locationStatusMessage = "No se pudo obtener la ubicación."
-            )
+        if (!canRunOnlineAction()) {
+            return
         }
+
+        uiState = uiState.copy(
+            isLocationLoading = false,
+            locationErrorMessage = message,
+            locationStatusMessage = "No se pudo obtener la ubicación."
+        )
     }
 
     fun onLocationCleared() {
@@ -492,7 +691,21 @@ class TripViewModel(
         }
     }
 
-private fun changeReservationState(
+    private fun canRunOnlineAction(errorMessage: String = ""): Boolean {
+        val isOnline = tripRepository.availableConnection()
+        connectivity = isOnline
+
+        if (!isOnline) {
+            if (errorMessage.isNotEmpty()) {
+                uiState = uiState.copy(infoMessage = errorMessage)
+            }
+            return false
+        }
+
+        return true
+    }
+
+    private fun changeReservationState(
         reservationId: Int,
         newState: String,
         successMessage: String
@@ -543,6 +756,15 @@ private fun changeReservationState(
                 uiState.copy(infoMessage = "No se pudo actualizar el viaje.")
             }
             if (success) loadTrips(showLoading = false)
+        }
+    }
+
+    private fun extractDateFromDateTime(dateTime: String): String {
+        return try {
+            // dateTime is expected to be in format like "2025-05-09 14:30:00" or "2025-05-09"
+            dateTime.split(" ").firstOrNull() ?: "Por definir"
+        } catch (_: Exception) {
+            "Por definir"
         }
     }
 
@@ -624,6 +846,25 @@ private fun changeReservationState(
 
     private fun canManageReservation(rideState: String?): Boolean {
         return normalizeState(rideState) == "OFERTADO"
+    }
+
+    private fun buildDriverTripForStorage(driverTrip: ActiveDriverTripUiModel?): ActiveDriverTripUiModel? {
+        if (driverTrip == null) return null
+
+        val rideState = normalizeState(driverTrip.status)
+        val isActiveRide = rideState == "OFERTADO" || rideState == "EN_CURSO"
+        if (!isActiveRide) return null
+
+        val filteredReservations = driverTrip.reservations.filter { reservation ->
+            val reservationState = normalizeState(reservation.status)
+            reservationState == "ACEPTADA" || reservationState == "EN_CURSO"
+        }
+
+        return driverTrip.copy(
+            reservations = filteredReservations,
+            reservationsCount = filteredReservations.size,
+            acceptedReservations = filteredReservations.size
+        )
     }
 
     private fun canAcceptMoreReservations(acceptedCount: Int, totalSeats: Int): Boolean {

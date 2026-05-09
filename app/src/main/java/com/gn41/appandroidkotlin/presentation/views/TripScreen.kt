@@ -30,8 +30,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.WifiOff
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -68,17 +66,17 @@ fun TripScreen(
     viewModel: TripViewModel,
     onHomeClick: () -> Unit
 ) {
-    if (viewModel.connectivity) {
-        val state = viewModel.uiState
-        val context = LocalContext.current
-        var selectedSection by remember { mutableStateOf("Conductor") }
-        var reservationToAcceptId by remember { mutableStateOf<Int?>(null) }
-        var reservationToRejectId by remember { mutableStateOf<Int?>(null) }
-        var reservationToCancelId by remember { mutableStateOf<Int?>(null) }
-        var showCancelRideDialog by remember { mutableStateOf(false) }
-        var showFinishRideDialog by remember { mutableStateOf(false) }
-        val configuration = LocalConfiguration.current
-        val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+    val state = viewModel.uiState
+    val context = LocalContext.current
+    var selectedSection by remember { mutableStateOf("Conductor") }
+    var reservationToAcceptId by remember { mutableStateOf<Int?>(null) }
+    var reservationToRejectId by remember { mutableStateOf<Int?>(null) }
+    var reservationToCancelId by remember { mutableStateOf<Int?>(null) }
+    var showCancelRideDialog by remember { mutableStateOf(false) }
+    var showFinishRideDialog by remember { mutableStateOf(false) }
+    val configuration = LocalConfiguration.current
+    val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+    val canAutoRefresh = viewModel.connectivity && !state.isOfflineData
 
         val locationPermissionLauncher = rememberLauncherForActivityResult(
             contract = ActivityResultContracts.RequestPermission()
@@ -97,7 +95,8 @@ fun TripScreen(
             }
         }
 
-        LaunchedEffect(Unit) {
+        LaunchedEffect(canAutoRefresh) {
+            if (!canAutoRefresh) return@LaunchedEffect
             while (true) {
                 delay(8000)
                 viewModel.refreshTrips()
@@ -164,6 +163,19 @@ fun TripScreen(
                 Spacer(modifier = Modifier.height(10.dp))
             }
 
+            if (state.isOfflineData && state.offlineMessage.isNotEmpty()) {
+                Text(
+                    text = state.offlineMessage,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = Color(0xFF78350F),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(Color(0xFFFEF3C7), RoundedCornerShape(10.dp))
+                        .padding(10.dp)
+                )
+                Spacer(modifier = Modifier.height(10.dp))
+            }
+
             Box(
                 modifier = Modifier
                     .weight(1f)
@@ -216,7 +228,8 @@ fun TripScreen(
                             onStartTrip = viewModel::onStartTripClicked,
                             onOpenRoute = viewModel::onOpenRouteClicked,
                             onFinishTrip = { showFinishRideDialog = true },
-                            onCancelReservation = { reservationToCancelId = it }
+                            onCancelReservation = { reservationToCancelId = it },
+                            isOfflineMode = state.isOfflineData
                         )
                     }
 
@@ -233,7 +246,8 @@ fun TripScreen(
                             onStartTrip = viewModel::onStartTripClicked,
                             onOpenRoute = viewModel::onOpenRouteClicked,
                             onFinishTrip = { showFinishRideDialog = true },
-                            onCancelReservation = { reservationToCancelId = it }
+                            onCancelReservation = { reservationToCancelId = it },
+                            isOfflineMode = state.isOfflineData
                         )
                     }
                 }
@@ -366,60 +380,6 @@ fun TripScreen(
                 }
             )
         }
-    }
-    else {
-        val scrollState = rememberScrollState()
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(darkBlue)
-                .statusBarsPadding()
-                .navigationBarsPadding()
-                .background(darkBlue)
-                .padding(16.dp)
-                .verticalScroll(scrollState),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text(
-                text = "Mis viajes",
-                style = MaterialTheme.typography.titleLarge,
-                color = Color.White
-            )
-
-            Spacer(modifier = Modifier.height(6.dp))
-
-            Text(
-                text = "Revisa tu viaje como conductor o pasajero.",
-                style = MaterialTheme.typography.bodyMedium,
-                color = Color.LightGray
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            LazyColumn(
-                modifier = Modifier
-                .weight(1f)
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                item{
-                    EmptyStateCard(
-                        icon = Icons.Default.WifiOff,
-                        iconTint = MaterialTheme.colorScheme.primary,
-                        title = "Sin conexión a internet",
-                        message = "No puedes gestionar tus viajes ahora mismo.\nRevisa tu conexión e intenta de nuevo."
-                    )
-                }
-            }
-
-            BottomNavigationBar(
-                selectedTab = "Viajes",
-                onTabClick = {
-                    if (it == "Inicio") onHomeClick()
-                }
-            )
-        }
-    }
 }
 
 @Composable
@@ -435,7 +395,8 @@ private fun PortraitTripsContent(
     onStartTrip: () -> Unit,
     onOpenRoute: () -> Unit,
     onFinishTrip: () -> Unit,
-    onCancelReservation: (Int) -> Unit
+    onCancelReservation: (Int) -> Unit,
+    isOfflineMode: Boolean = false
 ) {
     Column(
         modifier = Modifier.fillMaxSize()
@@ -461,13 +422,15 @@ private fun PortraitTripsContent(
                     onCancelTrip = onCancelTrip,
                     onStartTrip = onStartTrip,
                     onOpenRoute = onOpenRoute,
-                    onFinishTrip = onFinishTrip
+                    onFinishTrip = onFinishTrip,
+                    isOfflineMode = isOfflineMode
                 )
             } else {
                 RiderSection(
                     viewModel = viewModel,
                     trips = riderTrips,
-                    onCancelReservation = onCancelReservation
+                    onCancelReservation = onCancelReservation,
+                    isOfflineMode = isOfflineMode
                 )
             }
         }
@@ -487,7 +450,8 @@ private fun LandscapeTripsContent(
     onStartTrip: () -> Unit,
     onOpenRoute: () -> Unit,
     onFinishTrip: () -> Unit,
-    onCancelReservation: (Int) -> Unit
+    onCancelReservation: (Int) -> Unit,
+    isOfflineMode: Boolean = false
 ) {
     val state = viewModel.uiState
 
@@ -531,12 +495,14 @@ private fun LandscapeTripsContent(
                         onCancelTrip = onCancelTrip,
                         onStartTrip = onStartTrip,
                         onOpenRoute = onOpenRoute,
-                        onFinishTrip = onFinishTrip
+                        onFinishTrip = onFinishTrip,
+                        isOfflineMode = isOfflineMode
                     )
                 } else {
                     RiderSummarySection(
                         trips = riderTrips,
-                        onCancelReservation = onCancelReservation
+                        onCancelReservation = onCancelReservation,
+                        isOfflineMode = isOfflineMode
                     )
                 }
             }
@@ -563,7 +529,8 @@ private fun LandscapeTripsContent(
                         isUsingCachedLocations = state.isUsingCachedLocations,
                         cachedLocationMessage = state.cachedLocationMessage,
                         onRefreshLocations = viewModel::loadLocationsForCurrentRide,
-                        mapMarkers = viewModel.getMapMarkers()
+                        mapMarkers = viewModel.getMapMarkers(),
+                        isOfflineMode = isOfflineMode
                     )
                 } else {
                     EmptyStateCardTrip(message = "No hay un viaje activo para mostrar en el mapa.")
@@ -585,7 +552,8 @@ private fun LandscapeTripsContent(
                         isUsingCachedLocations = state.isUsingCachedLocations,
                         cachedLocationMessage = state.cachedLocationMessage,
                         onRefreshLocations = viewModel::loadLocationsForCurrentRide,
-                        mapMarkers = viewModel.getMapMarkers()
+                        mapMarkers = viewModel.getMapMarkers(),
+                        isOfflineMode = isOfflineMode
 
                     )
                 } else {
@@ -633,7 +601,8 @@ private fun SectionSwitch(
 private fun RiderSection(
     viewModel: TripViewModel,
     trips: List<ActiveRiderTripUiModel>,
-    onCancelReservation: (Int) -> Unit
+    onCancelReservation: (Int) -> Unit,
+    isOfflineMode: Boolean = false
 ) {
     if (trips.isEmpty()) {
         EmptyStateCardTrip(message = "No tienes una reserva activa como pasajero.")
@@ -668,7 +637,8 @@ private fun RiderSection(
             ) {
                 RiderReservationCard(
                     trip = trip,
-                    onCancel = { onCancelReservation(trip.reservationId) }
+                    onCancel = { onCancelReservation(trip.reservationId) },
+                    isOfflineMode = isOfflineMode
                 )
 
                 TripLocationCard(
@@ -685,7 +655,8 @@ private fun RiderSection(
                     isUsingCachedLocations = state.isUsingCachedLocations,
                     cachedLocationMessage = state.cachedLocationMessage,
                     onRefreshLocations = viewModel::loadLocationsForCurrentRide,
-                    mapMarkers = viewModel.getMapMarkers()
+                    mapMarkers = viewModel.getMapMarkers(),
+                    isOfflineMode = isOfflineMode
 
                 )
             }
@@ -696,7 +667,8 @@ private fun RiderSection(
 @Composable
 private fun RiderSummarySection(
     trips: List<ActiveRiderTripUiModel>,
-    onCancelReservation: (Int) -> Unit
+    onCancelReservation: (Int) -> Unit,
+    isOfflineMode: Boolean = false
 ) {
     if (trips.isEmpty()) {
         EmptyStateCardTrip(message = "No tienes una reserva activa como pasajero.")
@@ -719,7 +691,8 @@ private fun RiderSummarySection(
         items(trips) { trip ->
             RiderReservationCard(
                 trip = trip,
-                onCancel = { onCancelReservation(trip.reservationId) }
+                onCancel = { onCancelReservation(trip.reservationId) },
+                isOfflineMode = isOfflineMode
             )
         }
     }
@@ -728,7 +701,8 @@ private fun RiderSummarySection(
 @Composable
 private fun RiderReservationCard(
     trip: ActiveRiderTripUiModel,
-    onCancel: () -> Unit
+    onCancel: () -> Unit,
+    isOfflineMode: Boolean = false
 ) {
     Column(
         modifier = Modifier
@@ -757,6 +731,8 @@ private fun RiderReservationCard(
 
         Text("Estado reserva: ${mapStateLabel(trip.status)}", style = MaterialTheme.typography.bodyMedium)
         Text("Estado viaje: ${mapStateLabel(trip.rideStatus)}", style = MaterialTheme.typography.bodyMedium)
+        Text("Conductor: ${trip.driverName}", style = MaterialTheme.typography.bodyMedium)
+        Text("Fecha de salida: ${trip.departureDate}", style = MaterialTheme.typography.bodyMedium)
         Text("Hora de salida: ${formatTimeText(trip.departureTime)}", style = MaterialTheme.typography.bodyMedium)
 
         Spacer(modifier = Modifier.height(10.dp))
@@ -764,7 +740,7 @@ private fun RiderReservationCard(
         if (trip.showCancelButton) {
             Button(
                 onClick = onCancel,
-                enabled = trip.canCancelReservation,
+                enabled = trip.canCancelReservation && !isOfflineMode,
                 colors = ButtonDefaults.buttonColors(
                     containerColor = AutumnEmber,
                     disabledContainerColor = Color(0xFFCBD5E1),
@@ -782,6 +758,15 @@ private fun RiderReservationCard(
                     color = Color(0xFF64748B)
                 )
             }
+
+            if (isOfflineMode && trip.canCancelReservation) {
+                Spacer(modifier = Modifier.height(6.dp))
+                Text(
+                    text = "No disponible en modo offline.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Color(0xFF64748B)
+                )
+            }
         }
     }
 }
@@ -795,7 +780,8 @@ private fun DriverSection(
     onCancelTrip: () -> Unit,
     onStartTrip: () -> Unit,
     onOpenRoute: () -> Unit,
-    onFinishTrip: () -> Unit
+    onFinishTrip: () -> Unit,
+    isOfflineMode: Boolean = false
 ) {
     if (trip == null) {
         EmptyStateCardTrip(message = "No tienes un viaje activo como conductor.")
@@ -834,7 +820,8 @@ private fun DriverSection(
                     onCancelTrip = onCancelTrip,
                     onStartTrip = onStartTrip,
                     onOpenRoute = onOpenRoute,
-                    onFinishTrip = onFinishTrip
+                    onFinishTrip = onFinishTrip,
+                    isOfflineMode = isOfflineMode
                 )
 
                 TripLocationCard(
@@ -851,7 +838,8 @@ private fun DriverSection(
                     isUsingCachedLocations = state.isUsingCachedLocations,
                     cachedLocationMessage = state.cachedLocationMessage,
                     onRefreshLocations = viewModel::loadLocationsForCurrentRide,
-                    mapMarkers = viewModel.getMapMarkers()
+                    mapMarkers = viewModel.getMapMarkers(),
+                    isOfflineMode = isOfflineMode
                 )
             }
         }
@@ -871,7 +859,8 @@ private fun DriverSection(
                     canAccept = trip.availableSeats > 0,
                     canManageReservation = canManageReservations,
                     onAccept = { onAcceptReservation(reservation.id) },
-                    onReject = { onRejectReservation(reservation.id) }
+                    onReject = { onRejectReservation(reservation.id) },
+                    isOfflineMode = isOfflineMode
                 )
             }
         } else {
@@ -890,7 +879,8 @@ private fun DriverSummarySection(
     onCancelTrip: () -> Unit,
     onStartTrip: () -> Unit,
     onOpenRoute: () -> Unit,
-    onFinishTrip: () -> Unit
+    onFinishTrip: () -> Unit,
+    isOfflineMode: Boolean = false
 ) {
     if (trip == null) {
         EmptyStateCardTrip(message = "No tienes un viaje activo como conductor.")
@@ -917,7 +907,8 @@ private fun DriverSummarySection(
                 onCancelTrip = onCancelTrip,
                 onStartTrip = onStartTrip,
                 onOpenRoute = onOpenRoute,
-                onFinishTrip = onFinishTrip
+                onFinishTrip = onFinishTrip,
+                isOfflineMode = isOfflineMode
             )
         }
 
@@ -936,7 +927,8 @@ private fun DriverSummarySection(
                     canAccept = trip.availableSeats > 0,
                     canManageReservation = canManageReservations,
                     onAccept = { onAcceptReservation(reservation.id) },
-                    onReject = { onRejectReservation(reservation.id) }
+                    onReject = { onRejectReservation(reservation.id) },
+                    isOfflineMode = isOfflineMode
                 )
             }
         } else {
@@ -953,7 +945,8 @@ private fun DriverMainCard(
     onCancelTrip: () -> Unit,
     onStartTrip: () -> Unit,
     onOpenRoute: () -> Unit,
-    onFinishTrip: () -> Unit
+    onFinishTrip: () -> Unit,
+    isOfflineMode: Boolean = false
 ) {
     Column(
         modifier = Modifier
@@ -967,6 +960,7 @@ private fun DriverMainCard(
         Text("Origen: ${trip.source}", style = MaterialTheme.typography.bodyMedium)
         Text("Destino: ${trip.destination}", style = MaterialTheme.typography.bodyMedium)
         Text("Estado: ${mapStateLabel(trip.status)}", style = MaterialTheme.typography.bodyMedium)
+        Text("Fecha de salida: ${trip.departureDate}", style = MaterialTheme.typography.bodyMedium)
         Text("Hora de salida: ${formatTimeText(trip.departureTime)}", style = MaterialTheme.typography.bodyMedium)
         Text("Reservas: ${trip.reservationsCount}", style = MaterialTheme.typography.bodyMedium)
         Text("Cupos disponibles: ${trip.availableSeats}/${trip.totalSeats}", style = MaterialTheme.typography.bodyMedium)
@@ -980,11 +974,13 @@ private fun DriverMainCard(
                 SmallActionButton(
                     text = "Cancelar viaje",
                     onClick = onCancelTrip,
+                    enabled = !isOfflineMode,
                     accentColor = Color(0xFFDC2626)
                 )
                 SmallActionButton(
                     text = "Iniciar",
                     onClick = onStartTrip,
+                    enabled = !isOfflineMode,
                     accentColor = Color(0xFF16A34A)
                 )
             }
@@ -995,14 +991,25 @@ private fun DriverMainCard(
                 SmallActionButton(
                     text = "Abrir ruta",
                     onClick = onOpenRoute,
+                    enabled = !isOfflineMode,
                     accentColor = Color(0xFF2563EB)
                 )
                 SmallActionButton(
                     text = "Finalizar",
                     onClick = onFinishTrip,
+                    enabled = !isOfflineMode,
                     accentColor = Color(0xFF16A34A)
                 )
             }
+        }
+
+        if (isOfflineMode) {
+            Spacer(modifier = Modifier.height(10.dp))
+            Text(
+                text = "No se pueden realizar acciones en modo offline.",
+                style = MaterialTheme.typography.bodySmall,
+                color = Color(0xFF64748B)
+            )
         }
     }
 }
@@ -1013,7 +1020,8 @@ private fun DriverReservationRow(
     canAccept: Boolean,
     canManageReservation: Boolean,
     onAccept: () -> Unit,
-    onReject: () -> Unit
+    onReject: () -> Unit,
+    isOfflineMode: Boolean = false
 ) {
     Column(
         modifier = Modifier
@@ -1039,12 +1047,13 @@ private fun DriverReservationRow(
                 SmallActionButton(
                     text = "Aceptar",
                     onClick = onAccept,
-                    enabled = canAccept,
+                    enabled = canAccept && !isOfflineMode,
                     accentColor = Color(0xFF16A34A)
                 )
                 SmallActionButton(
                     text = "Rechazar",
                     onClick = onReject,
+                    enabled = !isOfflineMode,
                     accentColor = Color(0xFFDC2626)
                 )
             }
@@ -1054,6 +1063,14 @@ private fun DriverReservationRow(
                     text = "No hay cupos disponibles.",
                     style = MaterialTheme.typography.bodyMedium,
                     color = Color(0xFFB45309)
+                )
+            }
+            if (isOfflineMode) {
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = "No disponible en modo offline.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Color(0xFF64748B)
                 )
             }
         } else if (normalizeState(item.status) == "PENDIENTE" && !canManageReservation) {

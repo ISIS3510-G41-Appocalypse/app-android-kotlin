@@ -19,9 +19,11 @@ data class ActiveRiderTripUiModel(
     val status: String,
     val rideStatus: String,
     val departureTime: String,
-    val canCancelReservation: Boolean,
-    val showCancelButton: Boolean,
-    val cancelDisabledReason: String?
+    val driverName: String = "Conductor",
+    val departureDate: String = "Por definir",
+    val canCancelReservation: Boolean = false,
+    val showCancelButton: Boolean = true,
+    val cancelDisabledReason: String? = null
 )
 
 data class ActiveDriverTripUiModel(
@@ -34,7 +36,8 @@ data class ActiveDriverTripUiModel(
     val totalSeats: Int,
     val acceptedReservations: Int,
     val availableSeats: Int,
-    val reservations: List<TripReservationItemUiModel>
+    val reservations: List<TripReservationItemUiModel>,
+    val departureDate: String = "Por definir"
 )
 
 data class TripUiState(
@@ -57,7 +60,10 @@ data class TripUiState(
     val currentRideId: Int? = null,
     val rideLocations: List<UserSharedLocation> = emptyList(),
     val isUsingCachedLocations: Boolean = false,
-    val cachedLocationMessage: String = ""
+    val cachedLocationMessage: String = "",
+
+    val isOfflineData: Boolean = false,
+    val offlineMessage: String = ""
 )
 
 
