@@ -1,13 +1,13 @@
 package com.gn41.appandroidkotlin.presentation.navigation
 
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import com.gn41.appandroidkotlin.presentation.viewmodels.ActiveRideViewModel
-import com.gn41.appandroidkotlin.presentation.viewmodels.ActiveRideViewModelFactory
 import com.gn41.appandroidkotlin.presentation.viewmodels.CreateRideViewModel
 import com.gn41.appandroidkotlin.presentation.viewmodels.CreateRideViewModelFactory
 import com.gn41.appandroidkotlin.presentation.viewmodels.HomeViewModel
@@ -15,12 +15,12 @@ import com.gn41.appandroidkotlin.presentation.viewmodels.HomeViewModelFactory
 import com.gn41.appandroidkotlin.presentation.viewmodels.TripViewModel
 import com.gn41.appandroidkotlin.presentation.viewmodels.TripViewModelFactory
 import com.gn41.appandroidkotlin.presentation.viewmodels.WelcomeViewModel
-import com.gn41.appandroidkotlin.presentation.views.ActiveRideScreen
 import com.gn41.appandroidkotlin.presentation.views.CreateRideScreen
 import com.gn41.appandroidkotlin.presentation.views.HomeScreen
 import com.gn41.appandroidkotlin.presentation.views.TripScreen
 import com.gn41.appandroidkotlin.presentation.views.WelcomeScreen
 
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun AppNavigation(
     navController: NavHostController,

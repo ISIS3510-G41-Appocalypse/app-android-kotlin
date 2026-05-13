@@ -1,21 +1,22 @@
 package com.gn41.appandroidkotlin.presentation.views
 
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.annotation.RequiresApi
 import androidx.compose.runtime.LaunchedEffect
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.rememberNavController
 import com.gn41.appandroidkotlin.core.connectivity.NetworkHelper
 import com.gn41.appandroidkotlin.data.local.SessionManager
-import com.gn41.appandroidkotlin.data.repositories.AuthRepositoryImpl
-import com.gn41.appandroidkotlin.data.repositories.ReservationsRepositoryImpl
-import com.gn41.appandroidkotlin.data.repositories.RideRepositoryImpl
-import com.gn41.appandroidkotlin.data.repositories.RidesRepositoryImpl
-import com.gn41.appandroidkotlin.data.repositories.TripRepositoryImpl
-import com.gn41.appandroidkotlin.data.repositories.VehicleRepositoryImpl
-import com.gn41.appandroidkotlin.data.repositories.ZoneRepositoryImpl
+import com.gn41.appandroidkotlin.data.repositories.ReservationsRepository
+import com.gn41.appandroidkotlin.data.repositories.RideRepository
+import com.gn41.appandroidkotlin.data.repositories.RidesRepository
+import com.gn41.appandroidkotlin.data.repositories.TripRepository
+import com.gn41.appandroidkotlin.data.repositories.VehicleRepository
+import com.gn41.appandroidkotlin.data.repositories.ZoneRepository
 import com.gn41.appandroidkotlin.data.services.auth.AuthService
 import com.gn41.appandroidkotlin.data.services.reservations.ReservationsService
 import com.gn41.appandroidkotlin.data.services.rides.RideService
@@ -33,14 +34,15 @@ import com.gn41.appandroidkotlin.presentation.viewmodels.WelcomeViewModel
 import com.gn41.appandroidkotlin.presentation.viewmodels.WelcomeViewModelFactory
 import com.gn41.appandroidkotlin.ui.theme.AppAndroidKotlinTheme
 import com.gn41.appandroidkotlin.data.services.location.LocationService
-import com.gn41.appandroidkotlin.data.repositories.LocationRepositoryImpl
-import com.gn41.appandroidkotlin.presentation.viewmodels.ActiveRideViewModelFactory
 import com.mapbox.common.MapboxOptions
 import com.gn41.appandroidkotlin.BuildConfig
+import com.gn41.appandroidkotlin.data.repositories.AuthRepository
+import com.gn41.appandroidkotlin.data.repositories.LocationRepository
 import com.gn41.appandroidkotlin.localStorage.LocalStorageManager
 
 
 class MainActivity : ComponentActivity() {
+    @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -52,10 +54,10 @@ class MainActivity : ComponentActivity() {
                 val localStorageManager = LocalStorageManager(this)
 
                 val authService = AuthService()
-                val authRepository = AuthRepositoryImpl(authService)
+                val authRepository = AuthRepository(authService)
 
                 val tripService = TripService()
-                val tripRepository = TripRepositoryImpl(tripService, networkHelper)
+                val tripRepository = TripRepository(tripService, networkHelper)
 
                 val welcomeFactory = WelcomeViewModelFactory(
                     context = this,
@@ -66,12 +68,12 @@ class MainActivity : ComponentActivity() {
                 val welcomeViewModel: WelcomeViewModel = viewModel(factory = welcomeFactory)
 
                 val reservationsService = ReservationsService()
-                val reservationsRepository = ReservationsRepositoryImpl(reservationsService)
+                val reservationsRepository = ReservationsRepository(reservationsService)
 
                 val ridesService = RidesService()
-                val ridesRepository = RidesRepositoryImpl(ridesService)
+                val ridesRepository = RidesRepository(ridesService)
                 val locationService = LocationService()
-                val locationRepository = LocationRepositoryImpl(locationService,sessionManager)
+                val locationRepository = LocationRepository(locationService, sessionManager)
 
                 val tripViewModelFactory = TripViewModelFactory(
                     tripRepository = tripRepository,
@@ -86,9 +88,9 @@ class MainActivity : ComponentActivity() {
                 val vehicleService = VehicleService(sessionManager, userIdService)
                 val zoneService = ZoneService(sessionManager)
 
-                val rideRepository = RideRepositoryImpl(rideService, networkHelper, localStorageManager)
-                val vehicleRepository = VehicleRepositoryImpl(vehicleService)
-                val zoneRepository = ZoneRepositoryImpl(zoneService)
+                val rideRepository = RideRepository(rideService, networkHelper, localStorageManager)
+                val vehicleRepository = VehicleRepository(vehicleService)
+                val zoneRepository = ZoneRepository(zoneService)
 
                 val homeFactory = HomeViewModelFactory(
                     ridesRepository = ridesRepository,
@@ -107,10 +109,6 @@ class MainActivity : ComponentActivity() {
                     vehicleRepository = vehicleRepository,
                     zoneRepository = zoneRepository,
                     sessionManager = sessionManager
-                )
-
-                val activeRideViewModelFactory = ActiveRideViewModelFactory(
-                    rideRepository = rideRepository
                 )
 
                 val navController = rememberNavController()
