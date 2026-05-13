@@ -1,17 +1,9 @@
 package com.gn41.appandroidkotlin.data.services.rides
 
-import com.gn41.appandroidkotlin.data.dto.createRide.ActiveRideDto
 import com.gn41.appandroidkotlin.data.dto.createRide.CreateRideRequestDto
-import com.gn41.appandroidkotlin.data.dto.createRide.RiderCancellationOddsDto
-import com.gn41.appandroidkotlin.data.dto.createRide.RiderIdDto
-import com.gn41.appandroidkotlin.data.dto.createRide.RiderUserInfoDto
-import retrofit2.Response
 import retrofit2.http.Body
-import retrofit2.http.GET
 import retrofit2.http.Header
-import retrofit2.http.PATCH
 import retrofit2.http.POST
-import retrofit2.http.Query
 
 interface RideApi {
     @POST("rest/v1/rides")
@@ -19,7 +11,7 @@ interface RideApi {
                        @Header("Authorization") authorization: String,
                        @Body request: CreateRideRequestDto)
 
-    @PATCH("rest/v1/rides")
+    /*@PATCH("rest/v1/rides")
     suspend fun cancelRide(@Header("apiKey") apiKey: String,
                            @Header("Authorization") authorization: String,
                            @Query("id") id: String,
@@ -53,5 +45,5 @@ interface RideApi {
                                @Header("Authorization") authorization: String,
                                @Query("select") select: String = "first_name,last_name",
                                @Query("id", encoded = true) ids: String
-    ) : List<RiderUserInfoDto>
+    ) : List<RiderUserInfoDto>*/
 }

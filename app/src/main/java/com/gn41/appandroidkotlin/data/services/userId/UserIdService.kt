@@ -1,6 +1,5 @@
 package com.gn41.appandroidkotlin.data.services.userId
 
-import android.util.Base64
 import android.util.Log
 import com.gn41.appandroidkotlin.BuildConfig
 import com.gn41.appandroidkotlin.data.dto.user.UserIdDto
@@ -78,7 +77,7 @@ class UserIdService(
             ?: throw Exception("Driver not found")
     }
 
-    private fun extractAuthIdFromToken(token: String): String? {
+/*    private fun extractAuthIdFromToken(token: String): String? {
         return try {
             val parts = token.split('.')
             if (parts.size < 2) return null
@@ -91,5 +90,5 @@ class UserIdService(
         } catch (_: Exception) {
             null
         }
-    }
+    }*/
 }

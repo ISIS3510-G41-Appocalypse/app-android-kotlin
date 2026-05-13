@@ -169,8 +169,6 @@ fun LoginCard(viewModel: WelcomeViewModel, isLandscape: Boolean) {
                         strokeWidth = 2.dp,
                         color = MaterialTheme.colorScheme.onPrimary
                     )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(text = "Iniciando...")
                 } else {
                     Text(text = "Iniciar sesión")
                 }
