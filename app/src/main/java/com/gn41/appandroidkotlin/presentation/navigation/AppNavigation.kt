@@ -12,11 +12,14 @@ import com.gn41.appandroidkotlin.presentation.viewmodels.CreateRideViewModel
 import com.gn41.appandroidkotlin.presentation.viewmodels.CreateRideViewModelFactory
 import com.gn41.appandroidkotlin.presentation.viewmodels.HomeViewModel
 import com.gn41.appandroidkotlin.presentation.viewmodels.HomeViewModelFactory
+import com.gn41.appandroidkotlin.presentation.viewmodels.SettingsViewModel
+import com.gn41.appandroidkotlin.presentation.viewmodels.SettingsViewModelFactory
 import com.gn41.appandroidkotlin.presentation.viewmodels.TripViewModel
 import com.gn41.appandroidkotlin.presentation.viewmodels.TripViewModelFactory
 import com.gn41.appandroidkotlin.presentation.viewmodels.WelcomeViewModel
 import com.gn41.appandroidkotlin.presentation.views.CreateRideScreen
 import com.gn41.appandroidkotlin.presentation.views.HomeScreen
+import com.gn41.appandroidkotlin.presentation.views.SettingsScreen
 import com.gn41.appandroidkotlin.presentation.views.TripScreen
 import com.gn41.appandroidkotlin.presentation.views.WelcomeScreen
 
@@ -27,8 +30,9 @@ fun AppNavigation(
     welcomeViewModel: WelcomeViewModel,
     homeViewModelFactory: HomeViewModelFactory,
     createRideViewModelFactory: CreateRideViewModelFactory,
-    /*activeRideViewModelFactory: ActiveRideViewModelFactory*/
-    tripViewModelFactory: TripViewModelFactory
+    tripViewModelFactory: TripViewModelFactory,
+    settingsViewModelFactory: SettingsViewModelFactory,
+    onDarkModeChanged: (Boolean) -> Unit
 ) {
     NavHost(
         navController = navController,
@@ -54,31 +58,30 @@ fun AppNavigation(
                     navController.navigate("trips")
                 },
                 onCreateRideClick = {
-                    // FASE 4: la validación de internet vive en el ViewModel
                     homeViewModel.onCreateRideRequested {
                         navController.navigate("create_ride")
                     }
                 },
+                onSettingsClick = {
+                    navController.navigate("settings")
+                }
+            )
+        }
+
+        composable("settings") {
+            val settingsViewModel: SettingsViewModel = viewModel(factory = settingsViewModelFactory)
+            SettingsScreen(
+                viewModel = settingsViewModel,
+                onBackClick = { navController.popBackStack() },
                 onLogoutClick = {
                     welcomeViewModel.resetLoginState()
                     navController.navigate("welcome") {
                         popUpTo(0) { inclusive = true }
                     }
-                }
+                },
+                onDarkModeChanged = onDarkModeChanged
             )
         }
-/*
-        composable("trips") {
-            val activeRideViewModel: ActiveRideViewModel = viewModel(factory = activeRideViewModelFactory)
-            ActiveRideScreen(
-                viewModel = activeRideViewModel,
-                onBackClick = {
-                    navController.navigate("home") {
-                        launchSingleTop = true
-                    }
-                }
-            )
-        }*/
 
         composable("trips") {
             val tripViewModel: TripViewModel = viewModel(factory = tripViewModelFactory)
