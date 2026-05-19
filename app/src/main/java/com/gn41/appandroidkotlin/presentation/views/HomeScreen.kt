@@ -62,22 +62,12 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import com.gn41.appandroidkotlin.presentation.components.RideItemCard
 import com.gn41.appandroidkotlin.presentation.viewmodels.HomeViewModel
-import com.gn41.appandroidkotlin.ui.theme.AutumnEmber
-import com.gn41.appandroidkotlin.ui.theme.BrightSnow
-import com.gn41.appandroidkotlin.ui.theme.CoolSteel
-import com.gn41.appandroidkotlin.ui.theme.DarkCyan
-import com.gn41.appandroidkotlin.ui.theme.PrussianBlue
 import kotlinx.coroutines.delay
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 import java.util.TimeZone
-
-val darkBlue = Color(0xFF0B1E3B)
-val headerBlue = Color(0xFF1A2744)
-val whiteCard = BrightSnow
-val selectedBottomItemColor = AutumnEmber
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Estados visuales para la zona de rides
@@ -88,7 +78,7 @@ val selectedBottomItemColor = AutumnEmber
 private fun OfflineStateView() {
     EmptyStateCard(
         icon = Icons.Default.WifiOff,
-        iconTint = AutumnEmber,
+        iconTint = MaterialTheme.colorScheme.primary,
         title = "Sin conexión a internet",
         message = "No podemos cargar los viajes ahora mismo.\nRevisa tu conexión e intenta de nuevo."
     )
@@ -99,7 +89,7 @@ private fun OfflineStateView() {
 private fun EmptyRidesStateView() {
     EmptyStateCard(
         icon = Icons.Default.DirectionsCar,
-        iconTint = CoolSteel,
+        iconTint = MaterialTheme.colorScheme.tertiary,
         title = "Sin viajes disponibles",
         message = "No hay viajes disponibles en este momento."
     )
@@ -110,7 +100,7 @@ private fun EmptyRidesStateView() {
 private fun EmptyFilteredStateView() {
     EmptyStateCard(
         icon = Icons.Default.SearchOff,
-        iconTint = CoolSteel,
+        iconTint = MaterialTheme.colorScheme.tertiary,
         title = "Sin resultados",
         message = "Intenta cambiar los filtros para encontrar más viajes."
     )
@@ -134,7 +124,7 @@ fun EmptyStateCard(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(8.dp),
             modifier = Modifier
-                .background(headerBlue, RoundedCornerShape(16.dp))
+                .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(16.dp))
                 .padding(horizontal = 24.dp, vertical = 28.dp)
         ) {
             Icon(
@@ -146,14 +136,14 @@ fun EmptyStateCard(
             Spacer(modifier = Modifier.height(4.dp))
             Text(
                 text = title,
-                color = Color.White,
+                color = MaterialTheme.colorScheme.onSurface,
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.Bold,
                 textAlign = TextAlign.Center
             )
             Text(
                 text = message,
-                color = CoolSteel,
+                color = MaterialTheme.colorScheme.tertiary,
                 style = MaterialTheme.typography.bodySmall,
                 textAlign = TextAlign.Center
             )
@@ -198,7 +188,7 @@ fun HomeScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(PrussianBlue)
+            .background(MaterialTheme.colorScheme.background)
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
 
@@ -391,12 +381,12 @@ private fun ReservationMessageBanner(message: String, onDismiss: () -> Unit) {
     val isSuccess = message.contains("correctamente")
     Text(
         text = message,
-        color = if (isSuccess) DarkCyan else Color(0xFFEF4444),
+        color = if (isSuccess) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.error,
         style = MaterialTheme.typography.bodyMedium,
         modifier = Modifier
             .fillMaxWidth()
             .background(
-                if (isSuccess) Color(0xFFE6FFFA) else Color(0xFFFFEDED),
+                if (isSuccess) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.errorContainer,
                 RoundedCornerShape(8.dp)
             )
             .padding(horizontal = 12.dp, vertical = 8.dp)
@@ -410,11 +400,11 @@ private fun LoadingView() {
         contentAlignment = Alignment.Center
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            CircularProgressIndicator(color = Color.White)
+            CircularProgressIndicator(color = MaterialTheme.colorScheme.onBackground)
             Spacer(modifier = Modifier.height(8.dp))
             Text(
                 text = "Cargando viajes...",
-                color = Color.LightGray,
+                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
                 style = MaterialTheme.typography.bodyMedium
             )
         }
@@ -429,11 +419,11 @@ private fun ErrorView(message: String) {
     ) {
         Text(
             text = message,
-            color = Color(0xFFEF4444),
+            color = MaterialTheme.colorScheme.error,
             style = MaterialTheme.typography.bodyMedium,
             textAlign = TextAlign.Center,
             modifier = Modifier
-                .background(Color(0xFFFFEDED), RoundedCornerShape(12.dp))
+                .background(MaterialTheme.colorScheme.errorContainer, RoundedCornerShape(12.dp))
                 .padding(horizontal = 16.dp, vertical = 12.dp)
         )
     }
@@ -456,7 +446,7 @@ fun ExpandableCreateRideButton(
         if (expanded) {
             Box(
                 modifier = Modifier
-                    .background(Color(0xFF1F2937), RoundedCornerShape(12.dp))
+                    .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(12.dp))
                     .clickable {
                         expanded = false
                         if (!isBlocked) onCreateRideClick()
@@ -465,7 +455,7 @@ fun ExpandableCreateRideButton(
             ) {
                 Text(
                     text = if (isBlocked) blockedMessage else "Crear Viaje",
-                    color = if (isBlocked) Color(0xFF94A3B8) else Color.White,
+                    color = if (isBlocked) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.onSurface,
                     style = MaterialTheme.typography.bodyMedium
                 )
             }
@@ -475,7 +465,7 @@ fun ExpandableCreateRideButton(
         Box(
             modifier = Modifier
                 .background(
-                    color = if (isBlocked) Color(0xFF374151) else Color(0xFF1F2937),
+                    color = if (isBlocked) MaterialTheme.colorScheme.tertiary.copy(alpha = 0.5f) else MaterialTheme.colorScheme.surface,
                     shape = RoundedCornerShape(10.dp)
                 )
                 .clickable { expanded = !expanded }
@@ -483,7 +473,7 @@ fun ExpandableCreateRideButton(
         ) {
             Text(
                 text = "+",
-                color = if (isBlocked) Color(0xFF94A3B8) else Color.White,
+                color = if (isBlocked) MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f) else MaterialTheme.colorScheme.onSurface,
                 style = MaterialTheme.typography.titleMedium
             )
         }
@@ -499,7 +489,7 @@ fun HomeHeader(onSettingsClick: () -> Unit) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .background(headerBlue, shape = RoundedCornerShape(16.dp))
+            .background(MaterialTheme.colorScheme.surface, shape = RoundedCornerShape(16.dp))
             .padding(horizontal = 16.dp, vertical = 12.dp)
     ) {
         Row(
@@ -510,13 +500,13 @@ fun HomeHeader(onSettingsClick: () -> Unit) {
             Icon(
                 imageVector = Icons.Default.DirectionsCar,
                 contentDescription = "HappyRide",
-                tint = AutumnEmber,
+                tint = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.size(24.dp)
             )
             Spacer(modifier = Modifier.width(8.dp))
             Text(
                 text = "HappyRide",
-                color = Color.White,
+                color = MaterialTheme.colorScheme.onSurface,
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold
             )
@@ -525,7 +515,7 @@ fun HomeHeader(onSettingsClick: () -> Unit) {
             Icon(
                 imageVector = Icons.Default.Settings,
                 contentDescription = "Configuración",
-                tint = Color.White,
+                tint = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.size(20.dp)
             )
         }
@@ -541,20 +531,20 @@ fun OfertaViajestitle() {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .background(PrussianBlue, shape = RoundedCornerShape(16.dp))
+            .background(MaterialTheme.colorScheme.background, shape = RoundedCornerShape(16.dp))
             .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
             text = "Oferta de viajes",
-            color = Color.White,
+            color = MaterialTheme.colorScheme.onBackground,
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold
         )
         Spacer(modifier = Modifier.height(4.dp))
         Text(
             text = "Encuentra el viaje perfecto para tu trayecto.",
-            color = Color.White,
+            color = MaterialTheme.colorScheme.onBackground,
             style = MaterialTheme.typography.bodySmall,
             textAlign = TextAlign.Center
         )
@@ -590,7 +580,7 @@ fun FilterCard(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .background(BrightSnow, shape = RoundedCornerShape(16.dp))
+            .background(MaterialTheme.colorScheme.surface, shape = RoundedCornerShape(16.dp))
             .padding(16.dp)
     ) {
         FilterDropdownField(
@@ -608,7 +598,7 @@ fun FilterCard(
                     selectedValue = formatDateForUi(selectedDate),
                     onClick = { showDatePicker = true },
                     isActive = selectedDate != todayDateString(),
-                    neutralLabelColor = PrussianBlue
+                    neutralLabelColor = MaterialTheme.colorScheme.onSurface
                 )
             }
             Spacer(modifier = Modifier.width(8.dp))
@@ -632,7 +622,7 @@ fun FilterCard(
             Spacer(modifier = Modifier.height(4.dp))
             Text(
                 text = "Limpiar hora",
-                color = DarkCyan,
+                color = MaterialTheme.colorScheme.secondary,
                 style = MaterialTheme.typography.bodySmall,
                 modifier = Modifier.clickable { onDepartureTimeChange("Todas") }
             )
@@ -645,13 +635,13 @@ fun FilterCard(
         ) {
             Text(
                 text = if (hasActiveFilters) "$activeFilterCount filtros aplicados" else "Sin filtros aplicados",
-                color = if (hasActiveFilters) DarkCyan else CoolSteel,
+                color = if (hasActiveFilters) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.tertiary,
                 style = MaterialTheme.typography.bodyMedium
             )
             if (hasActiveFilters) {
                 Text(
                     text = "Limpiar",
-                    color = DarkCyan,
+                    color = MaterialTheme.colorScheme.secondary,
                     style = MaterialTheme.typography.bodyMedium,
                     modifier = Modifier.clickable { onClearFilters() }
                 )
@@ -770,12 +760,12 @@ fun FilterDropdownField(
 ) {
     var expanded by remember { mutableStateOf(false) }
     val isActive = useSelectionHighlight && selectedValue != defaultValue
-    val backgroundColor = if (isActive) Color(0xFFCCFBF1) else Color(0xFFF0F4F8)
-    val borderColor = if (isActive) DarkCyan.copy(alpha = 0.35f) else Color.Transparent
+    val backgroundColor = if (isActive) MaterialTheme.colorScheme.secondary.copy(alpha = 0.1f) else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f)
+    val borderColor = if (isActive) MaterialTheme.colorScheme.secondary.copy(alpha = 0.35f) else Color.Transparent
 
     Text(
         text = label,
-        color = PrussianBlue,
+        color = MaterialTheme.colorScheme.onSurface,
         style = MaterialTheme.typography.titleSmall,
         fontWeight = FontWeight.SemiBold
     )
@@ -788,7 +778,7 @@ fun FilterDropdownField(
             .clickable { expanded = true }
             .padding(horizontal = 10.dp, vertical = 10.dp)
     ) {
-        Text(text = selectedValue, style = MaterialTheme.typography.bodyMedium, color = PrussianBlue)
+        Text(text = selectedValue, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface)
         DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
             options.forEach { option ->
                 DropdownMenuItem(
@@ -817,7 +807,7 @@ fun BottomNavigationBar(
         modifier = Modifier
             .then(modifier)
             .fillMaxWidth()
-            .background(headerBlue, RoundedCornerShape(16.dp))
+            .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(16.dp))
             .padding(vertical = 12.dp, horizontal = 16.dp),
         horizontalArrangement = Arrangement.Center
     ) {
@@ -830,13 +820,13 @@ fun BottomNavigationBar(
                 Icon(
                     imageVector = icons[index],
                     contentDescription = item,
-                    tint = if (isSelected) AutumnEmber else CoolSteel,
+                    tint = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.tertiary,
                     modifier = Modifier.size(24.dp)
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
                     text = item,
-                    color = if (isSelected) AutumnEmber else CoolSteel,
+                    color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.tertiary,
                     style = MaterialTheme.typography.labelSmall
                 )
             }
@@ -852,12 +842,12 @@ fun FilterPickerField(
     isActive: Boolean,
     neutralLabelColor: Color = Color.Unspecified
 ) {
-    val backgroundColor = if (isActive) Color(0xFFCCFBF1) else Color(0xFFF0F4F8)
-    val borderColor = if (isActive) DarkCyan.copy(alpha = 0.35f) else Color.Transparent
+    val backgroundColor = if (isActive) MaterialTheme.colorScheme.secondary.copy(alpha = 0.1f) else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f)
+    val borderColor = if (isActive) MaterialTheme.colorScheme.secondary.copy(alpha = 0.35f) else Color.Transparent
 
     Text(
         text = label,
-        color = if (neutralLabelColor == Color.Unspecified) PrussianBlue else neutralLabelColor,
+        color = if (neutralLabelColor == Color.Unspecified) MaterialTheme.colorScheme.onSurface else neutralLabelColor,
         style = MaterialTheme.typography.titleSmall,
         fontWeight = FontWeight.SemiBold
     )
@@ -873,7 +863,7 @@ fun FilterPickerField(
         Text(
             text = selectedValue,
             style = MaterialTheme.typography.bodyMedium,
-            color = PrussianBlue
+            color = MaterialTheme.colorScheme.onSurface
         )
     }
 }

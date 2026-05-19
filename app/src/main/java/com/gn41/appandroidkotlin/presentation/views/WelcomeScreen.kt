@@ -29,8 +29,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.gn41.appandroidkotlin.presentation.components.LoginCard
 import com.gn41.appandroidkotlin.presentation.viewmodels.WelcomeViewModel
-import com.gn41.appandroidkotlin.ui.theme.BrightSnow
-import com.gn41.appandroidkotlin.ui.theme.CoolSteel
 
 @Composable
 fun WelcomeScreen(viewModel: WelcomeViewModel){
@@ -195,8 +193,8 @@ fun WelcomeButtons(onLoginClick: () -> Unit, onRegisterClick: () -> Unit){
         Button(
             onClick = onLoginClick,
             colors = ButtonDefaults.buttonColors(
-                containerColor = CoolSteel,
-                contentColor = BrightSnow
+                containerColor = MaterialTheme.colorScheme.tertiary,
+                contentColor = MaterialTheme.colorScheme.onSecondary // Using onSecondary for BrightSnow equivalent contrast
             )
         ) {
             Text(text = "¿Ya tienes una cuenta? Inicia Sesión")

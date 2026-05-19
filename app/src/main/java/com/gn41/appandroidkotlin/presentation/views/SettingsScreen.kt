@@ -34,9 +34,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.gn41.appandroidkotlin.presentation.viewmodels.SettingsViewModel
-import com.gn41.appandroidkotlin.ui.theme.AutumnEmber
-import com.gn41.appandroidkotlin.ui.theme.CoolSteel
-import com.gn41.appandroidkotlin.ui.theme.PrussianBlue
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -49,22 +46,22 @@ fun SettingsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Configuración", color = Color.White) },
+                title = { Text("Configuración", color = MaterialTheme.colorScheme.onSurface) },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Atrás",
-                            tint = Color.White
+                            tint = MaterialTheme.colorScheme.onSurface
                         )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = PrussianBlue
+                    containerColor = MaterialTheme.colorScheme.surface
                 )
             )
         },
-        containerColor = PrussianBlue
+        containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
         Column(
             modifier = Modifier
@@ -86,21 +83,21 @@ fun SettingsScreen(
                         Icon(
                             imageVector = Icons.Default.DarkMode,
                             contentDescription = null,
-                            tint = AutumnEmber
+                            tint = MaterialTheme.colorScheme.primary
                         )
                         Spacer(modifier = Modifier.width(12.dp))
                         Text(
                             text = "Modo Oscuro",
                             style = MaterialTheme.typography.bodyLarge,
-                            color = Color.White
+                            color = MaterialTheme.colorScheme.onSurface
                         )
                     }
                     Switch(
                         checked = viewModel.isDarkModeEnabled,
                         onCheckedChange = { viewModel.toggleDarkMode(it, onDarkModeChanged) },
                         colors = SwitchDefaults.colors(
-                            checkedThumbColor = AutumnEmber,
-                            checkedTrackColor = AutumnEmber.copy(alpha = 0.5f)
+                            checkedThumbColor = MaterialTheme.colorScheme.primary,
+                            checkedTrackColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
                         )
                     )
                 }
@@ -118,13 +115,13 @@ fun SettingsScreen(
                     Icon(
                         imageVector = Icons.Default.Logout,
                         contentDescription = null,
-                        tint = Color(0xFFEF4444)
+                        tint = MaterialTheme.colorScheme.error
                     )
                     Spacer(modifier = Modifier.width(12.dp))
                     Text(
                         text = "Cerrar Sesión",
                         style = MaterialTheme.typography.bodyLarge,
-                        color = Color(0xFFEF4444),
+                        color = MaterialTheme.colorScheme.error,
                         fontWeight = FontWeight.SemiBold
                     )
                 }
@@ -136,7 +133,7 @@ fun SettingsScreen(
             Text(
                 text = "Versión ${viewModel.appVersion}",
                 style = MaterialTheme.typography.bodySmall,
-                color = CoolSteel,
+                color = MaterialTheme.colorScheme.tertiary,
                 modifier = Modifier.align(Alignment.CenterHorizontally)
             )
         }
@@ -148,7 +145,7 @@ private fun SettingsItemCard(content: @Composable () -> Unit) {
     Card(
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
-            containerColor = Color(0xFF1A2744) // matches headerBlue from HomeScreen
+            containerColor = MaterialTheme.colorScheme.surface
         ),
         modifier = Modifier.fillMaxWidth()
     ) {
