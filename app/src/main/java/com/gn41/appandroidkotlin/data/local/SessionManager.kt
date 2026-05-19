@@ -83,4 +83,12 @@ class SessionManager(context: Context) {
     fun getCachedRideLocations(rideId: Int): String {
         return sharedPreferences.getString("cached_ride_locations_$rideId", "") ?: ""
     }
+
+    fun saveDarkModeEnabled(enabled: Boolean) {
+        sharedPreferences.edit().putBoolean("dark_mode_enabled", enabled).apply()
+    }
+
+    fun isDarkModeEnabled(): Boolean {
+        return sharedPreferences.getBoolean("dark_mode_enabled", true)
+    }
 }

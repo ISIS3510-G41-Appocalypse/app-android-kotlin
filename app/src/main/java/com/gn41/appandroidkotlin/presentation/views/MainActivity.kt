@@ -7,6 +7,10 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.annotation.RequiresApi
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.rememberNavController
 import com.gn41.appandroidkotlin.core.connectivity.NetworkHelper
@@ -29,6 +33,7 @@ import com.gn41.appandroidkotlin.presentation.navigation.AppNavigation
 import com.gn41.appandroidkotlin.presentation.cache.TripMemoryCache
 import com.gn41.appandroidkotlin.presentation.viewmodels.CreateRideViewModelFactory
 import com.gn41.appandroidkotlin.presentation.viewmodels.HomeViewModelFactory
+import com.gn41.appandroidkotlin.presentation.viewmodels.SettingsViewModelFactory
 import com.gn41.appandroidkotlin.presentation.viewmodels.TripViewModelFactory
 import com.gn41.appandroidkotlin.presentation.viewmodels.WelcomeViewModel
 import com.gn41.appandroidkotlin.presentation.viewmodels.WelcomeViewModelFactory
@@ -48,10 +53,17 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         MapboxOptions.accessToken = BuildConfig.MAPBOX_ACCESS_TOKEN
         setContent {
-            AppAndroidKotlinTheme {
-                val sessionManager = SessionManager(this)
+            val sessionManager = remember { SessionManager(this) }
+            val localStorageManager = remember { LocalStorageManager(this) }
+            
+            var darkThemeEnabled by remember { 
+                mutableStateOf(sessionManager.isDarkModeEnabled()) 
+            }
+
+            AppAndroidKotlinTheme(
+                darkTheme = darkThemeEnabled
+            ) {
                 val networkHelper = NetworkHelper(this)
-                val localStorageManager = LocalStorageManager(this)
 
                 val authService = AuthService()
                 val authRepository = AuthRepository(authService)
@@ -111,6 +123,11 @@ class MainActivity : ComponentActivity() {
                     sessionManager = sessionManager
                 )
 
+                val settingsViewModelFactory = SettingsViewModelFactory(
+                    sessionManager = sessionManager,
+                    localStorageManager = localStorageManager
+                )
+
                 val navController = rememberNavController()
 
                 LaunchedEffect(Unit) {
@@ -133,12 +150,13 @@ class MainActivity : ComponentActivity() {
                     welcomeViewModel = welcomeViewModel,
                     homeViewModelFactory = homeFactory,
                     createRideViewModelFactory = createRideViewModelFactory,
-                    /*activeRideViewModelFactory = activeRideViewModelFactory*/
-                    tripViewModelFactory = tripViewModelFactory
+                    tripViewModelFactory = tripViewModelFactory,
+                    settingsViewModelFactory = settingsViewModelFactory,
+                    onDarkModeChanged = { enabled ->
+                        darkThemeEnabled = enabled
+                    }
                 )
             }
         }
     }
 }
-
-/*2.0.0*/

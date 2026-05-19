@@ -24,8 +24,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DirectionsCar
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.LocalTaxi
-import androidx.compose.material.icons.filled.Logout
 import androidx.compose.material.icons.filled.SearchOff
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.WifiOff
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DatePicker
@@ -170,7 +170,7 @@ fun HomeScreen(
     viewModel: HomeViewModel,
     onTripsClick: () -> Unit,
     onCreateRideClick: () -> Unit,
-    onLogoutClick: () -> Unit
+    onSettingsClick: () -> Unit
 ) {
     val state = viewModel.uiState
     var selectedBottomTab by remember { mutableStateOf("Inicio") }
@@ -203,7 +203,7 @@ fun HomeScreen(
         Column(modifier = Modifier.fillMaxSize()) {
 
             if (isLandscape) {
-                HomeHeader(onLogoutClick = { viewModel.logout { onLogoutClick() } })
+                HomeHeader(onSettingsClick = onSettingsClick)
 
                 Row(
                     modifier = Modifier
@@ -289,7 +289,7 @@ fun HomeScreen(
                         .padding(horizontal = 16.dp, vertical = 16.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    item { HomeHeader(onLogoutClick = { viewModel.logout { onLogoutClick() } }) }
+                    item { HomeHeader(onSettingsClick = onSettingsClick) }
                     item { OfertaViajestitle() }
                     item {
                         FilterCard(
@@ -495,7 +495,7 @@ fun ExpandableCreateRideButton(
 // ─────────────────────────────────────────────────────────────────────────────
 
 @Composable
-fun HomeHeader(onLogoutClick: () -> Unit) {
+fun HomeHeader(onSettingsClick: () -> Unit) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -521,10 +521,10 @@ fun HomeHeader(onLogoutClick: () -> Unit) {
                 fontWeight = FontWeight.Bold
             )
         }
-        IconButton(onClick = onLogoutClick, modifier = Modifier.align(Alignment.CenterEnd)) {
+        IconButton(onClick = onSettingsClick, modifier = Modifier.align(Alignment.CenterEnd)) {
             Icon(
-                imageVector = Icons.Default.Logout,
-                contentDescription = "Cerrar sesión",
+                imageVector = Icons.Default.Settings,
+                contentDescription = "Configuración",
                 tint = Color.White,
                 modifier = Modifier.size(20.dp)
             )
