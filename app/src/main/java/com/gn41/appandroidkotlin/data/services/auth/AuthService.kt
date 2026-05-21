@@ -1,5 +1,6 @@
 package com.gn41.appandroidkotlin.data.services.auth
 
+import android.util.Log
 import com.gn41.appandroidkotlin.BuildConfig
 import com.gn41.appandroidkotlin.data.dto.auth.CreateCompleteUserRequestDto
 import com.gn41.appandroidkotlin.data.dto.auth.CreateCompleteUserResponseDto
@@ -44,7 +45,7 @@ class AuthService {
 
     suspend fun createCompleteUser(
         request: CreateCompleteUserRequestDto
-    ): CreateCompleteUserResponseDto? = withContext(Dispatchers.IO) {
+    ): CreateCompleteUserResponseDto = withContext(Dispatchers.IO) {
 
         return@withContext try {
 
@@ -55,15 +56,67 @@ class AuthService {
             )
 
             if (response.isSuccessful && response.body() != null) {
-                response.body()
+
+                response.body()!!
+
             } else {
-                println("Create user error: ${response.errorBody()?.string()}")
-                null
+
+                val errorBody = response.errorBody()?.string()
+                Log.e("AuthService", "Raw error body: $errorBody")
+
+                when {
+
+                    errorBody?.contains("USER_ALREADY_EXISTS") == true -> {
+                        CreateCompleteUserResponseDto(
+                            success = false,
+                            error_code = "USER_ALREADY_EXISTS",
+                            error = "Ya existe una cuenta con este correo."
+                        )
+                    }
+
+                    errorBody?.contains("VEHICLE_REQUIRED") == true -> {
+                        CreateCompleteUserResponseDto(
+                            success = false,
+                            error_code = "VEHICLE_REQUIRED",
+                            error = "Debes ingresar la información del vehículo."
+                        )
+                    }
+
+                    errorBody?.contains("INVALID_ROLE") == true -> {
+                        CreateCompleteUserResponseDto(
+                            success = false,
+                            error_code = "INVALID_ROLE",
+                            error = "El rol seleccionado no es válido."
+                        )
+                    }
+
+                    errorBody?.contains("MISSING_REQUIRED_FIELDS") == true -> {
+                        CreateCompleteUserResponseDto(
+                            success = false,
+                            error_code = "MISSING_REQUIRED_FIELDS",
+                            error = "Faltan campos obligatorios."
+                        )
+                    }
+
+                    else -> {
+                        CreateCompleteUserResponseDto(
+                            success = false,
+                            error_code = "UNKNOWN_SERVER_ERROR",
+                            error = "Ocurrió un error desconocido. Repórtalo para poder solucionarlo."
+                        )
+                    }
+                }
             }
 
         } catch (e: Exception) {
+
             e.printStackTrace()
-            null
+
+            CreateCompleteUserResponseDto(
+                success = false,
+                error_code = "NETWORK_ERROR",
+                error = "No se pudo conectar con el servidor. Revisa tu conexión."
+            )
         }
     }
 }

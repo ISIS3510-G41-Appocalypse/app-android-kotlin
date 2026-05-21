@@ -52,16 +52,32 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.gn41.appandroidkotlin.presentation.viewmodels.RegisterViewModel
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.runtime.LaunchedEffect
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import androidx.compose.runtime.rememberCoroutineScope
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RegisterScreen(
     onBackClick: () -> Unit,
-    onRegistrationSuccess: () -> Unit,
+    onRegistrationSuccess: (String,String) -> Unit,
     viewModel: RegisterViewModel = viewModel()
 ) {
+    val snackbarHostState = remember {
+        SnackbarHostState()
+    }
+    val coroutineScope = rememberCoroutineScope()
 
     Scaffold(
+        snackbarHost = {
+            SnackbarHost(
+                hostState = snackbarHostState
+            )
+        },
         topBar = {
+
             TopAppBar(
                 title = {
                     Text(
@@ -374,9 +390,23 @@ fun RegisterScreen(
                         if (viewModel.currentStep < 4) {
                             viewModel.nextStep()
                         } else {
-                            viewModel.onRegisterClick(
-                                onRegistrationSuccess
-                            )
+                            viewModel.onRegisterClick { email, password ->
+
+                                coroutineScope.launch {
+
+                                    snackbarHostState.showSnackbar(
+                                        message = "Cuenta creada exitosamente"
+                                    )
+
+                                    delay(1200)
+
+                                    onRegistrationSuccess(
+                                        email,
+                                        password
+                                    )
+                                }
+                            }
+
                         }
                     },
                     modifier = Modifier.weight(1f),

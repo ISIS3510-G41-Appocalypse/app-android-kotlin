@@ -485,7 +485,7 @@ class RegisterViewModel(
         return isValid
     }
 
-    fun onRegisterClick(onRegistrationSuccess: () -> Unit) {
+    fun onRegisterClick( onRegistrationSuccess: (String, String) -> Unit) {
         if (!validateStep1() || !validateStep2() || !validateStep3() || !validateVehicleInputs()) {
             registrationError = "Completa todos los campos requeridos."
             return
@@ -529,7 +529,7 @@ class RegisterViewModel(
 
                 val response = authRepository.createCompleteUser(request)
 
-                if (response != null && response.success) {
+                if (response.success) {
 
                     registrationSuccess = true
 
@@ -540,16 +540,20 @@ class RegisterViewModel(
                         "Registration successful for email: $email"
                     )
 
-                    onRegistrationSuccess()
+                    onRegistrationSuccess(
+                        email.trim().lowercase(),
+                        password.trim()
+                    )
 
                 } else {
 
                     registrationError =
-                        "Error en el registro. Verifica tus datos e intenta de nuevo."
+                        response.error
+                            ?: "Ocurrió un error desconocido. Repórtalo para poder solucionarlo."
 
                     Log.e(
                         "RegisterViewModel",
-                        "Registration failed for email: $email"
+                        "Registration failed: ${response.error_code}"
                     )
                 }
 
@@ -564,6 +568,8 @@ class RegisterViewModel(
                     e
                 )
 
+            } finally {
+                isLoading = false
             }
         }
     }

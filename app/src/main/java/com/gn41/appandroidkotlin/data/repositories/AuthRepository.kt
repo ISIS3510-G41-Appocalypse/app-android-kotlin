@@ -13,7 +13,7 @@ class AuthRepository(private val authService: AuthService) {
 
     suspend fun createCompleteUser(
         request: CreateCompleteUserRequestDto
-    ): CreateCompleteUserResponseDto? {
+    ): CreateCompleteUserResponseDto {
 
         return authService.createCompleteUser(request)
     }

@@ -58,10 +58,16 @@ fun AppNavigation(
             val registerViewModel: RegisterViewModel = viewModel(factory = registerViewModelFactory)
             RegisterScreen(
                 onBackClick = { navController.popBackStack() },
-                onRegistrationSuccess = {
-                    navController.navigate("home") {
-                        popUpTo("welcome") { inclusive = true }
-                        launchSingleTop = true
+                onRegistrationSuccess = { email, password ->
+
+                    welcomeViewModel.onEmailInput(email)
+                    welcomeViewModel.onPasswordInput(password)
+
+                    welcomeViewModel.onLoginSubmit {
+                        navController.navigate("home") {
+                            popUpTo("welcome") { inclusive = true }
+                            launchSingleTop = true
+                        }
                     }
                 },
                 viewModel = registerViewModel
