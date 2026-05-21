@@ -31,7 +31,7 @@ import com.gn41.appandroidkotlin.presentation.components.LoginCard
 import com.gn41.appandroidkotlin.presentation.viewmodels.WelcomeViewModel
 
 @Composable
-fun WelcomeScreen(viewModel: WelcomeViewModel){
+fun WelcomeScreen(viewModel: WelcomeViewModel, onRegisterClick: () -> Unit){
 
     val configuration = LocalConfiguration.current
     val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
@@ -89,7 +89,7 @@ fun WelcomeScreen(viewModel: WelcomeViewModel){
                 ) {
                     WelcomeButtons(
                         onLoginClick = { viewModel.onLoginClicked() },
-                        onRegisterClick = { viewModel.onRegisterClicked() }
+                        onRegisterClick = onRegisterClick
                     )
                 }
             }
@@ -117,7 +117,7 @@ fun WelcomeScreen(viewModel: WelcomeViewModel){
                 }
                 else {
                     WelcomeMessage()
-                    WelcomeButtons(onLoginClick = {viewModel.onLoginClicked()}, onRegisterClick = {viewModel.onRegisterClicked()})
+                    WelcomeButtons(onLoginClick = {viewModel.onLoginClicked()}, onRegisterClick = onRegisterClick)
                 }
 
             }
