@@ -87,8 +87,17 @@ fun AppNavigation(
             )
         }
 
-        composable("trips") {
+        composable("trips") { backStackEntry ->
             val tripViewModel: TripViewModel = viewModel(factory = tripViewModelFactory)
+            val ratingFinished = backStackEntry.savedStateHandle.get<Boolean>("rating_finished") ?: false
+
+            LaunchedEffect(ratingFinished) {
+                if (ratingFinished) {
+                    tripViewModel.clearFinishedRideForRating()
+                    backStackEntry.savedStateHandle["rating_finished"] = false
+                }
+            }
+
             TripScreen(
                 viewModel = tripViewModel,
                 onHomeClick = {
@@ -112,7 +121,12 @@ fun AppNavigation(
                 viewModel = ratingViewModel,
                 rideId = rideId,
                 ratingType = ratingType,
-                onBack = { navController.popBackStack() }
+                onBack = { navController.popBackStack() },
+                onRatingFinished = {
+                    navController.previousBackStackEntry
+                        ?.savedStateHandle
+                        ?.set("rating_finished", true)
+                }
             )
         }
 

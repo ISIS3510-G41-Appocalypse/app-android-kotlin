@@ -15,5 +15,13 @@ class RatingRepository(
     suspend fun rateRider(token: String, body: RateRiderRequestDto): Boolean {
         return ratingService.rateRider(token, body)
     }
+
+    suspend fun getRatedRidersForRide(token: String, rideId: Int, driverId: Int): List<Int> {
+        return ratingService.getRatedRidersForRide(token, rideId, driverId)
+    }
+
+    suspend fun getRatedDriversForRide(token: String, rideId: Int, riderId: Int): List<Int> {
+        return ratingService.getRatedDriversForRide(token, rideId, riderId)
+    }
 }
 

@@ -82,6 +82,11 @@ class RatingViewModel(
                     }
 
                     val reservations = tripRepository.getReservationsForRide(rideId, token)
+                    val ratedRiderIds = ratingRepository.getRatedRidersForRide(
+                        token = token,
+                        rideId = rideId,
+                        driverId = driver.id
+                    )
                     val riders = reservations
                         .mapNotNull { reservation ->
                             val nestedRider = reservation.riders ?: return@mapNotNull null
@@ -99,6 +104,10 @@ class RatingViewModel(
                             )
                         }
                         .distinctBy { it.riderId }
+                        .filter { riderToRate ->
+                            val riderId = riderToRate.riderId
+                            riderId != null && riderId !in ratedRiderIds
+                        }
 
                     uiState = uiState.copy(
                         isLoading = false,
@@ -106,7 +115,7 @@ class RatingViewModel(
                         driverId = driver.id,
                         ridersToRate = riders,
                         selectedRiderId = riders.firstOrNull()?.riderId,
-                        errorMessage = if (riders.isEmpty()) "No hay pasajeros disponibles para calificar." else null
+                        errorMessage = if (riders.isEmpty()) "No hay pasajeros pendientes por calificar." else null
                     )
                 } else {
                     if (rider == null) {
@@ -117,8 +126,11 @@ class RatingViewModel(
                         return@launch
                     }
 
-                    val activeReservations = tripRepository.getActiveRiderReservation(rider.id, token)
-                    val reservation = activeReservations.firstOrNull { it.ride_id == rideId }
+                    val reservation = tripRepository.getReservationByRideAndRider(
+                        rideId = rideId,
+                        riderId = rider.id,
+                        token = token
+                    )
                     val driverId = reservation?.rides?.drivers?.id
                     val firstName = reservation?.rides?.drivers?.users?.first_name.orEmpty()
                     val lastName = reservation?.rides?.drivers?.users?.last_name.orEmpty()
@@ -127,17 +139,32 @@ class RatingViewModel(
                         .joinToString(" ")
                         .ifBlank { "Driver" }
 
+                    val ratedDriverIds = ratingRepository.getRatedDriversForRide(
+                        token = token,
+                        rideId = rideId,
+                        riderId = rider.id
+                    )
+                    val driverAlreadyRated = driverId != null && ratedDriverIds.contains(driverId)
+
                     uiState = uiState.copy(
                         isLoading = false,
                         riderId = rider.id,
-                        driverId = driverId,
-                        ridersToRate = listOf(
-                            RateUserUiModel(
-                                driverId = driverId,
-                                name = driverName
+                        driverId = if (driverAlreadyRated) null else driverId,
+                        ridersToRate = if (driverId == null || driverAlreadyRated) {
+                            emptyList()
+                        } else {
+                            listOf(
+                                RateUserUiModel(
+                                    driverId = driverId,
+                                    name = driverName
+                                )
                             )
-                        ),
-                        errorMessage = if (driverId == null) "No se pudo obtener el conductor de este viaje." else null
+                        },
+                        errorMessage = when {
+                            driverId == null -> "No se pudo obtener el conductor de este viaje."
+                            driverAlreadyRated -> "Ya calificaste al conductor de este viaje."
+                            else -> null
+                        }
                     )
                 }
             } catch (_: Exception) {
@@ -150,31 +177,51 @@ class RatingViewModel(
     }
 
     fun updatePunctuality(value: Int) {
-        uiState = uiState.copy(punctuality = value)
+        uiState = uiState.copy(punctuality = value, errorMessage = null, successMessage = null)
     }
 
     fun updateBehavior(value: Int) {
-        uiState = uiState.copy(behavior = value)
+        uiState = uiState.copy(behavior = value, errorMessage = null, successMessage = null)
     }
 
     fun updateCommunication(value: Int) {
-        uiState = uiState.copy(communication = value)
+        uiState = uiState.copy(communication = value, errorMessage = null, successMessage = null)
     }
 
     fun updateSecurity(value: Int) {
-        uiState = uiState.copy(security = value)
+        uiState = uiState.copy(security = value, errorMessage = null, successMessage = null)
     }
 
     fun updatePaymentPunctuality(value: Int) {
-        uiState = uiState.copy(paymentPunctuality = value)
+        uiState = uiState.copy(paymentPunctuality = value, errorMessage = null, successMessage = null)
     }
 
     fun selectRider(riderId: Int) {
-        uiState = uiState.copy(selectedRiderId = riderId)
+        uiState = uiState.copy(
+            selectedRiderId = riderId,
+            punctuality = 0,
+            behavior = 0,
+            communication = 0,
+            paymentPunctuality = 0,
+            errorMessage = null,
+            successMessage = null
+        )
     }
 
     fun submitRating() {
         if (uiState.isSubmitting) return
+
+        if (uiState.ratingType == "rider" && uiState.selectedRiderId == null) {
+            uiState = uiState.copy(
+                errorMessage = "No hay pasajeros pendientes por calificar.",
+                successMessage = null
+            )
+            return
+        }
+
+        if (uiState.ratingType == "rider" && uiState.ridersToRate.isEmpty() && uiState.successMessage == "Calificación enviada correctamente.") {
+            return
+        }
 
         val token = sessionManager.getToken()
         if (token.isEmpty()) {
@@ -254,11 +301,32 @@ class RatingViewModel(
             }
 
             uiState = if (success) {
-                uiState.copy(
-                    isSubmitting = false,
-                    errorMessage = null,
-                    successMessage = "Calificación enviada correctamente."
-                )
+                if (uiState.ratingType == "rider") {
+                    val ratedRiderId = uiState.selectedRiderId
+                    val remainingRiders = uiState.ridersToRate.filterNot { it.riderId == ratedRiderId }
+                    val hasMoreRiders = remainingRiders.isNotEmpty()
+                    uiState.copy(
+                        isSubmitting = false,
+                        errorMessage = null,
+                        successMessage = if (hasMoreRiders) {
+                            "Calificación enviada correctamente. Puedes calificar otro pasajero."
+                        } else {
+                            "Calificación enviada correctamente."
+                        },
+                        ridersToRate = remainingRiders,
+                        selectedRiderId = remainingRiders.firstOrNull()?.riderId,
+                        punctuality = 0,
+                        behavior = 0,
+                        communication = 0,
+                        paymentPunctuality = 0
+                    )
+                } else {
+                    uiState.copy(
+                        isSubmitting = false,
+                        errorMessage = null,
+                        successMessage = "Calificación enviada correctamente."
+                    )
+                }
             } else {
                 uiState.copy(
                     isSubmitting = false,

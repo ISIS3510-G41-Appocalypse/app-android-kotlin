@@ -1,6 +1,7 @@
 package com.gn41.appandroidkotlin.presentation.views
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -35,12 +36,21 @@ fun RateUserScreen(
     viewModel: RatingViewModel,
     rideId: Int,
     ratingType: String,
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    onRatingFinished: () -> Unit = {}
 ) {
     val state = viewModel.uiState
     val normalizedRatingType = remember(ratingType) {
         if (ratingType == "rider") "rider" else "driver"
     }
+    val isRiderWithoutSelection = normalizedRatingType == "rider" && state.selectedRiderId == null
+    val noPendingRidersMessage = "No hay pasajeros pendientes por calificar."
+    val driverAlreadyRatedMessage = "Ya calificaste al conductor de este viaje."
+    val isNoPendingRidersState = normalizedRatingType == "rider" && state.errorMessage == noPendingRidersMessage
+    val isDriverAlreadyRatedState = normalizedRatingType == "driver" && state.errorMessage == driverAlreadyRatedMessage
+    val isFinalSuccess = state.successMessage != null &&
+        (normalizedRatingType != "rider" || state.ridersToRate.isEmpty())
+    val shouldShowBackToTrips = isFinalSuccess || isNoPendingRidersState || isDriverAlreadyRatedState
 
     LaunchedEffect(rideId, normalizedRatingType) {
         viewModel.loadRatingData(rideId, normalizedRatingType)
@@ -103,7 +113,7 @@ fun RateUserScreen(
             Spacer(modifier = Modifier.height(12.dp))
         }
 
-        if (normalizedRatingType == "rider") {
+        if (normalizedRatingType == "rider" && !shouldShowBackToTrips) {
             RiderSelector(
                 riders = state.ridersToRate,
                 selectedRiderId = state.selectedRiderId,
@@ -112,64 +122,82 @@ fun RateUserScreen(
             Spacer(modifier = Modifier.height(12.dp))
         }
 
-        ScoreSelector(
-            label = "Puntualidad",
-            selected = state.punctuality,
-            onValueSelected = viewModel::updatePunctuality
-        )
-
-        Spacer(modifier = Modifier.height(10.dp))
-
-        ScoreSelector(
-            label = "Comportamiento",
-            selected = state.behavior,
-            onValueSelected = viewModel::updateBehavior
-        )
-
-        Spacer(modifier = Modifier.height(10.dp))
-
-        ScoreSelector(
-            label = "Comunicación",
-            selected = state.communication,
-            onValueSelected = viewModel::updateCommunication
-        )
-
-        Spacer(modifier = Modifier.height(10.dp))
-
-        if (normalizedRatingType == "driver") {
+        if (!shouldShowBackToTrips) {
             ScoreSelector(
-                label = "Seguridad",
-                selected = state.security,
-                onValueSelected = viewModel::updateSecurity
+                label = "Puntualidad",
+                selected = state.punctuality,
+                onValueSelected = viewModel::updatePunctuality
             )
-        } else {
+
+            Spacer(modifier = Modifier.height(10.dp))
+
             ScoreSelector(
-                label = "Puntualidad en el pago",
-                selected = state.paymentPunctuality,
-                onValueSelected = viewModel::updatePaymentPunctuality
+                label = "Comportamiento",
+                selected = state.behavior,
+                onValueSelected = viewModel::updateBehavior
             )
-        }
 
-        Spacer(modifier = Modifier.height(18.dp))
+            Spacer(modifier = Modifier.height(10.dp))
 
-        Button(
-            onClick = viewModel::submitRating,
-            enabled = !state.isSubmitting,
-            modifier = Modifier.fillMaxWidth(),
-            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
-        ) {
-            Text(if (state.isSubmitting) "Enviando..." else "Enviar calificación")
-        }
+            ScoreSelector(
+                label = "Comunicación",
+                selected = state.communication,
+                onValueSelected = viewModel::updateCommunication
+            )
 
-        Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(10.dp))
 
-        TextButton(
-            onClick = {
-                viewModel.clearMessages()
-                onBack()
+            if (normalizedRatingType == "driver") {
+                ScoreSelector(
+                    label = "Seguridad",
+                    selected = state.security,
+                    onValueSelected = viewModel::updateSecurity
+                )
+            } else {
+                ScoreSelector(
+                    label = "Puntualidad en el pago",
+                    selected = state.paymentPunctuality,
+                    onValueSelected = viewModel::updatePaymentPunctuality
+                )
             }
-        ) {
-            Text("Omitir")
+
+            Spacer(modifier = Modifier.height(18.dp))
+        }
+
+        if (shouldShowBackToTrips) {
+            Button(
+                onClick = {
+                    viewModel.clearMessages()
+                    onRatingFinished()
+                    onBack()
+                },
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+            ) {
+                Text("Volver a mis viajes")
+            }
+        } else {
+            Button(
+                onClick = viewModel::submitRating,
+                enabled = !state.isSubmitting && !isRiderWithoutSelection,
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+            ) {
+                Text(if (state.isSubmitting) "Enviando..." else "Enviar calificación")
+            }
+        }
+
+        if (!shouldShowBackToTrips) {
+            Spacer(modifier = Modifier.height(8.dp))
+
+            TextButton(
+                onClick = {
+                    viewModel.clearMessages()
+                    onBack()
+                }
+            ) {
+                Text("Omitir")
+            }
         }
     }
 }
@@ -198,11 +226,17 @@ private fun RiderSelector(
         riders.forEach { rider ->
             val riderId = rider.riderId ?: return@forEach
             val isSelected = selectedRiderId == riderId
-            val containerColor = if (isSelected) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.surface
+            val containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface
 
             Button(
                 onClick = { onSelect(riderId) },
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .border(
+                        width = if (isSelected) 2.dp else 1.dp,
+                        color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant,
+                        shape = RoundedCornerShape(20.dp)
+                    ),
                 colors = ButtonDefaults.buttonColors(containerColor = containerColor)
             ) {
                 Text(

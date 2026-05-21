@@ -49,5 +49,47 @@ class RatingService {
             false
         }
     }
+
+    suspend fun getRatedRidersForRide(token: String, rideId: Int, driverId: Int): List<Int> = withContext(Dispatchers.IO) {
+        return@withContext try {
+            val response = ratingApi.getRiderRatingsForRide(
+                token = "Bearer $token",
+                apiKey = BuildConfig.SUPABASE_KEY,
+                rideFilter = "eq.$rideId",
+                driverFilter = "eq.$driverId"
+            )
+
+            if (response.isSuccessful) {
+                response.body().orEmpty().mapNotNull { it.rider_id }.distinct()
+            } else {
+                Log.e("RatingService", "getRatedRidersForRide error=${response.code()} ${response.errorBody()?.string()}")
+                emptyList()
+            }
+        } catch (e: Exception) {
+            Log.e("RatingService", "getRatedRidersForRide exception", e)
+            emptyList()
+        }
+    }
+
+    suspend fun getRatedDriversForRide(token: String, rideId: Int, riderId: Int): List<Int> = withContext(Dispatchers.IO) {
+        return@withContext try {
+            val response = ratingApi.getDriverRatingsForRide(
+                token = "Bearer $token",
+                apiKey = BuildConfig.SUPABASE_KEY,
+                rideFilter = "eq.$rideId",
+                riderFilter = "eq.$riderId"
+            )
+
+            if (response.isSuccessful) {
+                response.body().orEmpty().mapNotNull { it.driver_id }.distinct()
+            } else {
+                Log.e("RatingService", "getRatedDriversForRide error=${response.code()} ${response.errorBody()?.string()}")
+                emptyList()
+            }
+        } catch (e: Exception) {
+            Log.e("RatingService", "getRatedDriversForRide exception", e)
+            emptyList()
+        }
+    }
 }
 

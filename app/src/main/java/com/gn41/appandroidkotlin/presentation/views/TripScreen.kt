@@ -41,6 +41,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -76,7 +77,7 @@ fun TripScreen(
     var showCancelRideDialog by remember { mutableStateOf(false) }
     var showFinishRideDialog by remember { mutableStateOf(false) }
     var showRateRidersDialog by remember { mutableStateOf(false) }
-    var finishedRideIdForRating by remember { mutableStateOf<Int?>(null) }
+    var popupShownForRideId by rememberSaveable { mutableStateOf<Int?>(null) }
     val configuration = LocalConfiguration.current
     val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
     val canAutoRefresh = viewModel.connectivity && !state.isOfflineData
@@ -99,8 +100,9 @@ fun TripScreen(
     }
 
     LaunchedEffect(state.finishedRideIdForRating) {
-        if (state.finishedRideIdForRating != null) {
+        if (state.finishedRideIdForRating != null && popupShownForRideId != state.finishedRideIdForRating) {
             showRateRidersDialog = true
+            popupShownForRideId = state.finishedRideIdForRating
         }
     }
 
@@ -181,6 +183,16 @@ fun TripScreen(
                     .fillMaxWidth()
                     .background(Color(0xFFFEF3C7), RoundedCornerShape(10.dp))
                     .padding(10.dp)
+            )
+            Spacer(modifier = Modifier.height(10.dp))
+        }
+
+        if (state.finishedRideIdForRating != null) {
+            PendingRatingCard(
+                onRateRiders = {
+                    state.finishedRideIdForRating?.let { onRateRidersClick(it) }
+                },
+                onSkip = viewModel::clearFinishedRideForRating
             )
             Spacer(modifier = Modifier.height(10.dp))
         }
@@ -357,7 +369,6 @@ fun TripScreen(
                 TextButton(
                     onClick = {
                         showFinishRideDialog = false
-                        finishedRideIdForRating = state.activeDriverTrip?.rideId
                         viewModel.onFinishTripClicked()
                     }
                 ) {
@@ -371,7 +382,6 @@ fun TripScreen(
         AlertDialog(
             onDismissRequest = {
                 showRateRidersDialog = false
-                viewModel.clearFinishedRideForRating()
             },
             title = { Text("Viaje finalizado") },
             text = { Text("¿Deseas calificar a tus pasajeros ahora?") },
@@ -379,7 +389,6 @@ fun TripScreen(
                 TextButton(
                     onClick = {
                         showRateRidersDialog = false
-                        viewModel.clearFinishedRideForRating()
                     }
                 ) {
                     Text("Omitir")
@@ -388,12 +397,8 @@ fun TripScreen(
             confirmButton = {
                 TextButton(
                     onClick = {
-                        val rideId = state.finishedRideIdForRating
                         showRateRidersDialog = false
-                        viewModel.clearFinishedRideForRating()
-                        if (rideId != null) {
-                            onRateRidersClick(rideId)
-                        }
+                        state.finishedRideIdForRating?.let { onRateRidersClick(it) }
                     }
                 ) {
                     Text("Calificar ahora")
@@ -424,6 +429,43 @@ fun TripScreen(
                 }
             }
         )
+    }
+}
+
+@Composable
+private fun PendingRatingCard(
+    onRateRiders: () -> Unit,
+    onSkip: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(14.dp))
+            .padding(14.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp)
+    ) {
+        Text(
+            text = "Calificación pendiente",
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onSurface
+        )
+        Text(
+            text = "Tu viaje fue finalizado. Puedes calificar a tus pasajeros.",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurface
+        )
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            SmallActionButton(
+                text = "Calificar pasajeros",
+                onClick = onRateRiders,
+                accentColor = MaterialTheme.colorScheme.secondary
+            )
+            SmallActionButton(
+                text = "Omitir",
+                onClick = onSkip,
+                accentColor = MaterialTheme.colorScheme.tertiary
+            )
+        }
     }
 }
 

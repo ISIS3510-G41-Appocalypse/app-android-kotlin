@@ -136,6 +136,27 @@ class TripService {
         }
     }
 
+    suspend fun getReservationByRideAndRider(rideId: Int, riderId: Int, token: String): TripReservationDto? = withContext(Dispatchers.IO) {
+        return@withContext try {
+            val response = tripApi.getReservationByRideAndRider(
+                token = "Bearer $token",
+                apiKey = BuildConfig.SUPABASE_KEY,
+                rideId = "eq.$rideId",
+                riderId = "eq.$riderId"
+            )
+
+            if (response.isSuccessful) {
+                response.body()?.firstOrNull()
+            } else {
+                Log.e("TripService", "getReservationByRideAndRider error=${response.code()} ${response.errorBody()?.string()}")
+                null
+            }
+        } catch (e: Exception) {
+            Log.e("TripService", "getReservationByRideAndRider exception", e)
+            null
+        }
+    }
+
     suspend fun updateReservationState(reservationId: Int, newState: String, token: String): Boolean = withContext(Dispatchers.IO) {
         return@withContext try {
             val response = tripApi.updateReservationState(
