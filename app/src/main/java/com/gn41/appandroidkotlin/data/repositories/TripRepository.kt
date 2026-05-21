@@ -29,12 +29,24 @@ class TripRepository(
         return tripService.getActiveRiderReservation(riderId, token)
     }
 
+    suspend fun getFinishedRiderReservationForRating(riderId: Int, token: String): TripReservationDto? {
+        return tripService.getFinishedRiderReservationForRating(riderId, token)
+    }
+
     suspend fun getActiveDriverRide(driverId: Int, token: String): TripRideDto? {
         return tripService.getActiveDriverRide(driverId, token)
     }
 
+    suspend fun getFinishedDriverRideForRating(driverId: Int, token: String): TripRideDto? {
+        return tripService.getFinishedDriverRideForRating(driverId, token)
+    }
+
     suspend fun getReservationsForRide(rideId: Int, token: String): List<TripReservationDto> {
         return tripService.getReservationsForRide(rideId, token)
+    }
+
+    suspend fun getReservationByRideAndRider(rideId: Int, riderId: Int, token: String): TripReservationDto? {
+        return tripService.getReservationByRideAndRider(rideId, riderId, token)
     }
 
     suspend fun updateReservationState(reservationId: Int, newState: String, token: String): Boolean {

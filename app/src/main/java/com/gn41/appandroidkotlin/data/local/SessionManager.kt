@@ -91,4 +91,38 @@ class SessionManager(context: Context) {
     fun isDarkModeEnabled(): Boolean {
         return sharedPreferences.getBoolean("dark_mode_enabled", true)
     }
+
+    fun getSkippedDriverRatingRideIds(authId: String): Set<Int> {
+        if (authId.isBlank()) return emptySet()
+        return sharedPreferences
+            .getStringSet("skipped_driver_rating_$authId", emptySet())
+            ?.mapNotNull { it.toIntOrNull() }
+            ?.toSet()
+            ?: emptySet()
+    }
+
+    fun getSkippedRiderRatingRideIds(authId: String): Set<Int> {
+        if (authId.isBlank()) return emptySet()
+        return sharedPreferences
+            .getStringSet("skipped_rider_rating_$authId", emptySet())
+            ?.mapNotNull { it.toIntOrNull() }
+            ?.toSet()
+            ?: emptySet()
+    }
+
+    fun addSkippedDriverRatingRideId(authId: String, rideId: Int) {
+        if (authId.isBlank()) return
+        val key = "skipped_driver_rating_$authId"
+        val current = sharedPreferences.getStringSet(key, emptySet()).orEmpty().toMutableSet()
+        current.add(rideId.toString())
+        sharedPreferences.edit().putStringSet(key, current).apply()
+    }
+
+    fun addSkippedRiderRatingRideId(authId: String, rideId: Int) {
+        if (authId.isBlank()) return
+        val key = "skipped_rider_rating_$authId"
+        val current = sharedPreferences.getStringSet(key, emptySet()).orEmpty().toMutableSet()
+        current.add(rideId.toString())
+        sharedPreferences.edit().putStringSet(key, current).apply()
+    }
 }

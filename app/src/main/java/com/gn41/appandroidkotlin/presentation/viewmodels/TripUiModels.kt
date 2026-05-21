@@ -8,6 +8,7 @@ data class TripReservationItemUiModel(
     val riderName: String,
     val status: String,
     val cancellationOdds: Double?,
+    val riderRating: Double? = null,
     val paymentMethod: String = "Por definir"
 )
 
@@ -63,7 +64,10 @@ data class TripUiState(
     val cachedLocationMessage: String = "",
 
     val isOfflineData: Boolean = false,
-    val offlineMessage: String = ""
+    val offlineMessage: String = "",
+
+    val finishedRideIdForRating: Int? = null,
+    val finishedRiderRideIdForRating: Int? = null
 )
 
 
