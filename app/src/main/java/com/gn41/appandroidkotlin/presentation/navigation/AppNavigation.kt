@@ -59,7 +59,10 @@ fun AppNavigation(
             RegisterScreen(
                 onBackClick = { navController.popBackStack() },
                 onRegistrationSuccess = {
-                    navController.navigate("welcome") { popUpTo("welcome") { inclusive = true } }
+                    navController.navigate("home") {
+                        popUpTo("welcome") { inclusive = true }
+                        launchSingleTop = true
+                    }
                 },
                 viewModel = registerViewModel
             )

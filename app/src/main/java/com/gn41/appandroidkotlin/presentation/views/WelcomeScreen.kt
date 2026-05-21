@@ -63,7 +63,9 @@ fun WelcomeScreen(viewModel: WelcomeViewModel, onRegisterClick: () -> Unit){
                     verticalArrangement = Arrangement.Center,
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    LoginCard(viewModel = viewModel, isLandscape = true)
+                    LoginCard(viewModel = viewModel, isLandscape = true, onRegisterClick = {
+                        onRegisterClick()
+                    })
                 }
             }
             else{
@@ -113,7 +115,9 @@ fun WelcomeScreen(viewModel: WelcomeViewModel, onRegisterClick: () -> Unit){
 
                 WelcomeHeader()
                 if (viewModel.showLoginCard) {
-                    LoginCard(viewModel = viewModel, isLandscape = false)
+                    LoginCard(viewModel = viewModel, isLandscape = false,onRegisterClick = {
+                        onRegisterClick()
+                    })
                 }
                 else {
                     WelcomeMessage()

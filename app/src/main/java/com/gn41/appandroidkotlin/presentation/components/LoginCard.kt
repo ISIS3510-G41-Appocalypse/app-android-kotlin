@@ -31,9 +31,10 @@ import com.gn41.appandroidkotlin.ui.theme.AutumnEmber
 import com.gn41.appandroidkotlin.ui.theme.BrightSnow
 import com.gn41.appandroidkotlin.ui.theme.CoolSteel
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.foundation.clickable
 
 @Composable
-fun LoginCard(viewModel: WelcomeViewModel, isLandscape: Boolean) {
+fun LoginCard(viewModel: WelcomeViewModel, isLandscape: Boolean,onRegisterClick: () -> Unit) {
     val scrollState = rememberScrollState()
 
     Box(
@@ -193,6 +194,9 @@ fun LoginCard(viewModel: WelcomeViewModel, isLandscape: Boolean) {
                 )
                 Text(
                     text = "Regístrate",
+                    modifier = Modifier.clickable {
+                        onRegisterClick()
+                    },
                     color = MaterialTheme.colorScheme.secondary,
                     fontWeight = FontWeight.Bold
                 )
