@@ -14,6 +14,8 @@ import com.gn41.appandroidkotlin.presentation.viewmodels.HomeViewModel
 import com.gn41.appandroidkotlin.presentation.viewmodels.HomeViewModelFactory
 import com.gn41.appandroidkotlin.presentation.viewmodels.RatingViewModel
 import com.gn41.appandroidkotlin.presentation.viewmodels.RatingViewModelFactory
+import com.gn41.appandroidkotlin.presentation.viewmodels.RegisterViewModel
+import com.gn41.appandroidkotlin.presentation.viewmodels.RegisterViewModelFactory
 import com.gn41.appandroidkotlin.presentation.viewmodels.SettingsViewModel
 import com.gn41.appandroidkotlin.presentation.viewmodels.SettingsViewModelFactory
 import com.gn41.appandroidkotlin.presentation.viewmodels.TripViewModel
@@ -22,6 +24,7 @@ import com.gn41.appandroidkotlin.presentation.viewmodels.WelcomeViewModel
 import com.gn41.appandroidkotlin.presentation.views.CreateRideScreen
 import com.gn41.appandroidkotlin.presentation.views.HomeScreen
 import com.gn41.appandroidkotlin.presentation.views.RateUserScreen
+import com.gn41.appandroidkotlin.presentation.views.RegisterScreen
 import com.gn41.appandroidkotlin.presentation.views.SettingsScreen
 import com.gn41.appandroidkotlin.presentation.views.TripScreen
 import com.gn41.appandroidkotlin.presentation.views.WelcomeScreen
@@ -36,6 +39,7 @@ fun AppNavigation(
     tripViewModelFactory: TripViewModelFactory,
     ratingViewModelFactory: RatingViewModelFactory,
     settingsViewModelFactory: SettingsViewModelFactory,
+    registerViewModelFactory: RegisterViewModelFactory,
     onDarkModeChanged: (Boolean) -> Unit
 ) {
     NavHost(
@@ -51,7 +55,27 @@ fun AppNavigation(
                 }
             }
 
-            WelcomeScreen(viewModel = welcomeViewModel)
+            WelcomeScreen(viewModel = welcomeViewModel, onRegisterClick = { navController.navigate("register") })
+        }
+
+        composable("register") {
+            val registerViewModel: RegisterViewModel = viewModel(factory = registerViewModelFactory)
+            RegisterScreen(
+                onBackClick = { navController.popBackStack() },
+                onRegistrationSuccess = { email, password ->
+
+                    welcomeViewModel.onEmailInput(email)
+                    welcomeViewModel.onPasswordInput(password)
+
+                    welcomeViewModel.onLoginSubmit {
+                        navController.navigate("home") {
+                            popUpTo("welcome") { inclusive = true }
+                            launchSingleTop = true
+                        }
+                    }
+                },
+                viewModel = registerViewModel
+            )
         }
 
         composable("home") {

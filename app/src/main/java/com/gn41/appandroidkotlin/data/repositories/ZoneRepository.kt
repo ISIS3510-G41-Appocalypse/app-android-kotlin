@@ -11,4 +11,8 @@ class ZoneRepository(private val zoneService: ZoneService) {
     suspend fun getZoneByName(name:String) : ZoneDto {
         return zoneService.getZoneByName(name)
     }
+
+    suspend fun getPublicZones(): List<ZoneDto> {
+        return zoneService.getPublicZones()
+    }
 }
