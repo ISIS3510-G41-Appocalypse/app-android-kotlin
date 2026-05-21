@@ -5,11 +5,13 @@ import androidx.lifecycle.ViewModelProvider
 import com.gn41.appandroidkotlin.core.connectivity.NetworkHelper
 import com.gn41.appandroidkotlin.data.local.SessionManager
 import com.gn41.appandroidkotlin.data.repositories.LocationRepository
+import com.gn41.appandroidkotlin.data.repositories.RatingRepository
 import com.gn41.appandroidkotlin.data.repositories.TripRepository
 import com.gn41.appandroidkotlin.localStorage.LocalStorageManager
 
 class TripViewModelFactory(
     private val tripRepository: TripRepository,
+    private val ratingRepository: RatingRepository,
     private val sessionManager: SessionManager,
     private val locationRepository: LocationRepository,
     private val networkHelper: NetworkHelper,
@@ -21,6 +23,7 @@ class TripViewModelFactory(
             @Suppress("UNCHECKED_CAST")
             return TripViewModel(
                 tripRepository,
+                ratingRepository,
                 sessionManager,
                 locationRepository,
                 networkHelper,

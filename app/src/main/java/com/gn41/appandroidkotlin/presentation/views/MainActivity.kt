@@ -90,16 +90,18 @@ class MainActivity : ComponentActivity() {
                 val locationService = LocationService()
                 val locationRepository = LocationRepository(locationService, sessionManager)
 
+                val ratingService = RatingService()
+                val ratingRepository = RatingRepository(ratingService)
+
                 val tripViewModelFactory = TripViewModelFactory(
                     tripRepository = tripRepository,
+                    ratingRepository = ratingRepository,
                     sessionManager = sessionManager,
                     locationRepository = locationRepository,
                     networkHelper = networkHelper,
                     localStorageManager = localStorageManager
                 )
 
-                val ratingService = RatingService()
-                val ratingRepository = RatingRepository(ratingService)
                 val ratingViewModelFactory = RatingViewModelFactory(
                     tripRepository = tripRepository,
                     ratingRepository = ratingRepository,

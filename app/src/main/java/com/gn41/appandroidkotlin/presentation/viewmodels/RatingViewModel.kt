@@ -126,11 +126,20 @@ class RatingViewModel(
                         return@launch
                     }
 
-                    val reservation = tripRepository.getReservationByRideAndRider(
+                    val finishedReservation = tripRepository.getFinishedRiderReservationForRating(
+                        riderId = rider.id,
+                        token = token
+                    )
+                    val fallbackReservation = tripRepository.getReservationByRideAndRider(
                         rideId = rideId,
                         riderId = rider.id,
                         token = token
                     )
+                    val reservation = when {
+                        normalizeState(finishedReservation?.rides?.state) == "FINALIZADO" -> finishedReservation
+                        normalizeState(fallbackReservation?.rides?.state) == "FINALIZADO" -> fallbackReservation
+                        else -> null
+                    }
                     val driverId = reservation?.rides?.drivers?.id
                     val firstName = reservation?.rides?.drivers?.users?.first_name.orEmpty()
                     val lastName = reservation?.rides?.drivers?.users?.last_name.orEmpty()

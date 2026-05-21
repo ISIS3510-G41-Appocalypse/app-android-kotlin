@@ -66,7 +66,8 @@ import java.util.Locale
 fun TripScreen(
     viewModel: TripViewModel,
     onHomeClick: () -> Unit,
-    onRateRidersClick: (Int) -> Unit
+    onRateRidersClick: (Int) -> Unit,
+    onRateDriverClick: (Int) -> Unit
 ) {
     val state = viewModel.uiState
     val context = LocalContext.current
@@ -78,6 +79,7 @@ fun TripScreen(
     var showFinishRideDialog by remember { mutableStateOf(false) }
     var showRateRidersDialog by remember { mutableStateOf(false) }
     var popupShownForRideId by rememberSaveable { mutableStateOf<Int?>(null) }
+    var finishRequestedRideId by rememberSaveable { mutableStateOf<Int?>(null) }
     val configuration = LocalConfiguration.current
     val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
     val canAutoRefresh = viewModel.connectivity && !state.isOfflineData
@@ -100,9 +102,14 @@ fun TripScreen(
     }
 
     LaunchedEffect(state.finishedRideIdForRating) {
-        if (state.finishedRideIdForRating != null && popupShownForRideId != state.finishedRideIdForRating) {
+        if (
+            state.finishedRideIdForRating != null &&
+            finishRequestedRideId == state.finishedRideIdForRating &&
+            popupShownForRideId != state.finishedRideIdForRating
+        ) {
             showRateRidersDialog = true
             popupShownForRideId = state.finishedRideIdForRating
+            finishRequestedRideId = null
         }
     }
 
@@ -187,12 +194,28 @@ fun TripScreen(
             Spacer(modifier = Modifier.height(10.dp))
         }
 
-        if (state.finishedRideIdForRating != null) {
+        if (state.finishedRideIdForRating != null && state.activeDriverTrip == null) {
             PendingRatingCard(
-                onRateRiders = {
-                    state.finishedRideIdForRating?.let { onRateRidersClick(it) }
+                title = "Calificación pendiente",
+                message = "Tu viaje fue finalizado. Puedes calificar a tus pasajeros.",
+                buttonText = "Calificar pasajeros",
+                onRate = {
+                    onRateRidersClick(state.finishedRideIdForRating)
                 },
                 onSkip = viewModel::clearFinishedRideForRating
+            )
+            Spacer(modifier = Modifier.height(10.dp))
+        }
+
+        if (state.finishedRiderRideIdForRating != null && state.activeRiderTrips.isEmpty()) {
+            PendingRatingCard(
+                title = "Calificación pendiente",
+                message = "Tu viaje fue finalizado. Puedes calificar al conductor.",
+                buttonText = "Calificar conductor",
+                onRate = {
+                    onRateDriverClick(state.finishedRiderRideIdForRating)
+                },
+                onSkip = viewModel::clearFinishedRiderRideForRating
             )
             Spacer(modifier = Modifier.height(10.dp))
         }
@@ -368,7 +391,9 @@ fun TripScreen(
             confirmButton = {
                 TextButton(
                     onClick = {
+                        val rideId = state.activeDriverTrip?.rideId ?: return@TextButton
                         showFinishRideDialog = false
+                        finishRequestedRideId = rideId
                         viewModel.onFinishTripClicked()
                     }
                 ) {
@@ -391,7 +416,7 @@ fun TripScreen(
                         showRateRidersDialog = false
                     }
                 ) {
-                    Text("Omitir")
+                    Text("Más tarde")
                 }
             },
             confirmButton = {
@@ -434,7 +459,10 @@ fun TripScreen(
 
 @Composable
 private fun PendingRatingCard(
-    onRateRiders: () -> Unit,
+    title: String,
+    message: String,
+    buttonText: String,
+    onRate: () -> Unit,
     onSkip: () -> Unit
 ) {
     Column(
@@ -445,19 +473,19 @@ private fun PendingRatingCard(
         verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
         Text(
-            text = "Calificación pendiente",
+            text = title,
             style = MaterialTheme.typography.titleMedium,
             color = MaterialTheme.colorScheme.onSurface
         )
         Text(
-            text = "Tu viaje fue finalizado. Puedes calificar a tus pasajeros.",
+            text = message,
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurface
         )
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             SmallActionButton(
-                text = "Calificar pasajeros",
-                onClick = onRateRiders,
+                text = buttonText,
+                onClick = onRate,
                 accentColor = MaterialTheme.colorScheme.secondary
             )
             SmallActionButton(

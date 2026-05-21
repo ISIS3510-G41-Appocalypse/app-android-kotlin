@@ -47,12 +47,34 @@ interface TripApi {
         @Query("order") order: String = "id.desc"
     ): Response<List<TripReservationDto>>
 
+    @GET("rest/v1/reservations")
+    suspend fun getFinishedRiderReservationForRating(
+        @Header("Authorization") token: String,
+        @Header("apikey") apiKey: String,
+        @Query("rider_id") riderId: String,
+        @Query("state") state: String = "in.(ACEPTADA,EN_CURSO)",
+        @Query("select") select: String = "id,ride_id,rider_id,state,rides(id,source,destination,state,departure_time,date,drivers(id,user_id,users(first_name,last_name)))",
+        @Query("order") order: String = "id.desc",
+        @Query("limit") limit: Int = 1
+    ): Response<List<TripReservationDto>>
+
     @GET("rest/v1/rides")
     suspend fun getActiveDriverRide(
         @Header("Authorization") token: String,
         @Header("apikey") apiKey: String,
         @Query("driver_id") driverId: String,
         @Query("state") state: String = "in.(OFERTADO,EN_CURSO)",
+        @Query("select") select: String = "id,source,destination,state,departure_time,date,vehicles(number_slots)",
+        @Query("order") order: String = "id.desc",
+        @Query("limit") limit: Int = 1
+    ): Response<List<TripRideDto>>
+
+    @GET("rest/v1/rides")
+    suspend fun getFinishedDriverRideForRating(
+        @Header("Authorization") token: String,
+        @Header("apikey") apiKey: String,
+        @Query("driver_id") driverId: String,
+        @Query("state") state: String = "in.(FINALIZADO,FINALIZADA,FINISHED,COMPLETED)",
         @Query("select") select: String = "id,source,destination,state,departure_time,date,vehicles(number_slots)",
         @Query("order") order: String = "id.desc",
         @Query("limit") limit: Int = 1

@@ -122,6 +122,13 @@ fun RateUserScreen(
             Spacer(modifier = Modifier.height(12.dp))
         }
 
+        if (normalizedRatingType == "driver" && !shouldShowBackToTrips) {
+            DriverInfoCard(
+                driverName = state.ridersToRate.firstOrNull()?.name
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+        }
+
         if (!shouldShowBackToTrips) {
             ScoreSelector(
                 label = "Puntualidad",
@@ -196,9 +203,37 @@ fun RateUserScreen(
                     onBack()
                 }
             ) {
-                Text("Omitir")
+                Text("Más tarde")
             }
         }
+    }
+}
+
+@Composable
+private fun DriverInfoCard(driverName: String?) {
+    if (driverName.isNullOrBlank()) return
+
+    Text(
+        text = "Conductor",
+        style = MaterialTheme.typography.titleMedium,
+        color = MaterialTheme.colorScheme.onBackground,
+        modifier = Modifier.fillMaxWidth()
+    )
+
+    Spacer(modifier = Modifier.height(8.dp))
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(MaterialTheme.colorScheme.primaryContainer, RoundedCornerShape(12.dp))
+            .border(1.dp, MaterialTheme.colorScheme.primary, RoundedCornerShape(12.dp))
+            .padding(12.dp)
+    ) {
+        Text(
+            text = driverName,
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onPrimaryContainer
+        )
     }
 }
 

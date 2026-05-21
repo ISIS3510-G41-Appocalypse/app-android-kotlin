@@ -96,6 +96,34 @@ class TripService {
         }
     }
 
+    suspend fun getFinishedRiderReservationForRating(riderId: Int, token: String): TripReservationDto? = withContext(Dispatchers.IO) {
+        return@withContext try {
+            val response = tripApi.getFinishedRiderReservationForRating(
+                token = "Bearer $token",
+                apiKey = BuildConfig.SUPABASE_KEY,
+                riderId = "eq.$riderId"
+            )
+
+            if (response.isSuccessful) {
+                response.body()
+                    .orEmpty()
+                    .firstOrNull { reservation ->
+                        reservation.rides?.state
+                            ?.trim()
+                            ?.uppercase()
+                            ?.let { it == "FINALIZADO" || it == "FINALIZADA" || it == "FINISHED" || it == "COMPLETED" }
+                            ?: false
+                    }
+            } else {
+                Log.e("TripService", "getFinishedRiderReservationForRating error=${response.code()} ${response.errorBody()?.string()}")
+                null
+            }
+        } catch (e: Exception) {
+            Log.e("TripService", "getFinishedRiderReservationForRating exception", e)
+            null
+        }
+    }
+
     suspend fun getActiveDriverRide(driverId: Int, token: String): TripRideDto? = withContext(Dispatchers.IO){
         return@withContext try {
             val response = tripApi.getActiveDriverRide(
@@ -112,6 +140,26 @@ class TripService {
             }
         } catch (e: Exception) {
             Log.e("TripService", "getActiveDriverRide exception", e)
+            null
+        }
+    }
+
+    suspend fun getFinishedDriverRideForRating(driverId: Int, token: String): TripRideDto? = withContext(Dispatchers.IO) {
+        return@withContext try {
+            val response = tripApi.getFinishedDriverRideForRating(
+                token = "Bearer $token",
+                apiKey = BuildConfig.SUPABASE_KEY,
+                driverId = "eq.$driverId"
+            )
+
+            if (response.isSuccessful) {
+                response.body()?.firstOrNull()
+            } else {
+                Log.e("TripService", "getFinishedDriverRideForRating error=${response.code()} ${response.errorBody()?.string()}")
+                null
+            }
+        } catch (e: Exception) {
+            Log.e("TripService", "getFinishedDriverRideForRating exception", e)
             null
         }
     }
@@ -185,7 +233,6 @@ class TripService {
                 else -> listOf(newState)
             }
 
-            var lastError = ""
             for (state in stateCandidates) {
                 val response = tripApi.updateRideState(
                     token = "Bearer $token",
@@ -198,7 +245,7 @@ class TripService {
                     return@withContext true
                 }
 
-                lastError = response.errorBody()?.string().orEmpty()
+                val lastError = response.errorBody()?.string().orEmpty()
                 Log.e("TripService", "updateRideState error state=$state code=${response.code()} $lastError")
             }
 

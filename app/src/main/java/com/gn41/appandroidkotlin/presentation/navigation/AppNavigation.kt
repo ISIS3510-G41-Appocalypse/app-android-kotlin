@@ -89,12 +89,19 @@ fun AppNavigation(
 
         composable("trips") { backStackEntry ->
             val tripViewModel: TripViewModel = viewModel(factory = tripViewModelFactory)
-            val ratingFinished = backStackEntry.savedStateHandle.get<Boolean>("rating_finished") ?: false
+            val riderRatingFinished = backStackEntry.savedStateHandle.get<Boolean>("rider_rating_finished") ?: false
+            val driverRatingFinished = backStackEntry.savedStateHandle.get<Boolean>("driver_rating_finished") ?: false
 
-            LaunchedEffect(ratingFinished) {
-                if (ratingFinished) {
-                    tripViewModel.clearFinishedRideForRating()
-                    backStackEntry.savedStateHandle["rating_finished"] = false
+            LaunchedEffect(riderRatingFinished, driverRatingFinished) {
+                if (riderRatingFinished) {
+                    // Rating completed: clear without marking as skipped
+                    tripViewModel.completeFinishedRideForRating()
+                    backStackEntry.savedStateHandle["rider_rating_finished"] = false
+                }
+                if (driverRatingFinished) {
+                    // Rating completed: clear without marking as skipped
+                    tripViewModel.completeFinishedRiderRideForRating()
+                    backStackEntry.savedStateHandle["driver_rating_finished"] = false
                 }
             }
 
@@ -107,6 +114,9 @@ fun AppNavigation(
                 },
                 onRateRidersClick = { rideId ->
                     navController.navigate("rate_user/$rideId/rider")
+                },
+                onRateDriverClick = { rideId ->
+                    navController.navigate("rate_user/$rideId/driver")
                 }
             )
         }
@@ -125,7 +135,7 @@ fun AppNavigation(
                 onRatingFinished = {
                     navController.previousBackStackEntry
                         ?.savedStateHandle
-                        ?.set("rating_finished", true)
+                        ?.set(if (ratingType == "driver") "driver_rating_finished" else "rider_rating_finished", true)
                 }
             )
         }

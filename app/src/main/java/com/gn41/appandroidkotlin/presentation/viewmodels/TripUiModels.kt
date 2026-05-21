@@ -66,7 +66,8 @@ data class TripUiState(
     val isOfflineData: Boolean = false,
     val offlineMessage: String = "",
 
-    val finishedRideIdForRating: Int? = null
+    val finishedRideIdForRating: Int? = null,
+    val finishedRiderRideIdForRating: Int? = null
 )
 
 
