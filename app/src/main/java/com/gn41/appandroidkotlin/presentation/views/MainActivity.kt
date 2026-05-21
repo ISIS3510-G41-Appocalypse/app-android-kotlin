@@ -133,7 +133,9 @@ class MainActivity : ComponentActivity() {
                 val registerDraftManager = remember { RegisterDraftManager(this) }
                 val registerViewModelFactory = RegisterViewModelFactory(
                     registerDraftManager = registerDraftManager,
-                    networkHelper = networkHelper
+                    networkHelper = networkHelper,
+                    authRepository = authRepository,
+                    zoneRepository = zoneRepository
                 )
 
                 val navController = rememberNavController()
