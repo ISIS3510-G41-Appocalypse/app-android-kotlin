@@ -59,6 +59,7 @@ import com.gn41.appandroidkotlin.presentation.viewmodels.normalizeState
 import com.gn41.appandroidkotlin.presentation.viewmodels.stateToReadableLabel
 import com.gn41.appandroidkotlin.ui.theme.AutumnEmber
 import kotlinx.coroutines.delay
+import java.util.Locale
 
 @Composable
 fun TripScreen(
@@ -1020,6 +1021,13 @@ private fun DriverReservationRow(
     onReject: () -> Unit,
     isOfflineMode: Boolean = false
 ) {
+    val riderRatingText = item.riderRating
+        ?.coerceIn(0.0, 5.0)
+        ?.let { rating ->
+            "Rating: ${String.format(Locale.getDefault(), "%.1f", rating)} ⭐"
+        }
+        ?: "Rating: No rating yet"
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -1035,6 +1043,7 @@ private fun DriverReservationRow(
                 color = MaterialTheme.colorScheme.secondary
             }
         }
+        Text(text = riderRatingText, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface)
         Text(text = "Probabilidad de cancelación: ${item.cancellationOdds?.times(100)}%", color = color)
         Text(text = "Metodo de pago: ${item.paymentMethod}", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface)
 

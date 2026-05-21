@@ -188,6 +188,7 @@ class LocalStorageManager (private val context: Context) {
             riderName = getStringOrNull("riderName")?.takeIf { it.isNotBlank() } ?: "Rider",
             status = getStringOrNull("status") ?: return null,
             cancellationOdds = getDoubleOrNull("cancellationOdds"),
+            riderRating = getDoubleOrNull("riderRating"),
             paymentMethod = getStringOrNull("paymentMethod")?.takeIf { it.isNotBlank() } ?: "Por definir"
         )
     }

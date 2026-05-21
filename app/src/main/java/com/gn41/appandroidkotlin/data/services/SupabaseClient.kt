@@ -4,6 +4,7 @@ import com.gn41.appandroidkotlin.BuildConfig
 import com.gn41.appandroidkotlin.data.services.auth.AuthApi
 import com.gn41.appandroidkotlin.data.services.location.LocationApi
 import com.gn41.appandroidkotlin.data.services.performance.SupervisorApi
+import com.gn41.appandroidkotlin.data.services.ratings.RatingApi
 import com.gn41.appandroidkotlin.data.services.reservations.ReservationsApi
 import com.gn41.appandroidkotlin.data.services.rides.RideApi
 import com.gn41.appandroidkotlin.data.services.rides.RidesApi
@@ -66,6 +67,10 @@ object SupabaseClient {
 
     val supervisorApi: SupervisorApi by lazy {
         retrofit.create(SupervisorApi::class.java)
+    }
+
+    val ratingApi: RatingApi by lazy {
+        retrofit.create(RatingApi::class.java)
     }
 
 }

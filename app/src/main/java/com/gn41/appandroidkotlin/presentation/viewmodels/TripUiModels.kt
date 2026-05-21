@@ -8,6 +8,7 @@ data class TripReservationItemUiModel(
     val riderName: String,
     val status: String,
     val cancellationOdds: Double?,
+    val riderRating: Double? = null,
     val paymentMethod: String = "Por definir"
 )
 

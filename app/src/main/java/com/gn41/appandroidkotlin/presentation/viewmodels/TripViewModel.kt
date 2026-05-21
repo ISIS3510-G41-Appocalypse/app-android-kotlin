@@ -330,6 +330,7 @@ class TripViewModel(
                                     id = reservation.id,
                                     riderName = riderName,
                                     cancellationOdds = reservation.riders?.cancellation_odds,
+                                    riderRating = reservation.riders?.rating,
                                     status = normalizeState(reservation.state)
                                 )
                             }
