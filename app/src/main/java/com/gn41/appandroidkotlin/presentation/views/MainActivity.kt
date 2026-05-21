@@ -16,6 +16,7 @@ import androidx.navigation.compose.rememberNavController
 import com.gn41.appandroidkotlin.core.connectivity.NetworkHelper
 import com.gn41.appandroidkotlin.data.local.SessionManager
 import com.gn41.appandroidkotlin.data.repositories.ReservationsRepository
+import com.gn41.appandroidkotlin.data.repositories.RatingRepository
 import com.gn41.appandroidkotlin.data.repositories.RideRepository
 import com.gn41.appandroidkotlin.data.repositories.RidesRepository
 import com.gn41.appandroidkotlin.data.repositories.TripRepository
@@ -25,6 +26,7 @@ import com.gn41.appandroidkotlin.data.services.auth.AuthService
 import com.gn41.appandroidkotlin.data.services.reservations.ReservationsService
 import com.gn41.appandroidkotlin.data.services.rides.RideService
 import com.gn41.appandroidkotlin.data.services.rides.RidesService
+import com.gn41.appandroidkotlin.data.services.ratings.RatingService
 import com.gn41.appandroidkotlin.data.services.trips.TripService
 import com.gn41.appandroidkotlin.data.services.userId.UserIdService
 import com.gn41.appandroidkotlin.data.services.vehicles.VehicleService
@@ -33,6 +35,7 @@ import com.gn41.appandroidkotlin.presentation.navigation.AppNavigation
 import com.gn41.appandroidkotlin.presentation.cache.TripMemoryCache
 import com.gn41.appandroidkotlin.presentation.viewmodels.CreateRideViewModelFactory
 import com.gn41.appandroidkotlin.presentation.viewmodels.HomeViewModelFactory
+import com.gn41.appandroidkotlin.presentation.viewmodels.RatingViewModelFactory
 import com.gn41.appandroidkotlin.presentation.viewmodels.SettingsViewModelFactory
 import com.gn41.appandroidkotlin.presentation.viewmodels.TripViewModelFactory
 import com.gn41.appandroidkotlin.presentation.viewmodels.WelcomeViewModel
@@ -95,6 +98,14 @@ class MainActivity : ComponentActivity() {
                     localStorageManager = localStorageManager
                 )
 
+                val ratingService = RatingService()
+                val ratingRepository = RatingRepository(ratingService)
+                val ratingViewModelFactory = RatingViewModelFactory(
+                    tripRepository = tripRepository,
+                    ratingRepository = ratingRepository,
+                    sessionManager = sessionManager
+                )
+
                 val userIdService = UserIdService(sessionManager)
                 val rideService = RideService(sessionManager, userIdService)
                 val vehicleService = VehicleService(sessionManager, userIdService)
@@ -151,6 +162,7 @@ class MainActivity : ComponentActivity() {
                     homeViewModelFactory = homeFactory,
                     createRideViewModelFactory = createRideViewModelFactory,
                     tripViewModelFactory = tripViewModelFactory,
+                    ratingViewModelFactory = ratingViewModelFactory,
                     settingsViewModelFactory = settingsViewModelFactory,
                     onDarkModeChanged = { enabled ->
                         darkThemeEnabled = enabled

@@ -569,6 +569,10 @@ class TripViewModel(
         )
     }
 
+    fun clearFinishedRideForRating() {
+        uiState = uiState.copy(finishedRideIdForRating = null)
+    }
+
     fun onToggleLocationSharing(enabled: Boolean) {
         if (!canRunOnlineAction("Necesitas conexión para compartir tu ubicación.")) {
             return
@@ -752,7 +756,13 @@ class TripViewModel(
             }
 
             uiState = if (success) {
-                uiState.copy(infoMessage = successMessage)
+                val newUiState = uiState.copy(infoMessage = successMessage)
+                // If finish trip was successful, set finishedRideIdForRating to trigger rating dialog
+                if (newState == "FINALIZADO") {
+                    newUiState.copy(finishedRideIdForRating = rideId)
+                } else {
+                    newUiState
+                }
             } else {
                 uiState.copy(infoMessage = "No se pudo actualizar el viaje.")
             }

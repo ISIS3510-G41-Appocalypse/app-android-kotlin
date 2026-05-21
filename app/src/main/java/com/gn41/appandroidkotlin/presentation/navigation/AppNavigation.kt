@@ -12,6 +12,8 @@ import com.gn41.appandroidkotlin.presentation.viewmodels.CreateRideViewModel
 import com.gn41.appandroidkotlin.presentation.viewmodels.CreateRideViewModelFactory
 import com.gn41.appandroidkotlin.presentation.viewmodels.HomeViewModel
 import com.gn41.appandroidkotlin.presentation.viewmodels.HomeViewModelFactory
+import com.gn41.appandroidkotlin.presentation.viewmodels.RatingViewModel
+import com.gn41.appandroidkotlin.presentation.viewmodels.RatingViewModelFactory
 import com.gn41.appandroidkotlin.presentation.viewmodels.SettingsViewModel
 import com.gn41.appandroidkotlin.presentation.viewmodels.SettingsViewModelFactory
 import com.gn41.appandroidkotlin.presentation.viewmodels.TripViewModel
@@ -19,6 +21,7 @@ import com.gn41.appandroidkotlin.presentation.viewmodels.TripViewModelFactory
 import com.gn41.appandroidkotlin.presentation.viewmodels.WelcomeViewModel
 import com.gn41.appandroidkotlin.presentation.views.CreateRideScreen
 import com.gn41.appandroidkotlin.presentation.views.HomeScreen
+import com.gn41.appandroidkotlin.presentation.views.RateUserScreen
 import com.gn41.appandroidkotlin.presentation.views.SettingsScreen
 import com.gn41.appandroidkotlin.presentation.views.TripScreen
 import com.gn41.appandroidkotlin.presentation.views.WelcomeScreen
@@ -31,6 +34,7 @@ fun AppNavigation(
     homeViewModelFactory: HomeViewModelFactory,
     createRideViewModelFactory: CreateRideViewModelFactory,
     tripViewModelFactory: TripViewModelFactory,
+    ratingViewModelFactory: RatingViewModelFactory,
     settingsViewModelFactory: SettingsViewModelFactory,
     onDarkModeChanged: (Boolean) -> Unit
 ) {
@@ -91,7 +95,24 @@ fun AppNavigation(
                     navController.navigate("home") {
                         launchSingleTop = true
                     }
+                },
+                onRateRidersClick = { rideId ->
+                    navController.navigate("rate_user/$rideId/rider")
                 }
+            )
+        }
+
+
+        composable("rate_user/{rideId}/{ratingType}") { backStackEntry ->
+            val ratingViewModel: RatingViewModel = viewModel(factory = ratingViewModelFactory)
+            val rideId = backStackEntry.arguments?.getString("rideId")?.toIntOrNull() ?: 0
+            val ratingType = backStackEntry.arguments?.getString("ratingType") ?: "driver"
+
+            RateUserScreen(
+                viewModel = ratingViewModel,
+                rideId = rideId,
+                ratingType = ratingType,
+                onBack = { navController.popBackStack() }
             )
         }
 

@@ -64,7 +64,9 @@ data class TripUiState(
     val cachedLocationMessage: String = "",
 
     val isOfflineData: Boolean = false,
-    val offlineMessage: String = ""
+    val offlineMessage: String = "",
+
+    val finishedRideIdForRating: Int? = null
 )
 
 

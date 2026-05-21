@@ -64,7 +64,8 @@ import java.util.Locale
 @Composable
 fun TripScreen(
     viewModel: TripViewModel,
-    onHomeClick: () -> Unit
+    onHomeClick: () -> Unit,
+    onRateRidersClick: (Int) -> Unit
 ) {
     val state = viewModel.uiState
     val context = LocalContext.current
@@ -74,6 +75,8 @@ fun TripScreen(
     var reservationToCancelId by remember { mutableStateOf<Int?>(null) }
     var showCancelRideDialog by remember { mutableStateOf(false) }
     var showFinishRideDialog by remember { mutableStateOf(false) }
+    var showRateRidersDialog by remember { mutableStateOf(false) }
+    var finishedRideIdForRating by remember { mutableStateOf<Int?>(null) }
     val configuration = LocalConfiguration.current
     val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
     val canAutoRefresh = viewModel.connectivity && !state.isOfflineData
@@ -92,6 +95,12 @@ fun TripScreen(
         LaunchedEffect(state.infoMessage) {
             delay(3000)
             viewModel.clearInfoMessage()
+        }
+    }
+
+    LaunchedEffect(state.finishedRideIdForRating) {
+        if (state.finishedRideIdForRating != null) {
+            showRateRidersDialog = true
         }
     }
 
@@ -348,10 +357,46 @@ fun TripScreen(
                 TextButton(
                     onClick = {
                         showFinishRideDialog = false
+                        finishedRideIdForRating = state.activeDriverTrip?.rideId
                         viewModel.onFinishTripClicked()
                     }
                 ) {
                     Text("Finalizar")
+                }
+            }
+        )
+    }
+
+    if (showRateRidersDialog && state.finishedRideIdForRating != null) {
+        AlertDialog(
+            onDismissRequest = {
+                showRateRidersDialog = false
+                viewModel.clearFinishedRideForRating()
+            },
+            title = { Text("Viaje finalizado") },
+            text = { Text("¿Deseas calificar a tus pasajeros ahora?") },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        showRateRidersDialog = false
+                        viewModel.clearFinishedRideForRating()
+                    }
+                ) {
+                    Text("Omitir")
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        val rideId = state.finishedRideIdForRating
+                        showRateRidersDialog = false
+                        viewModel.clearFinishedRideForRating()
+                        if (rideId != null) {
+                            onRateRidersClick(rideId)
+                        }
+                    }
+                ) {
+                    Text("Calificar ahora")
                 }
             }
         )
