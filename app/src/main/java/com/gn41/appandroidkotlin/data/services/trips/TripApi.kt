@@ -74,7 +74,7 @@ interface TripApi {
         @Header("Authorization") token: String,
         @Header("apikey") apiKey: String,
         @Query("driver_id") driverId: String,
-        @Query("state") state: String = "in.(FINALIZADO,FINALIZADA,FINISHED,COMPLETED)",
+        @Query("state") state: String = "FINALIZADO",
         @Query("select") select: String = "id,source,destination,state,departure_time,date,vehicles(number_slots)",
         @Query("order") order: String = "id.desc",
         @Query("limit") limit: Int = 1

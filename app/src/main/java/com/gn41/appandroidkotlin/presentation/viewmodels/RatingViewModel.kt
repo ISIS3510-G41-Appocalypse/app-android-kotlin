@@ -261,20 +261,31 @@ class RatingViewModel(
             return
         }
 
-        val token = sessionManager.getToken()
-        if (token.isEmpty()) {
-            uiState = uiState.copy(errorMessage = "No hay una sesión activa.", successMessage = null)
-            return
-        }
-
-        if (!networkHelper.isInternetAvailable()) {
-            saveCurrentDraft()
+        val rideId = uiState.rideId
+        if (rideId <= 0) {
             uiState = uiState.copy(
-                isSubmitting = false,
-                errorMessage = "Sin conexión. Guardamos tu calificación para que puedas enviarla después.",
+                errorMessage = "No se pudieron identificar los usuarios a calificar.",
                 successMessage = null
             )
             return
+        }
+
+        if (uiState.ratingType == "rider") {
+            if (uiState.selectedRiderId == null || uiState.driverId == null) {
+                uiState = uiState.copy(
+                    errorMessage = "Selecciona un pasajero antes de enviar.",
+                    successMessage = null
+                )
+                return
+            }
+        } else {
+            if (uiState.riderId == null || uiState.driverId == null) {
+                uiState = uiState.copy(
+                    errorMessage = "No se pudieron identificar los usuarios a calificar.",
+                    successMessage = null
+                )
+                return
+            }
         }
 
         if (!isValidScore(uiState.punctuality) ||
@@ -292,6 +303,22 @@ class RatingViewModel(
 
         if (uiState.ratingType == "driver" && !isValidScore(uiState.security)) {
             uiState = uiState.copy(errorMessage = "Califica todos los campos de 1 a 5.", successMessage = null)
+            return
+        }
+
+        val token = sessionManager.getToken()
+        if (token.isEmpty()) {
+            uiState = uiState.copy(errorMessage = "No hay una sesión activa.", successMessage = null)
+            return
+        }
+
+        if (!networkHelper.isInternetAvailable()) {
+            saveCurrentDraft()
+            uiState = uiState.copy(
+                isSubmitting = false,
+                errorMessage = "Sin conexión. Guardamos tu calificación para que puedas enviarla después.",
+                successMessage = null
+            )
             return
         }
 
@@ -355,10 +382,27 @@ class RatingViewModel(
                     val remainingRiders = uiState.ridersToRate.filterNot { it.riderId == ratedRiderId }
                     val hasMoreRiders = remainingRiders.isNotEmpty()
                     val nextRiderId = remainingRiders.firstOrNull()?.riderId
+
+                    val authId = resolveCurrentAuthId()
+                    val currentRideId = uiState.rideId
+                    val noRidersLeft = if (authId != null && ratedRiderId != null && currentRideId > 0) {
+                        val noPendingRiders = localStorageManager.removeRiderFromPendingRating(
+                            authId = authId,
+                            rideId = currentRideId,
+                            riderId = ratedRiderId
+                        )
+                        if (noPendingRiders) {
+                            sessionManager.removePendingDriverRatingRideId(authId, currentRideId)
+                        }
+                        noPendingRiders
+                    } else {
+                        false
+                    }
+
                     val updatedState = uiState.copy(
                         isSubmitting = false,
                         errorMessage = null,
-                        successMessage = if (hasMoreRiders) {
+                        successMessage = if (hasMoreRiders && !noRidersLeft) {
                             "Calificación enviada correctamente. Puedes calificar otro pasajero."
                         } else {
                             "Calificación enviada correctamente."
@@ -374,7 +418,19 @@ class RatingViewModel(
                     nextRiderId?.let { applyDraftIfExists(it) }
                     uiState
                 } else {
+                    val authId = resolveCurrentAuthId()
+                    val currentRideId = uiState.rideId
                     uiState.driverId?.let { clearDraftForTarget(it) }
+                    if (authId != null && currentRideId > 0) {
+                        // Clear the current pending for this ride
+                        localStorageManager.clearPendingRating(authId, currentRideId, "driver")
+                        // Clear any other stale rider pending entries that might linger
+                        localStorageManager.clearOldRiderPendingRatings(authId, keepRideId = null)
+                        // Also clean up SessionManager for any remaining pending rider ids
+                        val staleIds = sessionManager.getPendingRiderRatingRideIds(authId)
+                        staleIds.forEach { sessionManager.removePendingRiderRatingRideId(authId, it) }
+                        Log.d("TripRating", "clear old rider pending ratings keepRideId=null removed=${staleIds.size}")
+                    }
                     uiState.copy(
                         isSubmitting = false,
                         errorMessage = null,

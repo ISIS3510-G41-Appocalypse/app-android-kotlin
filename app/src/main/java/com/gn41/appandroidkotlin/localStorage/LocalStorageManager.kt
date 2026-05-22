@@ -218,6 +218,26 @@ class LocalStorageManager (private val context: Context) {
         }
     }
 
+    fun clearOldRiderPendingRatings(authId: String, keepRideId: Int? = null) {
+        try {
+            val all = readAllPendingRatings()
+            val removed = all.count { pending ->
+                pending.authId == authId &&
+                    pending.ratingType == "driver" &&
+                    (keepRideId == null || pending.rideId != keepRideId)
+            }
+            val updated = all.filterNot { pending ->
+                pending.authId == authId &&
+                    pending.ratingType == "driver" &&
+                    (keepRideId == null || pending.rideId != keepRideId)
+            }
+            writeAllPendingRatings(updated)
+            Log.d(TAG, "clear old rider pending ratings keepRideId=$keepRideId removed=$removed")
+        } catch (e: Exception) {
+            Log.e(TAG, "clear old rider pending ratings error", e)
+        }
+    }
+
     fun clearPendingRatingsForRide(authId: String, rideId: Int) {
         try {
             val updated = readAllPendingRatings().filterNot {
@@ -227,6 +247,45 @@ class LocalStorageManager (private val context: Context) {
             Log.d(TAG, "pending ratings for ride cleared authIdPresent=true rideId=$rideId")
         } catch (e: Exception) {
             Log.e(TAG, "pending ratings for ride clear error", e)
+        }
+    }
+
+    fun removeRiderFromPendingRating(authId: String, rideId: Int, riderId: Int): Boolean {
+        return try {
+            val ratings = readAllPendingRatings().toMutableList()
+            val index = ratings.indexOfFirst {
+                it.authId == authId &&
+                    it.rideId == rideId &&
+                    it.ratingType == "rider"
+            }
+
+            if (index < 0) {
+                false
+            } else {
+                val pending = ratings[index]
+                val updatedRiders = pending.ridersToRate.orEmpty().filterNot { it.riderId == riderId }
+
+                if (updatedRiders.isEmpty()) {
+                    ratings.removeAt(index)
+                    writeAllPendingRatings(ratings)
+                    Log.d(TAG, "pending rider local cleared rideId=$rideId because no riders left")
+                    true
+                } else {
+                    ratings[index] = pending.copy(
+                        ridersToRate = updatedRiders,
+                        updatedAt = System.currentTimeMillis()
+                    )
+                    writeAllPendingRatings(ratings)
+                    Log.d(
+                        TAG,
+                        "pending rider removed from local rideId=$rideId riderId=$riderId remaining=${updatedRiders.size}"
+                    )
+                    false
+                }
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "pending rider remove from local error", e)
+            false
         }
     }
 
