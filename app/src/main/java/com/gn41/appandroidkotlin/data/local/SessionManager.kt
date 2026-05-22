@@ -125,4 +125,54 @@ class SessionManager(context: Context) {
         current.add(rideId.toString())
         sharedPreferences.edit().putStringSet(key, current).apply()
     }
+
+    fun getPendingDriverRatingRideIds(authId: String): Set<Int> {
+        if (authId.isBlank()) return emptySet()
+        return sharedPreferences
+            .getStringSet("pending_driver_rating_$authId", emptySet())
+            ?.mapNotNull { it.toIntOrNull() }
+            ?.toSet()
+            ?: emptySet()
+    }
+
+    fun getPendingRiderRatingRideIds(authId: String): Set<Int> {
+        if (authId.isBlank()) return emptySet()
+        return sharedPreferences
+            .getStringSet("pending_rider_rating_$authId", emptySet())
+            ?.mapNotNull { it.toIntOrNull() }
+            ?.toSet()
+            ?: emptySet()
+    }
+
+    fun addPendingDriverRatingRideId(authId: String, rideId: Int) {
+        if (authId.isBlank()) return
+        val key = "pending_driver_rating_$authId"
+        val current = sharedPreferences.getStringSet(key, emptySet()).orEmpty().toMutableSet()
+        current.add(rideId.toString())
+        sharedPreferences.edit().putStringSet(key, current).apply()
+    }
+
+    fun addPendingRiderRatingRideId(authId: String, rideId: Int) {
+        if (authId.isBlank()) return
+        val key = "pending_rider_rating_$authId"
+        val current = sharedPreferences.getStringSet(key, emptySet()).orEmpty().toMutableSet()
+        current.add(rideId.toString())
+        sharedPreferences.edit().putStringSet(key, current).apply()
+    }
+
+    fun removePendingDriverRatingRideId(authId: String, rideId: Int) {
+        if (authId.isBlank()) return
+        val key = "pending_driver_rating_$authId"
+        val current = sharedPreferences.getStringSet(key, emptySet()).orEmpty().toMutableSet()
+        current.remove(rideId.toString())
+        sharedPreferences.edit().putStringSet(key, current).apply()
+    }
+
+    fun removePendingRiderRatingRideId(authId: String, rideId: Int) {
+        if (authId.isBlank()) return
+        val key = "pending_rider_rating_$authId"
+        val current = sharedPreferences.getStringSet(key, emptySet()).orEmpty().toMutableSet()
+        current.remove(rideId.toString())
+        sharedPreferences.edit().putStringSet(key, current).apply()
+    }
 }
