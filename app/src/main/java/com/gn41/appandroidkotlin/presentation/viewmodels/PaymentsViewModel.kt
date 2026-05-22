@@ -3,6 +3,7 @@ package com.gn41.appandroidkotlin.presentation.viewmodels
 import android.util.ArrayMap
 import android.util.Log
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
@@ -10,6 +11,7 @@ import androidx.lifecycle.viewModelScope
 import com.gn41.appandroidkotlin.data.dto.payments.PaymentDto
 import com.gn41.appandroidkotlin.data.dto.payments.RidePaymentDto
 import com.gn41.appandroidkotlin.data.repositories.PaymentsRepository
+import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
 
 class PaymentsViewModel ( private val paymentsRepository: PaymentsRepository) : ViewModel() {
@@ -21,7 +23,9 @@ class PaymentsViewModel ( private val paymentsRepository: PaymentsRepository) : 
     var rides by mutableStateOf<List<RidePaymentDto>>(emptyList())
         private set
 
-    var payments by mutableStateOf<ArrayMap<Int, List<PaymentDto>>>(ArrayMap())
+    val payments = mutableStateMapOf<Int, List<PaymentDto>>()
+
+    var isLoadingData by mutableStateOf(false)
         private set
 
     init {
@@ -29,16 +33,20 @@ class PaymentsViewModel ( private val paymentsRepository: PaymentsRepository) : 
     }
 
     private fun loadData() {
+        rides = emptyList()
+        payments.clear()
         viewModelScope.launch {
+            isLoadingData = true
             rides = paymentsRepository.getRides(selectedRole)
             if (rides.isNotEmpty()) {
                 rides.forEach { ride ->
-                    payments[ride.id] = paymentsRepository.getPayments(selectedRole, ride.id)
+                    payments[ride.id] = async{ paymentsRepository.getPayments(selectedRole, ride.id) }.await()
                 }
             }
+            Log.d("PaymentsViewModel", "Rides: $rides")
+            Log.d("PaymentsViewModel", "Payments: $payments")
+            isLoadingData = false
         }
-        Log.d("PaymentsViewModel", "Rides: $rides")
-        Log.d("PaymentsViewModel", "Payments: $payments")
     }
 
     fun onRoleChange(value: String) {

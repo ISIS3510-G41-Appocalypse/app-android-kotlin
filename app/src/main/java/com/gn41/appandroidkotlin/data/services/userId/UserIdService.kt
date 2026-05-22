@@ -73,8 +73,13 @@ class UserIdService(
             userId = "eq.$userId"
         )
 
-        return@withContext response.firstOrNull()?.id
-            ?: throw Exception("Driver not found")
+        val id = response.firstOrNull()?.id
+        if (id == null) {
+            return@withContext -1
+        }
+        else{
+            return@withContext id
+        }
     }
 
     suspend fun getRiderIdByUserId(userId: Int): Int = withContext(Dispatchers.IO) {
@@ -89,8 +94,13 @@ class UserIdService(
             userId = "eq.$userId"
         )
 
-        return@withContext response.firstOrNull()?.id
-            ?: throw Exception("Driver not found")
+        val id = response.firstOrNull()?.id
+        if (id == null) {
+            return@withContext -1
+        }
+        else{
+            return@withContext id
+        }
     }
 
 /*    private fun extractAuthIdFromToken(token: String): String? {

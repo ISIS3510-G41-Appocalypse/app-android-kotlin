@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -51,7 +52,6 @@ fun PaymentsScreen(
                 .weight(1f)
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
 
@@ -78,29 +78,43 @@ fun PaymentsScreen(
                 )
             }
 
-            item {
-
-                PaymentSectionSwitch(
-                    selectedSection = viewModel.selectedRole,
-                    onSectionSelected = {
-                        viewModel.onRoleChange(it)
+            if (viewModel.isLoadingData) {
+                item {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
                     }
-                )
-            }
+                }
+            } else {
 
-            if (viewModel.selectedRole == "Conductor") {
+                item {
 
-                items(viewModel.rides) { ride ->
-
-                    DriverPaymentCard(
-                        ride = ride,
-                        payments = viewModel.payments.getOrDefault(ride.id, emptyList())
+                    PaymentSectionSwitch(
+                        selectedSection = viewModel.selectedRole,
+                        onSectionSelected = {
+                            viewModel.onRoleChange(it)
+                        }
                     )
                 }
 
-            } else {
+                if (viewModel.selectedRole == "Conductor") {
 
-                items(viewModel.rides) { ride ->
+                    items(
+                        items = viewModel.rides,
+                        key = { it.id }
+                    ) { ride ->
+
+                        DriverPaymentCard(
+                            ride = ride,
+                            payments = viewModel.payments.getOrDefault(ride.id, emptyList())
+                        )
+                    }
+
+                } else {
+
+                    items(viewModel.rides) { ride ->
 
                         RiderPaymentCard(
                             ride = ride,
@@ -109,11 +123,12 @@ fun PaymentsScreen(
                                 viewModel.onPayClicked()
                             }
                         )
+                    }
                 }
-            }
 
-            item {
-                Spacer(modifier = Modifier.height(20.dp))
+                item {
+                    Spacer(modifier = Modifier.height(20.dp))
+                }
             }
         }
 

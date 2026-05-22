@@ -26,20 +26,30 @@ class PaymentsService (
 
         if (selectedRole == "Conductor") {
             val driverId = userIdService.getDriverIdByUserId(userId)
-            return@withContext paymentsApi.get_driver_rides_with_payments(
-                apiKey = BuildConfig.SUPABASE_KEY,
-                authorization = "Bearer $token",
-                request = RideDriverPaymentDtoRequest(driverId)
-            )
+            if (driverId == -1){
+                return@withContext emptyList()
+            }
+            else{
+                return@withContext paymentsApi.get_driver_rides_with_payments(
+                    apiKey = BuildConfig.SUPABASE_KEY,
+                    authorization = "Bearer $token",
+                    request = RideDriverPaymentDtoRequest(driverId)
+                )
+            }
         }
         else
         {
             val riderId = userIdService.getRiderIdByUserId(userId)
-            return@withContext paymentsApi.get_rider_rides_with_payments(
-                apiKey = BuildConfig.SUPABASE_KEY,
-                authorization = "Bearer $token",
-                request = RideRiderPaymentDtoRequest(riderId)
-            )
+            if (riderId == -1){
+                return@withContext emptyList()
+            }
+            else {
+                return@withContext paymentsApi.get_rider_rides_with_payments(
+                    apiKey = BuildConfig.SUPABASE_KEY,
+                    authorization = "Bearer $token",
+                    request = RideRiderPaymentDtoRequest(riderId)
+                )
+            }
         }
     }
 
