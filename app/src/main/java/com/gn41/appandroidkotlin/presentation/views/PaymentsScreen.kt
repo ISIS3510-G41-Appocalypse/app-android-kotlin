@@ -18,9 +18,19 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -28,6 +38,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.gn41.appandroidkotlin.data.dto.payments.PaymentDto
+import com.gn41.appandroidkotlin.data.dto.payments.PaymentMethodDto
 import com.gn41.appandroidkotlin.data.dto.payments.RidePaymentDto
 import com.gn41.appandroidkotlin.presentation.viewmodels.PaymentsViewModel
 import com.gn41.appandroidkotlin.ui.theme.AutumnEmber
@@ -107,6 +118,7 @@ fun PaymentsScreen(
                     ) { ride ->
 
                         DriverPaymentCard(
+                            viewModel,
                             ride = ride,
                             payments = viewModel.payments.getOrDefault(ride.id, emptyList())
                         )
@@ -117,11 +129,9 @@ fun PaymentsScreen(
                     items(viewModel.rides) { ride ->
 
                         RiderPaymentCard(
+                            viewModel,
                             ride = ride,
-                            payments = viewModel.payments.getOrDefault(ride.id, emptyList()),
-                            onPayClick = {
-                                viewModel.onPayClicked()
-                            }
+                            payments = viewModel.payments.getOrDefault(ride.id, emptyList())
                         )
                     }
                 }
@@ -147,6 +157,7 @@ fun PaymentsScreen(
 
 @Composable
 private fun DriverPaymentCard(
+    viewModel: PaymentsViewModel,
     ride: RidePaymentDto,
     payments: List<PaymentDto>
 ) {
@@ -226,17 +237,57 @@ private fun DriverPaymentCard(
                     style = MaterialTheme.typography.titleMedium,
                     color = AutumnEmber
                 )
+
+                if (payment.state=="POR CONFIRMAR"){
+                    Text(
+                        text = "El usuario ha pagado. Confirma el pago.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+
+                        SmallActionButton(
+                            text = "Confirmar",
+                            onClick = {
+                                viewModel.onConfirmarPago(payment.id)
+                            },
+                            accentColor = MaterialTheme.colorScheme.secondary
+                        )
+
+                        SmallActionButton(
+                            text = "Rechazar",
+                            onClick = {
+                                viewModel.onRechazarPago(payment.id)
+                            },
+                            accentColor = MaterialTheme.colorScheme.error
+                        )
+                    }
+                }
             }
         }
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun RiderPaymentCard(
+    viewModel: PaymentsViewModel,
     ride: RidePaymentDto,
     payments: List<PaymentDto>,
-    onPayClick: () -> Unit
 ) {
+
+    val payment = payments.firstOrNull()
+
+    var expanded by remember {
+        mutableStateOf(false)
+    }
+
+    var selectedMethod by remember {
+        mutableStateOf<PaymentMethodDto?>(null)
+    }
 
     Column(
         modifier = Modifier
@@ -276,14 +327,81 @@ private fun RiderPaymentCard(
         )
 
         Text(
-            text = "$ ${payments.first().amount}",
+            text = "$ ${payment?.amount ?: 0}",
             style = MaterialTheme.typography.titleLarge,
             color = AutumnEmber
         )
 
+        Spacer(modifier = Modifier.height(4.dp))
+
+        Text(
+            text = "Método de pago",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurface
+        )
+
+        ExposedDropdownMenuBox(
+            expanded = expanded,
+            onExpandedChange = {
+                expanded = !expanded
+            }
+        ) {
+
+            OutlinedTextField(
+                value = selectedMethod?.let {
+                    it.methodName
+                } ?: "Selecciona un método",
+                onValueChange = {},
+                readOnly = true,
+                modifier = Modifier
+                    .menuAnchor()
+                    .fillMaxWidth(),
+                trailingIcon = {
+                    ExposedDropdownMenuDefaults.TrailingIcon(
+                        expanded = expanded
+                    )
+                },
+                colors = TextFieldDefaults.colors(
+                    focusedContainerColor = MaterialTheme.colorScheme.surface,
+                    unfocusedContainerColor = MaterialTheme.colorScheme.surface
+                ),
+                shape = RoundedCornerShape(12.dp)
+            )
+
+            ExposedDropdownMenu(
+                expanded = expanded,
+                onDismissRequest = {
+                    expanded = false
+                }
+            ) {
+
+                payment?.paymentMethods?.forEach { method ->
+
+                    DropdownMenuItem(
+                        text = {
+                            Column {
+
+                                Text(
+                                    text = method.methodName,
+                                    style = MaterialTheme.typography.bodyMedium
+                                )
+                            }
+                        },
+                        onClick = {
+                            selectedMethod = method
+                            expanded = false
+                        }
+                    )
+                }
+            }
+        }
+
         SmallActionButton(
             text = "Pagar",
-            onClick = onPayClick,
+            onClick = {
+                viewModel.onPayClicked(payment?.id ?: -1, selectedMethod?.methodName ?: "")
+            },
+            enabled = selectedMethod != null,
             accentColor = MaterialTheme.colorScheme.secondary
         )
     }

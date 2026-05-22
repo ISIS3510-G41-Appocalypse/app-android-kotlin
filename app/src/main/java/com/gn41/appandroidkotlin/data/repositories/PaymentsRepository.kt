@@ -12,4 +12,16 @@ class PaymentsRepository (private val paymentsService: PaymentsService) {
     suspend fun getPayments(selectedRole: String, rideId: Int) : List<PaymentDto> {
         return paymentsService.getPayments(selectedRole, rideId)
     }
+
+    suspend fun pay(id:Int, selectedMethod: String) {
+        paymentsService.pay(id,selectedMethod)
+    }
+
+    suspend fun rechazarPago(id:Int) {
+        paymentsService.rechazarPago(id)
+    }
+
+    suspend fun confirmarPago(id:Int) {
+        paymentsService.confirmarPago(id)
+    }
 }
