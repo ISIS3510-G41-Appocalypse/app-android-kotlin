@@ -154,17 +154,16 @@ class TripViewModel(
         val cachedState = TripMemoryCache.getSavedState(authId = authId)
 
         if (cachedState != null) {
-            val finalOfflineDriverPendingRideId = if (cachedState.activeDriverTrip != null) {
-                Log.d("TripRating", "skip offline driver pending because active driver trip exists")
-                null
+            val hasActiveOfflineTrip = hasAnyActiveTrip(cachedState.activeDriverTrip, cachedState.activeRiderTrips)
+            val finalOfflineDriverPendingRideId: Int?
+            val finalOfflineRiderPendingRideId: Int?
+            if (hasActiveOfflineTrip) {
+                Log.d("TripRating", "skip all offline pending because active trip exists")
+                finalOfflineDriverPendingRideId = null
+                finalOfflineRiderPendingRideId = null
             } else {
-                offlineDriverPendingRideId
-            }
-            val finalOfflineRiderPendingRideId = if (cachedState.activeRiderTrips.isNotEmpty()) {
-                Log.d("TripRating", "skip offline rider pending because active rider trip exists")
-                null
-            } else {
-                offlineRiderPendingRideId
+                finalOfflineDriverPendingRideId = offlineDriverPendingRideId
+                finalOfflineRiderPendingRideId = if (offlineDriverPendingRideId == null) offlineRiderPendingRideId else null
             }
             Log.d(
                 TAG,
@@ -187,17 +186,16 @@ class TripViewModel(
             Log.d(TAG, "offline RAM miss, reading local storage")
             val localState = localStorageManager.readTripState(authId)
             if (localState != null) {
-                val finalOfflineDriverPendingRideId = if (localState.activeDriverTrip != null) {
-                    Log.d("TripRating", "skip offline driver pending because active driver trip exists")
-                    null
+                val hasActiveOfflineTrip = hasAnyActiveTrip(localState.activeDriverTrip, localState.activeRiderTrips)
+                val finalOfflineDriverPendingRideId: Int?
+                val finalOfflineRiderPendingRideId: Int?
+                if (hasActiveOfflineTrip) {
+                    Log.d("TripRating", "skip all offline pending because active trip exists")
+                    finalOfflineDriverPendingRideId = null
+                    finalOfflineRiderPendingRideId = null
                 } else {
-                    offlineDriverPendingRideId
-                }
-                val finalOfflineRiderPendingRideId = if (localState.activeRiderTrips.isNotEmpty()) {
-                    Log.d("TripRating", "skip offline rider pending because active rider trip exists")
-                    null
-                } else {
-                    offlineRiderPendingRideId
+                    finalOfflineDriverPendingRideId = offlineDriverPendingRideId
+                    finalOfflineRiderPendingRideId = if (offlineDriverPendingRideId == null) offlineRiderPendingRideId else null
                 }
                 Log.d(
                     TAG,
@@ -227,17 +225,16 @@ class TripViewModel(
                 }
                 val inMemoryDriverTrip = buildDriverTripForStorage(uiState.activeDriverTrip)
                 if (inMemoryRiderTrips.isNotEmpty() || inMemoryDriverTrip != null) {
-                    val finalOfflineDriverPendingRideId = if (inMemoryDriverTrip != null) {
-                        Log.d("TripRating", "skip offline driver pending because active driver trip exists")
-                        null
+                    val hasActiveOfflineTrip = hasAnyActiveTrip(inMemoryDriverTrip, inMemoryRiderTrips)
+                    val finalOfflineDriverPendingRideId: Int?
+                    val finalOfflineRiderPendingRideId: Int?
+                    if (hasActiveOfflineTrip) {
+                        Log.d("TripRating", "skip all offline pending because active trip exists")
+                        finalOfflineDriverPendingRideId = null
+                        finalOfflineRiderPendingRideId = null
                     } else {
-                        offlineDriverPendingRideId
-                    }
-                    val finalOfflineRiderPendingRideId = if (inMemoryRiderTrips.isNotEmpty()) {
-                        Log.d("TripRating", "skip offline rider pending because active rider trip exists")
-                        null
-                    } else {
-                        offlineRiderPendingRideId
+                        finalOfflineDriverPendingRideId = offlineDriverPendingRideId
+                        finalOfflineRiderPendingRideId = if (offlineDriverPendingRideId == null) offlineRiderPendingRideId else null
                     }
                     Log.d(
                         TAG,
@@ -274,24 +271,26 @@ class TripViewModel(
                 }
 
                 Log.d(TAG, "offline no cache found in RAM/FILE")
+                val finalOfflineDriverPendingRideId = offlineDriverPendingRideId
+                val finalOfflineRiderPendingRideId = if (offlineDriverPendingRideId == null) offlineRiderPendingRideId else null
                 // No cache available in memory or local storage
                 uiState = uiState.copy(
                     isLoading = false,
-                    errorMessage = if (offlineDriverPendingRideId != null || offlineRiderPendingRideId != null) {
+                    errorMessage = if (finalOfflineDriverPendingRideId != null || finalOfflineRiderPendingRideId != null) {
                         ""
                     } else {
                         "Sin conexión a internet. No hay datos guardados disponibles."
                     },
                     activeRiderTrips = emptyList(),
                     activeDriverTrip = null,
-                    isOfflineData = offlineDriverPendingRideId != null || offlineRiderPendingRideId != null,
-                    offlineMessage = if (offlineDriverPendingRideId != null || offlineRiderPendingRideId != null) {
+                    isOfflineData = finalOfflineDriverPendingRideId != null || finalOfflineRiderPendingRideId != null,
+                    offlineMessage = if (finalOfflineDriverPendingRideId != null || finalOfflineRiderPendingRideId != null) {
                         "Estás viendo información guardada. Necesitas conexión para realizar acciones."
                     } else {
                         ""
                     },
-                    finishedRideIdForRating = offlineDriverPendingRideId,
-                    finishedRiderRideIdForRating = offlineRiderPendingRideId
+                    finishedRideIdForRating = finalOfflineDriverPendingRideId,
+                    finishedRiderRideIdForRating = finalOfflineRiderPendingRideId
                 )
             }
         }
@@ -330,7 +329,13 @@ class TripViewModel(
         }
 
         if (showLoading) {
-            uiState = uiState.copy(isLoading = true, errorMessage = "")
+            Log.d("TripRating", "hide pending cards while loading trips")
+            uiState = uiState.copy(
+                isLoading = true,
+                errorMessage = "",
+                finishedRideIdForRating = null,
+                finishedRiderRideIdForRating = null
+            )
         } else {
             uiState = uiState.copy(errorMessage = "")
         }
@@ -499,27 +504,21 @@ class TripViewModel(
                     null
                 }
 
-                if (driverTrip != null) {
-                    val activeDriverRideId = driverTrip.rideId
-                    pendingDriverIds.toList().forEach { oldRideId ->
-                        if (oldRideId != activeDriverRideId) {
-                            clearDriverPendingRatingLocal(authId, oldRideId)
-                        }
+                val hasActiveTrip = hasAnyActiveTrip(driverTrip, riderTrips)
+                val activeRiderRideIds = riderTrips.map { it.rideId }.toSet()
+                Log.d(
+                    "TripRating",
+                    "rating cleanup activeTrip=$hasActiveTrip driverTrip=${driverTrip?.rideId} riderTrips=${activeRiderRideIds.joinToString()}"
+                )
+                if (hasActiveTrip) {
+                    val activeRideIds = buildSet {
+                        driverTrip?.let { add(it.rideId) }
+                        addAll(activeRiderRideIds)
                     }
+                    clearAllOldPendingRatingsBecauseActiveFlow(authId, activeRideIds)
                 }
 
-                if (riderTrips.isNotEmpty()) {
-                    val activeRiderRideIds = riderTrips.map { it.rideId }.toSet()
-                    pendingRiderIds.toList().forEach { oldRideId ->
-                        if (oldRideId !in activeRiderRideIds) {
-                            clearRiderPendingRatingLocal(authId, oldRideId)
-                        }
-                    }
-                    // Clear stale entries from pending_ratings.json not tracked by SessionManager
-                    clearOldRiderPendingRatingsLocal(authId, keepRideId = null)
-                }
-
-                val finishedDriverRideForRating = if (driver != null && driverTrip == null) {
+                val finishedDriverRideForRating = if (driver != null && !hasActiveTrip) {
                     tripRepository.getFinishedDriverRideForRating(driver.id, token)
                 } else {
                     null
@@ -586,12 +585,15 @@ class TripViewModel(
                 val memoryDriverPendingRideId = pendingDriverIds
                     .lastOrNull { it !in skippedDriverIds }
 
+                val safeCurrentPendingDriverRating = currentPendingDriverRating
+                    ?.takeIf { !hasActiveTrip && isDriverPendingStillValid(authId, it) }
+
                 // Preserve in-session pending if not skipped and no active driver trip;
                 // avoids losing the pending card due to backend timing after trip finish
                 val finalDriverPendingRideId = when {
-                    driverTrip != null -> null
-                    currentPendingDriverRating != null &&
-                        currentPendingDriverRating !in skippedDriverIds -> currentPendingDriverRating
+                    hasActiveTrip -> null
+                    safeCurrentPendingDriverRating != null &&
+                        safeCurrentPendingDriverRating !in skippedDriverIds -> safeCurrentPendingDriverRating
                     memoryDriverPendingRideId != null -> memoryDriverPendingRideId
                     detectedDriverPendingRideId != null &&
                         detectedDriverPendingRideId !in skippedDriverIds -> detectedDriverPendingRideId
@@ -606,7 +608,7 @@ class TripViewModel(
 
                 // Only accept reservations with state ACEPTADA or EN_CURSO for rider pending detection;
                 // avoids showing pending card for cancelled, rejected or pending reservations
-                val detectedRiderPendingRideId = if (riderTrips.isEmpty()) {
+                val detectedRiderPendingRideId = if (!hasActiveTrip && riderTrips.isEmpty()) {
                     finishedRiderReservationForRating
                         ?.takeIf { reservation ->
                             val reservationState = normalizeState(reservation.state)
@@ -687,11 +689,14 @@ class TripViewModel(
                 val memoryRiderPendingRideId = pendingRiderIds
                     .lastOrNull { it !in skippedRiderIds }
 
+                val safeCurrentPendingRiderRating = currentPendingRiderRating
+                    ?.takeIf { !hasActiveTrip && isRiderPendingStillValid(authId, it) }
+
                 // Preserve in-session pending rider rating if not skipped and no active rider trips
                 val finalRiderPendingRideId = when {
-                    riderTrips.isNotEmpty() -> null
-                    currentPendingRiderRating != null &&
-                        currentPendingRiderRating !in skippedRiderIds -> currentPendingRiderRating
+                    hasActiveTrip -> null
+                    safeCurrentPendingRiderRating != null &&
+                        safeCurrentPendingRiderRating !in skippedRiderIds -> safeCurrentPendingRiderRating
                     memoryRiderPendingRideId != null -> memoryRiderPendingRideId
                     validDetectedRiderPendingRideId != null &&
                         validDetectedRiderPendingRideId !in skippedRiderIds -> validDetectedRiderPendingRideId
@@ -707,13 +712,30 @@ class TripViewModel(
                     "authIdPresent=${authId.isNotBlank()} rider pending current=$currentPendingRiderRating memory=$memoryRiderPendingRideId detected=$detectedRiderPendingRideId final=$finalRiderPendingRideId skipped=${finalRiderPendingRideId in skippedRiderIds}"
                 )
 
+                val resolvedDriverPendingRideId: Int?
+                val resolvedRiderPendingRideId: Int?
+                if (hasActiveTrip) {
+                    resolvedDriverPendingRideId = null
+                    resolvedRiderPendingRideId = null
+                } else if (finalDriverPendingRideId != null) {
+                    resolvedDriverPendingRideId = finalDriverPendingRideId
+                    resolvedRiderPendingRideId = null
+                } else {
+                    resolvedDriverPendingRideId = null
+                    resolvedRiderPendingRideId = finalRiderPendingRideId
+                }
+                Log.d(
+                    "TripRating",
+                    "resolved pending driver=$resolvedDriverPendingRideId rider=$resolvedRiderPendingRideId"
+                )
+
                 // Ensure snapshot exists for final pending driver ride before showing UI
-                if (finalDriverPendingRideId != null && driver != null) {
+                if (resolvedDriverPendingRideId != null && driver != null) {
                     ensureDriverPendingSnapshot(
                         authId = authId,
                         token = token,
                         driverId = driver.id,
-                        rideId = finalDriverPendingRideId
+                        rideId = resolvedDriverPendingRideId
                     )
                 }
 
@@ -726,8 +748,8 @@ class TripViewModel(
                     currentRideId = currentRideId,
                     isOfflineData = false,
                     offlineMessage = "",
-                    finishedRideIdForRating = finalDriverPendingRideId,
-                    finishedRiderRideIdForRating = finalRiderPendingRideId
+                    finishedRideIdForRating = resolvedDriverPendingRideId,
+                    finishedRiderRideIdForRating = resolvedRiderPendingRideId
                 )
 
                 // Save to memory cache with filtered driver reservations
@@ -905,6 +927,28 @@ class TripViewModel(
 
     fun refreshTrips() {
         loadTrips(showLoading = false)
+    }
+
+    fun forceClearCompletedRating(rideId: Int, ratingType: String) {
+        val authId = resolveCurrentAuthId() ?: return
+
+        if (ratingType == "rider") {
+            pendingDriverSet(authId).remove(rideId)
+            sessionManager.removePendingDriverRatingRideId(authId, rideId)
+            localStorageManager.clearPendingRating(authId, rideId, "rider")
+            localStorageManager.clearRatingDraftsForRide(authId, rideId, "rider")
+            RatingDraftCache.clearDraftsForRide(authId, rideId, "rider")
+            uiState = uiState.copy(finishedRideIdForRating = null)
+        } else {
+            pendingRiderSet(authId).remove(rideId)
+            sessionManager.removePendingRiderRatingRideId(authId, rideId)
+            localStorageManager.clearPendingRating(authId, rideId, "driver")
+            localStorageManager.clearRatingDraftsForRide(authId, rideId, "driver")
+            RatingDraftCache.clearDraftsForRide(authId, rideId, "driver")
+            uiState = uiState.copy(finishedRiderRideIdForRating = null)
+        }
+
+        Log.d("TripRating", "force clear completed rating rideId=$rideId type=$ratingType")
     }
 
     fun onOpenRouteClicked() {
@@ -1270,6 +1314,67 @@ class TripViewModel(
         val token = sessionManager.getToken()
         if (token.isBlank()) return null
         return extractAuthIdFromToken(token)
+    }
+
+    private fun hasAnyActiveTrip(
+        driverTrip: ActiveDriverTripUiModel?,
+        riderTrips: List<ActiveRiderTripUiModel>
+    ): Boolean {
+        return driverTrip != null || riderTrips.isNotEmpty()
+    }
+
+    private fun clearAllOldPendingRatingsBecauseActiveFlow(authId: String, activeRideIds: Set<Int>) {
+        pendingDriverSet(authId).toList().forEach { rideId ->
+            if (rideId !in activeRideIds) {
+                Log.d("TripRating", "clear old pending because active flow exists rideId=$rideId type=rider")
+                clearDriverPendingRatingLocal(authId, rideId)
+            }
+        }
+
+        pendingRiderSet(authId).toList().forEach { rideId ->
+            if (rideId !in activeRideIds) {
+                Log.d("TripRating", "clear old pending because active flow exists rideId=$rideId type=driver")
+                clearRiderPendingRatingLocal(authId, rideId)
+            }
+        }
+
+        localStorageManager.readPendingRatings(authId).forEach { pending ->
+            if (pending.rideId !in activeRideIds) {
+                Log.d("TripRating", "clear old pending because active flow exists rideId=${pending.rideId} type=${pending.ratingType}")
+                localStorageManager.clearPendingRating(authId, pending.rideId, pending.ratingType)
+                localStorageManager.clearRatingDraftsForRide(authId, pending.rideId, pending.ratingType)
+                RatingDraftCache.clearDraftsForRide(authId, pending.rideId, pending.ratingType)
+                if (pending.ratingType == "rider") {
+                    pendingDriverSet(authId).remove(pending.rideId)
+                    sessionManager.removePendingDriverRatingRideId(authId, pending.rideId)
+                } else if (pending.ratingType == "driver") {
+                    pendingRiderSet(authId).remove(pending.rideId)
+                    sessionManager.removePendingRiderRatingRideId(authId, pending.rideId)
+                }
+            }
+        }
+    }
+
+    private fun isDriverPendingStillValid(authId: String, rideId: Int): Boolean {
+        val inSession = rideId in sessionManager.getPendingDriverRatingRideIds(authId)
+        val inLocal = localStorageManager.readPendingRatings(authId).any {
+            it.rideId == rideId &&
+                it.ratingType == "rider" &&
+                it.driverId != null &&
+                !it.ridersToRate.isNullOrEmpty()
+        }
+        return inSession && inLocal
+    }
+
+    private fun isRiderPendingStillValid(authId: String, rideId: Int): Boolean {
+        val inSession = rideId in sessionManager.getPendingRiderRatingRideIds(authId)
+        val inLocal = localStorageManager.readPendingRatings(authId).any {
+            it.rideId == rideId &&
+                it.ratingType == "driver" &&
+                it.riderId != null &&
+                it.driverId != null
+        }
+        return inSession && inLocal
     }
 
     private fun pendingDriverSet(authId: String): MutableSet<Int> {
