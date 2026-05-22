@@ -393,6 +393,10 @@ class RatingViewModel(
                         )
                         if (noPendingRiders) {
                             sessionManager.removePendingDriverRatingRideId(authId, currentRideId)
+                            localStorageManager.clearPendingRating(authId, currentRideId, "rider")
+                            localStorageManager.clearRatingDraftsForRide(authId, currentRideId, "rider")
+                            RatingDraftCache.clearDraftsForRide(authId, currentRideId, "rider")
+                            Log.d("TripRating", "clear completed driver pending after last rider rideId=$currentRideId")
                         }
                         noPendingRiders
                     } else {

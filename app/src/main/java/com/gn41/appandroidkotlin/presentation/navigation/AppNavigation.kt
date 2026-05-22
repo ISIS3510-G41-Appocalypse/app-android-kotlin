@@ -122,17 +122,33 @@ fun AppNavigation(
             val tripViewModel: TripViewModel = viewModel(factory = tripViewModelFactory)
             val riderRatingFinished = backStackEntry.savedStateHandle.get<Boolean>("rider_rating_finished") ?: false
             val driverRatingFinished = backStackEntry.savedStateHandle.get<Boolean>("driver_rating_finished") ?: false
+            val completedRatingRideId = backStackEntry.savedStateHandle.get<Int>("completed_rating_ride_id")
+            val completedRatingType = backStackEntry.savedStateHandle.get<String>("completed_rating_type")
 
-            LaunchedEffect(riderRatingFinished, driverRatingFinished) {
+            LaunchedEffect(riderRatingFinished, driverRatingFinished, completedRatingRideId, completedRatingType) {
                 if (riderRatingFinished) {
-                    // Rating completed: clear without marking as skipped
-                    tripViewModel.completeFinishedRideForRating()
+                    if (completedRatingRideId != null) {
+                        tripViewModel.forceClearCompletedRating(completedRatingRideId, completedRatingType ?: "rider")
+                    } else {
+                        // Rating completed: clear without marking as skipped
+                        tripViewModel.completeFinishedRideForRating()
+                    }
+                    tripViewModel.refreshTrips()
                     backStackEntry.savedStateHandle["rider_rating_finished"] = false
                 }
                 if (driverRatingFinished) {
-                    // Rating completed: clear without marking as skipped
-                    tripViewModel.completeFinishedRiderRideForRating()
+                    if (completedRatingRideId != null) {
+                        tripViewModel.forceClearCompletedRating(completedRatingRideId, completedRatingType ?: "driver")
+                    } else {
+                        // Rating completed: clear without marking as skipped
+                        tripViewModel.completeFinishedRiderRideForRating()
+                    }
+                    tripViewModel.refreshTrips()
                     backStackEntry.savedStateHandle["driver_rating_finished"] = false
+                }
+                if (riderRatingFinished || driverRatingFinished) {
+                    backStackEntry.savedStateHandle.remove<Int>("completed_rating_ride_id")
+                    backStackEntry.savedStateHandle.remove<String>("completed_rating_type")
                 }
             }
 
@@ -183,6 +199,12 @@ fun AppNavigation(
                     navController.previousBackStackEntry
                         ?.savedStateHandle
                         ?.set(if (ratingType == "driver") "driver_rating_finished" else "rider_rating_finished", true)
+                    navController.previousBackStackEntry
+                        ?.savedStateHandle
+                        ?.set("completed_rating_ride_id", rideId)
+                    navController.previousBackStackEntry
+                        ?.savedStateHandle
+                        ?.set("completed_rating_type", ratingType)
                 }
             )
         }

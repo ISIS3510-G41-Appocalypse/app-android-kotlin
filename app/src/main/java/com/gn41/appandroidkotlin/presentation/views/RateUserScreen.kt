@@ -30,6 +30,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.gn41.appandroidkotlin.presentation.viewmodels.RateUserUiModel
 import com.gn41.appandroidkotlin.presentation.viewmodels.RatingViewModel
+import kotlinx.coroutines.delay
 
 @Composable
 fun RateUserScreen(
@@ -46,6 +47,7 @@ fun RateUserScreen(
     val isRiderWithoutSelection = normalizedRatingType == "rider" && state.selectedRiderId == null
     val noPendingRidersMessage = "No hay pasajeros pendientes por calificar."
     val driverAlreadyRatedMessage = "Ya calificaste al conductor de este viaje."
+    val offlinePendingSavedMessage = "Sin conexión. Guardamos tu calificación para que puedas enviarla después."
     val isNoPendingRidersState = normalizedRatingType == "rider" && state.errorMessage == noPendingRidersMessage
     val isDriverAlreadyRatedState = normalizedRatingType == "driver" && state.errorMessage == driverAlreadyRatedMessage
     val isFinalSuccess = state.successMessage != null &&
@@ -54,6 +56,13 @@ fun RateUserScreen(
 
     LaunchedEffect(rideId, normalizedRatingType) {
         viewModel.loadRatingData(rideId, normalizedRatingType)
+    }
+
+    LaunchedEffect(state.errorMessage) {
+        if (state.errorMessage == offlinePendingSavedMessage) {
+            delay(1800)
+            viewModel.clearMessages()
+        }
     }
 
     Column(
