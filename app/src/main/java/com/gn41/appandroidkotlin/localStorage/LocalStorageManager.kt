@@ -22,6 +22,8 @@ class LocalStorageManager (private val context: Context) {
 
     private val gson = Gson()
     private val tripFileName = "trip_state.json"
+    private val ratingDraftsFileName = "rating_drafts.json"
+    private val pendingRatingsFileName = "pending_ratings.json"
 
     companion object {
         private const val TAG = "TripCache"
@@ -111,6 +113,162 @@ class LocalStorageManager (private val context: Context) {
             Log.d(TAG, "file cleared")
         } else {
             Log.d(TAG, "file clear skipped: not found")
+        }
+    }
+
+    fun saveRatingDraft(draft: RatingDraftDto) {
+        try {
+            val drafts = readAllRatingDrafts().toMutableList()
+            val index = drafts.indexOfFirst {
+                it.authId == draft.authId &&
+                    it.rideId == draft.rideId &&
+                    it.ratingType == draft.ratingType &&
+                    it.targetUserId == draft.targetUserId
+            }
+            if (index >= 0) {
+                drafts[index] = draft
+            } else {
+                drafts.add(draft)
+            }
+            writeAllRatingDrafts(drafts)
+        } catch (e: Exception) {
+            Log.e(TAG, "rating draft save error", e)
+        }
+    }
+
+    fun readRatingDraft(authId: String, rideId: Int, ratingType: String, targetUserId: Int): RatingDraftDto? {
+        return try {
+            readAllRatingDrafts().firstOrNull {
+                it.authId == authId &&
+                    it.rideId == rideId &&
+                    it.ratingType == ratingType &&
+                    it.targetUserId == targetUserId
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "rating draft read error", e)
+            null
+        }
+    }
+
+    fun clearRatingDraft(authId: String, rideId: Int, ratingType: String, targetUserId: Int) {
+        try {
+            val updatedDrafts = readAllRatingDrafts().filterNot {
+                it.authId == authId &&
+                    it.rideId == rideId &&
+                    it.ratingType == ratingType &&
+                    it.targetUserId == targetUserId
+            }
+            writeAllRatingDrafts(updatedDrafts)
+        } catch (e: Exception) {
+            Log.e(TAG, "rating draft clear error", e)
+        }
+    }
+
+    fun clearRatingDraftsForRide(authId: String, rideId: Int, ratingType: String) {
+        try {
+            val updatedDrafts = readAllRatingDrafts().filterNot {
+                it.authId == authId &&
+                    it.rideId == rideId &&
+                    it.ratingType == ratingType
+            }
+            writeAllRatingDrafts(updatedDrafts)
+        } catch (e: Exception) {
+            Log.e(TAG, "rating drafts clear by ride error", e)
+        }
+    }
+
+    fun savePendingRating(pendingRating: PendingRatingDto) {
+        try {
+            val ratings = readAllPendingRatings().toMutableList()
+            val index = ratings.indexOfFirst {
+                it.authId == pendingRating.authId &&
+                    it.rideId == pendingRating.rideId &&
+                    it.ratingType == pendingRating.ratingType
+            }
+            if (index >= 0) {
+                ratings[index] = pendingRating
+            } else {
+                ratings.add(pendingRating)
+            }
+            writeAllPendingRatings(ratings)
+            Log.d(TAG, "pending rating saved authIdPresent=true rideId=${pendingRating.rideId} type=${pendingRating.ratingType}")
+        } catch (e: Exception) {
+            Log.e(TAG, "pending rating save error", e)
+        }
+    }
+
+    fun readPendingRatings(authId: String): List<PendingRatingDto> {
+        return try {
+            readAllPendingRatings().filter { it.authId == authId }
+        } catch (e: Exception) {
+            Log.e(TAG, "pending ratings read error", e)
+            emptyList()
+        }
+    }
+
+    fun clearPendingRating(authId: String, rideId: Int, ratingType: String) {
+        try {
+            val updated = readAllPendingRatings().filterNot {
+                it.authId == authId && it.rideId == rideId && it.ratingType == ratingType
+            }
+            writeAllPendingRatings(updated)
+            Log.d(TAG, "pending rating cleared authIdPresent=true rideId=$rideId type=$ratingType")
+        } catch (e: Exception) {
+            Log.e(TAG, "pending rating clear error", e)
+        }
+    }
+
+    fun clearPendingRatingsForRide(authId: String, rideId: Int) {
+        try {
+            val updated = readAllPendingRatings().filterNot {
+                it.authId == authId && it.rideId == rideId
+            }
+            writeAllPendingRatings(updated)
+            Log.d(TAG, "pending ratings for ride cleared authIdPresent=true rideId=$rideId")
+        } catch (e: Exception) {
+            Log.e(TAG, "pending ratings for ride clear error", e)
+        }
+    }
+
+    private fun readAllRatingDrafts(): List<RatingDraftDto> {
+        val file = File(context.filesDir, ratingDraftsFileName)
+        if (!file.exists()) return emptyList()
+
+        return try {
+            val jsonString = file.readText()
+            val type = object : TypeToken<List<RatingDraftDto>>() {}.type
+            gson.fromJson<List<RatingDraftDto>>(jsonString, type) ?: emptyList()
+        } catch (_: Exception) {
+            emptyList()
+        }
+    }
+
+    private fun writeAllRatingDrafts(drafts: List<RatingDraftDto>) {
+        val file = File(context.filesDir, ratingDraftsFileName)
+        val jsonString = gson.toJson(drafts)
+        FileOutputStream(file).use { stream ->
+            stream.write(jsonString.toByteArray())
+        }
+    }
+
+    private fun readAllPendingRatings(): List<PendingRatingDto> {
+        val file = File(context.filesDir, pendingRatingsFileName)
+        if (!file.exists()) return emptyList()
+
+        return try {
+            val jsonString = file.readText()
+            val type = object : TypeToken<List<PendingRatingDto>>() {}.type
+            gson.fromJson<List<PendingRatingDto>>(jsonString, type) ?: emptyList()
+        } catch (_: Exception) {
+            emptyList()
+        }
+    }
+
+    private fun writeAllPendingRatings(pendingRatings: List<PendingRatingDto>) {
+        val file = File(context.filesDir, pendingRatingsFileName)
+        val jsonString = gson.toJson(pendingRatings)
+        FileOutputStream(file).use { stream ->
+            stream.write(jsonString.toByteArray())
         }
     }
 
