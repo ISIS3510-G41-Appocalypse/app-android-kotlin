@@ -107,7 +107,9 @@ class MainActivity : ComponentActivity() {
                 val ratingViewModelFactory = RatingViewModelFactory(
                     tripRepository = tripRepository,
                     ratingRepository = ratingRepository,
-                    sessionManager = sessionManager
+                    sessionManager = sessionManager,
+                    networkHelper = networkHelper,
+                    localStorageManager = localStorageManager
                 )
 
                 val userIdService = UserIdService(sessionManager)
