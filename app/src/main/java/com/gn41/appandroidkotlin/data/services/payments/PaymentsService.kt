@@ -7,6 +7,7 @@ import com.gn41.appandroidkotlin.data.dto.payments.PaymentDto
 import com.gn41.appandroidkotlin.data.dto.payments.PaymentRiderDtoRequest
 import com.gn41.appandroidkotlin.data.dto.payments.RidePaymentDto
 import com.gn41.appandroidkotlin.data.dto.payments.RideRiderPaymentDtoRequest
+import com.gn41.appandroidkotlin.data.dto.payments.UpdatePaymentDtoRequest
 import com.gn41.appandroidkotlin.data.local.SessionManager
 import com.gn41.appandroidkotlin.data.services.SupabaseClient
 import com.gn41.appandroidkotlin.data.services.userId.UserIdService
@@ -74,5 +75,42 @@ class PaymentsService (
                 request = PaymentRiderDtoRequest(riderId, rideId)
             )
         }
+    }
+
+    suspend fun pay(id:Int,selectedMethod: String) : Result<Unit> = withContext(Dispatchers.IO) {
+        val token = sessionManager.getToken()
+
+        paymentsApi.pay(
+            apiKey = BuildConfig.SUPABASE_KEY,
+            authorization = "Bearer $token",
+            id = "eq.$id",
+            update = UpdatePaymentDtoRequest("POR CONFIRMAR",selectedMethod)
+        )
+
+        return@withContext Result.success(Unit)
+    }
+
+    suspend fun rechazarPago(id: Int) : Result<Unit> = withContext(Dispatchers.IO) {
+        val token = sessionManager.getToken()
+
+        paymentsApi.actualizarEstado(
+            apiKey = BuildConfig.SUPABASE_KEY,
+            authorization = "Bearer $token",
+            id = "eq.$id",
+            request = mapOf("state" to "PENDIENTE")
+        )
+        return@withContext Result.success(Unit)
+    }
+
+    suspend fun confirmarPago(id: Int) : Result<Unit> = withContext(Dispatchers.IO) {
+        val token = sessionManager.getToken()
+
+        paymentsApi.actualizarEstado(
+            apiKey = BuildConfig.SUPABASE_KEY,
+            authorization = "Bearer $token",
+            id = "eq.$id",
+            request = mapOf("state" to "COMPLETADO")
+        )
+        return@withContext Result.success(Unit)
     }
 }

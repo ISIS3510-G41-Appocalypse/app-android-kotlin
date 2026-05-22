@@ -54,5 +54,21 @@ class PaymentsViewModel ( private val paymentsRepository: PaymentsRepository) : 
         loadData()
     }
 
-    fun onPayClicked( ) {}
+    fun onPayClicked( id:Int, selectedMethod: String) {
+        viewModelScope.launch {
+            paymentsRepository.pay(id,selectedMethod)
+        }
+    }
+
+    fun onRechazarPago(id:Int) {
+        viewModelScope.launch {
+            paymentsRepository.rechazarPago(id)
+        }
+    }
+
+    fun onConfirmarPago(id:Int) {
+        viewModelScope.launch {
+            paymentsRepository.confirmarPago(id)
+        }
+    }
 }
