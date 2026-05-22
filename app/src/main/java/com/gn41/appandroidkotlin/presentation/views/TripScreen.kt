@@ -66,6 +66,7 @@ import java.util.Locale
 fun TripScreen(
     viewModel: TripViewModel,
     onHomeClick: () -> Unit,
+    onPagosClick: () -> Unit,
     onRateRidersClick: (Int) -> Unit,
     onRateDriverClick: (Int) -> Unit
 ) {
@@ -302,7 +303,12 @@ fun TripScreen(
         BottomNavigationBar(
             selectedTab = "Viajes",
             onTabClick = {
-                if (it == "Inicio") onHomeClick()
+                if (it == "Inicio") {
+                    onHomeClick()
+                }
+                else if (it == "Pagos") {
+                    onPagosClick()
+                }
             }
         )
     }

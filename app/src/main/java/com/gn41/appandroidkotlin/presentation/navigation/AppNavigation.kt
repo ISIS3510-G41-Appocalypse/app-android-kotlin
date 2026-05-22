@@ -23,6 +23,7 @@ import com.gn41.appandroidkotlin.presentation.viewmodels.TripViewModelFactory
 import com.gn41.appandroidkotlin.presentation.viewmodels.WelcomeViewModel
 import com.gn41.appandroidkotlin.presentation.views.CreateRideScreen
 import com.gn41.appandroidkotlin.presentation.views.HomeScreen
+import com.gn41.appandroidkotlin.presentation.views.PaymentsScreen
 import com.gn41.appandroidkotlin.presentation.views.RateUserScreen
 import com.gn41.appandroidkotlin.presentation.views.RegisterScreen
 import com.gn41.appandroidkotlin.presentation.views.SettingsScreen
@@ -86,7 +87,7 @@ fun AppNavigation(
                     navController.navigate("trips")
                 },
                 onPagosClick = {
-                    navController.navigate("trips")
+                    navController.navigate("payments")
                 },
                 onCreateRideClick = {
                     homeViewModel.onCreateRideRequested {
@@ -139,11 +140,25 @@ fun AppNavigation(
                         launchSingleTop = true
                     }
                 },
+                onPagosClick = {
+                    navController.navigate("payments")
+                },
                 onRateRidersClick = { rideId ->
                     navController.navigate("rate_user/$rideId/rider")
                 },
                 onRateDriverClick = { rideId ->
                     navController.navigate("rate_user/$rideId/driver")
+                }
+            )
+        }
+
+        composable("payments") {
+            PaymentsScreen(
+                onHomeClick = {
+                    navController.navigate("home")
+                },
+                onTripsClick = {
+                    navController.navigate("trips")
                 }
             )
         }
