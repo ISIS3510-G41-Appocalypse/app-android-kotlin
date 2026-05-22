@@ -14,6 +14,7 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.rememberNavController
 import com.gn41.appandroidkotlin.core.connectivity.NetworkHelper
+import com.gn41.appandroidkotlin.data.local.RegisterDraftManager
 import com.gn41.appandroidkotlin.data.local.SessionManager
 import com.gn41.appandroidkotlin.data.repositories.ReservationsRepository
 import com.gn41.appandroidkotlin.data.repositories.RatingRepository
@@ -36,6 +37,7 @@ import com.gn41.appandroidkotlin.presentation.cache.TripMemoryCache
 import com.gn41.appandroidkotlin.presentation.viewmodels.CreateRideViewModelFactory
 import com.gn41.appandroidkotlin.presentation.viewmodels.HomeViewModelFactory
 import com.gn41.appandroidkotlin.presentation.viewmodels.RatingViewModelFactory
+import com.gn41.appandroidkotlin.presentation.viewmodels.RegisterViewModelFactory
 import com.gn41.appandroidkotlin.presentation.viewmodels.SettingsViewModelFactory
 import com.gn41.appandroidkotlin.presentation.viewmodels.TripViewModelFactory
 import com.gn41.appandroidkotlin.presentation.viewmodels.WelcomeViewModel
@@ -141,6 +143,14 @@ class MainActivity : ComponentActivity() {
                     localStorageManager = localStorageManager
                 )
 
+                val registerDraftManager = remember { RegisterDraftManager(this) }
+                val registerViewModelFactory = RegisterViewModelFactory(
+                    registerDraftManager = registerDraftManager,
+                    networkHelper = networkHelper,
+                    authRepository = authRepository,
+                    zoneRepository = zoneRepository
+                )
+
                 val navController = rememberNavController()
 
                 LaunchedEffect(Unit) {
@@ -166,6 +176,7 @@ class MainActivity : ComponentActivity() {
                     tripViewModelFactory = tripViewModelFactory,
                     ratingViewModelFactory = ratingViewModelFactory,
                     settingsViewModelFactory = settingsViewModelFactory,
+                    registerViewModelFactory = registerViewModelFactory,
                     onDarkModeChanged = { enabled ->
                         darkThemeEnabled = enabled
                     }

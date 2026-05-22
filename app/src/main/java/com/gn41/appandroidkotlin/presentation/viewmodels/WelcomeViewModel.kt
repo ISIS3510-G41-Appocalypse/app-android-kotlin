@@ -30,7 +30,7 @@ class WelcomeViewModel(
 
     //Para ayudarnnos a decidi si mostramos o on el card de login.
     var showLoginCard by mutableStateOf(value = false)
-        private set
+        public set
     var email by mutableStateOf(value = "")
         private set
     var password by mutableStateOf(value = "")
@@ -111,7 +111,7 @@ class WelcomeViewModel(
             loginError = ""
         }
     }
-    fun onLoginSubmit() {
+    fun onLoginSubmit(onLoginSuccess: (() -> Unit)? = null) {
         val startTime = System.currentTimeMillis()
         val cleanEmail = email.trim().lowercase()
         val cleanPassword = password.trim()
@@ -135,6 +135,8 @@ class WelcomeViewModel(
             isLoading = true
             loginError = ""
 
+
+
             val (loginResult, time) = measureTimedValue {
                 withTimeoutOrNull(15000) {
                     authRepository.login(cleanEmail, cleanPassword)
@@ -154,6 +156,8 @@ class WelcomeViewModel(
                 password = cleanPassword
                 isLoggedIn = true
                 loginError = ""
+
+                onLoginSuccess?.invoke()
                 Supervisor.addDuration("Login", time.inWholeMilliseconds.toDouble(), "BACKEND")
             } else {
                 sessionToken = ""

@@ -41,4 +41,12 @@ class ZoneService(
         return@withContext zone.firstOrNull()
             ?: throw Exception("Zone not found")
     }
+
+
+    suspend fun getPublicZones(): List<ZoneDto> = withContext(Dispatchers.IO) {
+
+        return@withContext zoneApi.getPublicZones(
+            apiKey = BuildConfig.SUPABASE_KEY
+        )
+    }
 }

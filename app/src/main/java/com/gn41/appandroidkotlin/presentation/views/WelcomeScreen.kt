@@ -31,7 +31,7 @@ import com.gn41.appandroidkotlin.presentation.components.LoginCard
 import com.gn41.appandroidkotlin.presentation.viewmodels.WelcomeViewModel
 
 @Composable
-fun WelcomeScreen(viewModel: WelcomeViewModel){
+fun WelcomeScreen(viewModel: WelcomeViewModel, onRegisterClick: () -> Unit){
 
     val configuration = LocalConfiguration.current
     val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
@@ -63,7 +63,16 @@ fun WelcomeScreen(viewModel: WelcomeViewModel){
                     verticalArrangement = Arrangement.Center,
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    LoginCard(viewModel = viewModel, isLandscape = true)
+                    LoginCard(
+                        viewModel = viewModel,
+                        isLandscape = isLandscape,
+                        onRegisterClick = {
+                            onRegisterClick()
+                        },
+                        onCloseClick = {
+                            viewModel.showLoginCard = false
+                        }
+                    )
                 }
             }
             else{
@@ -89,7 +98,7 @@ fun WelcomeScreen(viewModel: WelcomeViewModel){
                 ) {
                     WelcomeButtons(
                         onLoginClick = { viewModel.onLoginClicked() },
-                        onRegisterClick = { viewModel.onRegisterClicked() }
+                        onRegisterClick = onRegisterClick
                     )
                 }
             }
@@ -113,11 +122,20 @@ fun WelcomeScreen(viewModel: WelcomeViewModel){
 
                 WelcomeHeader()
                 if (viewModel.showLoginCard) {
-                    LoginCard(viewModel = viewModel, isLandscape = false)
+                    LoginCard(
+                        viewModel = viewModel,
+                        isLandscape = isLandscape,
+                        onRegisterClick = {
+                            onRegisterClick()
+                        },
+                        onCloseClick = {
+                            viewModel.showLoginCard = false
+                        }
+                    )
                 }
                 else {
                     WelcomeMessage()
-                    WelcomeButtons(onLoginClick = {viewModel.onLoginClicked()}, onRegisterClick = {viewModel.onRegisterClicked()})
+                    WelcomeButtons(onLoginClick = {viewModel.onLoginClicked()}, onRegisterClick = onRegisterClick)
                 }
 
             }
