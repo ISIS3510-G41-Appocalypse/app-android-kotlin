@@ -12,6 +12,8 @@ import com.gn41.appandroidkotlin.presentation.viewmodels.CreateRideViewModel
 import com.gn41.appandroidkotlin.presentation.viewmodels.CreateRideViewModelFactory
 import com.gn41.appandroidkotlin.presentation.viewmodels.HomeViewModel
 import com.gn41.appandroidkotlin.presentation.viewmodels.HomeViewModelFactory
+import com.gn41.appandroidkotlin.presentation.viewmodels.PaymentsViewModel
+import com.gn41.appandroidkotlin.presentation.viewmodels.PaymentsViewModelFactory
 import com.gn41.appandroidkotlin.presentation.viewmodels.RatingViewModel
 import com.gn41.appandroidkotlin.presentation.viewmodels.RatingViewModelFactory
 import com.gn41.appandroidkotlin.presentation.viewmodels.RegisterViewModel
@@ -38,6 +40,7 @@ fun AppNavigation(
     homeViewModelFactory: HomeViewModelFactory,
     createRideViewModelFactory: CreateRideViewModelFactory,
     tripViewModelFactory: TripViewModelFactory,
+    paymentsViewModelFactory: PaymentsViewModelFactory,
     ratingViewModelFactory: RatingViewModelFactory,
     settingsViewModelFactory: SettingsViewModelFactory,
     registerViewModelFactory: RegisterViewModelFactory,
@@ -153,7 +156,9 @@ fun AppNavigation(
         }
 
         composable("payments") {
+            val paymentsViewModel : PaymentsViewModel = viewModel(factory = paymentsViewModelFactory)
             PaymentsScreen(
+                paymentsViewModel,
                 onHomeClick = {
                     navController.navigate("home")
                 },

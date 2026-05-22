@@ -48,7 +48,10 @@ import com.mapbox.common.MapboxOptions
 import com.gn41.appandroidkotlin.BuildConfig
 import com.gn41.appandroidkotlin.data.repositories.AuthRepository
 import com.gn41.appandroidkotlin.data.repositories.LocationRepository
+import com.gn41.appandroidkotlin.data.repositories.PaymentsRepository
+import com.gn41.appandroidkotlin.data.services.payments.PaymentsService
 import com.gn41.appandroidkotlin.localStorage.LocalStorageManager
+import com.gn41.appandroidkotlin.presentation.viewmodels.PaymentsViewModelFactory
 
 
 class MainActivity : ComponentActivity() {
@@ -75,6 +78,10 @@ class MainActivity : ComponentActivity() {
 
                 val tripService = TripService()
                 val tripRepository = TripRepository(tripService, networkHelper)
+
+                val userIdService = UserIdService(sessionManager)
+                val paymentsService = PaymentsService(sessionManager, userIdService)
+                val paymentsRepository = PaymentsRepository(paymentsService)
 
                 val welcomeFactory = WelcomeViewModelFactory(
                     context = this,
@@ -104,6 +111,10 @@ class MainActivity : ComponentActivity() {
                     localStorageManager = localStorageManager
                 )
 
+                val paymentsViewModelFactory = PaymentsViewModelFactory(
+                    paymentsRepository = paymentsRepository
+                )
+
                 val ratingViewModelFactory = RatingViewModelFactory(
                     tripRepository = tripRepository,
                     ratingRepository = ratingRepository,
@@ -112,7 +123,7 @@ class MainActivity : ComponentActivity() {
                     localStorageManager = localStorageManager
                 )
 
-                val userIdService = UserIdService(sessionManager)
+
                 val rideService = RideService(sessionManager, userIdService)
                 val vehicleService = VehicleService(sessionManager, userIdService)
                 val zoneService = ZoneService(sessionManager)
@@ -179,6 +190,7 @@ class MainActivity : ComponentActivity() {
                     ratingViewModelFactory = ratingViewModelFactory,
                     settingsViewModelFactory = settingsViewModelFactory,
                     registerViewModelFactory = registerViewModelFactory,
+                    paymentsViewModelFactory = paymentsViewModelFactory,
                     onDarkModeChanged = { enabled ->
                         darkThemeEnabled = enabled
                     }

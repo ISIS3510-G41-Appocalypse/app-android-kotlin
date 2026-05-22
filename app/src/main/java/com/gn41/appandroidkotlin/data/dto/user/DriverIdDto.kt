@@ -5,3 +5,7 @@ data class DriverIdDto(
     val user_id: Int
 )
 
+data class RiderIdDto(
+    val id: Int,
+    val user_id: Int
+)
