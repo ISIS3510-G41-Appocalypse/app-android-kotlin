@@ -73,8 +73,34 @@ class UserIdService(
             userId = "eq.$userId"
         )
 
-        return@withContext response.firstOrNull()?.id
-            ?: throw Exception("Driver not found")
+        val id = response.firstOrNull()?.id
+        if (id == null) {
+            return@withContext -1
+        }
+        else{
+            return@withContext id
+        }
+    }
+
+    suspend fun getRiderIdByUserId(userId: Int): Int = withContext(Dispatchers.IO) {
+        val token = sessionManager.getToken()
+        if (token.isEmpty()) {
+            throw Exception("No auth token")
+        }
+
+        val response = userIdApi.getRiderByUserId(
+            token = "Bearer $token",
+            apiKey = BuildConfig.SUPABASE_KEY,
+            userId = "eq.$userId"
+        )
+
+        val id = response.firstOrNull()?.id
+        if (id == null) {
+            return@withContext -1
+        }
+        else{
+            return@withContext id
+        }
     }
 
 /*    private fun extractAuthIdFromToken(token: String): String? {

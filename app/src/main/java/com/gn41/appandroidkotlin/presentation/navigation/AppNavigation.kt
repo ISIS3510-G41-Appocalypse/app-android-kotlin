@@ -12,6 +12,8 @@ import com.gn41.appandroidkotlin.presentation.viewmodels.CreateRideViewModel
 import com.gn41.appandroidkotlin.presentation.viewmodels.CreateRideViewModelFactory
 import com.gn41.appandroidkotlin.presentation.viewmodels.HomeViewModel
 import com.gn41.appandroidkotlin.presentation.viewmodels.HomeViewModelFactory
+import com.gn41.appandroidkotlin.presentation.viewmodels.PaymentsViewModel
+import com.gn41.appandroidkotlin.presentation.viewmodels.PaymentsViewModelFactory
 import com.gn41.appandroidkotlin.presentation.viewmodels.RatingViewModel
 import com.gn41.appandroidkotlin.presentation.viewmodels.RatingViewModelFactory
 import com.gn41.appandroidkotlin.presentation.viewmodels.RegisterViewModel
@@ -23,6 +25,7 @@ import com.gn41.appandroidkotlin.presentation.viewmodels.TripViewModelFactory
 import com.gn41.appandroidkotlin.presentation.viewmodels.WelcomeViewModel
 import com.gn41.appandroidkotlin.presentation.views.CreateRideScreen
 import com.gn41.appandroidkotlin.presentation.views.HomeScreen
+import com.gn41.appandroidkotlin.presentation.views.PaymentsScreen
 import com.gn41.appandroidkotlin.presentation.views.RateUserScreen
 import com.gn41.appandroidkotlin.presentation.views.RegisterScreen
 import com.gn41.appandroidkotlin.presentation.views.SettingsScreen
@@ -37,6 +40,7 @@ fun AppNavigation(
     homeViewModelFactory: HomeViewModelFactory,
     createRideViewModelFactory: CreateRideViewModelFactory,
     tripViewModelFactory: TripViewModelFactory,
+    paymentsViewModelFactory: PaymentsViewModelFactory,
     ratingViewModelFactory: RatingViewModelFactory,
     settingsViewModelFactory: SettingsViewModelFactory,
     registerViewModelFactory: RegisterViewModelFactory,
@@ -84,6 +88,9 @@ fun AppNavigation(
                 viewModel = homeViewModel,
                 onTripsClick = {
                     navController.navigate("trips")
+                },
+                onPagosClick = {
+                    navController.navigate("payments")
                 },
                 onCreateRideClick = {
                     homeViewModel.onCreateRideRequested {
@@ -136,11 +143,27 @@ fun AppNavigation(
                         launchSingleTop = true
                     }
                 },
+                onPagosClick = {
+                    navController.navigate("payments")
+                },
                 onRateRidersClick = { rideId ->
                     navController.navigate("rate_user/$rideId/rider")
                 },
                 onRateDriverClick = { rideId ->
                     navController.navigate("rate_user/$rideId/driver")
+                }
+            )
+        }
+
+        composable("payments") {
+            val paymentsViewModel : PaymentsViewModel = viewModel(factory = paymentsViewModelFactory)
+            PaymentsScreen(
+                paymentsViewModel,
+                onHomeClick = {
+                    navController.navigate("home")
+                },
+                onTripsClick = {
+                    navController.navigate("trips")
                 }
             )
         }
