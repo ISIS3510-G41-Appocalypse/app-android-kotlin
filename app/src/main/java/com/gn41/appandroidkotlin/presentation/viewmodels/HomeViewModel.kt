@@ -303,10 +303,10 @@ class HomeViewModel(
 
     // FASE 4: validar si el conductor puede crear viaje (necesita internet)
     fun onCreateRideRequested(onNavigate: () -> Unit) {
-        if (uiState.isOffline) {
+/*        if (uiState.isOffline) {
             uiState = uiState.copy(reservationMessage = "Necesitas conexión a internet para crear un viaje.")
             return
-        }
+        }*/
         onNavigate()
     }
 

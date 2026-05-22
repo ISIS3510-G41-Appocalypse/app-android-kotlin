@@ -85,6 +85,9 @@ fun AppNavigation(
                 onTripsClick = {
                     navController.navigate("trips")
                 },
+                onPagosClick = {
+                    navController.navigate("trips")
+                },
                 onCreateRideClick = {
                     homeViewModel.onCreateRideRequested {
                         navController.navigate("create_ride")

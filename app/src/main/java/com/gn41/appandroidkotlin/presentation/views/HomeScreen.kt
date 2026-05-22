@@ -21,6 +21,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AttachMoney
 import androidx.compose.material.icons.filled.DirectionsCar
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.LocalTaxi
@@ -159,6 +160,7 @@ fun EmptyStateCard(
 fun HomeScreen(
     viewModel: HomeViewModel,
     onTripsClick: () -> Unit,
+    onPagosClick: () -> Unit,
     onCreateRideClick: () -> Unit,
     onSettingsClick: () -> Unit
 ) {
@@ -343,7 +345,12 @@ fun HomeScreen(
                 selectedTab = selectedBottomTab,
                 onTabClick = {
                     selectedBottomTab = it
-                    if (it == "Viajes") onTripsClick()
+                    if (it == "Viajes"){
+                        onTripsClick()
+                    }
+                    else if (it == "Pagos"){
+                        onPagosClick()
+                    }
                 }
             )
         }
@@ -354,9 +361,8 @@ fun HomeScreen(
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
                     .padding(end = 24.dp, bottom = 116.dp),
-                isBlocked = state.hasActiveDriverTrip || state.hasActiveRiderReservation || state.isOffline,
-                blockedMessage = when {
-                    state.isOffline -> "Necesitas internet para crear un viaje"
+                isBlocked = state.hasActiveDriverTrip || state.hasActiveRiderReservation,
+                blockedMessage = when{
                     state.hasActiveDriverTrip && state.hasActiveRiderReservation -> "Ya tienes un viaje o reserva activa"
                     state.hasActiveDriverTrip -> "Ya tienes un viaje activo"
                     state.hasActiveRiderReservation -> "Ya tienes una reserva activa"
@@ -800,8 +806,8 @@ fun BottomNavigationBar(
     selectedTab: String,
     onTabClick: (String) -> Unit
 ) {
-    val items = listOf("Inicio", "Viajes")
-    val icons = listOf(Icons.Default.Home, Icons.Default.LocalTaxi)
+    val items = listOf("Inicio", "Viajes", "Pagos")
+    val icons = listOf(Icons.Default.Home, Icons.Default.LocalTaxi, Icons.Default.AttachMoney)
 
     Row(
         modifier = Modifier
