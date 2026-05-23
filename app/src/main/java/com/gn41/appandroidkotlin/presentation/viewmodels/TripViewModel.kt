@@ -50,6 +50,7 @@ class TripViewModel(
         private set
 
     private var lastConnectionState: Boolean? = null
+    private var isLoadingTripsJobActive = false
 
     init {
         uiState = uiState.copy(
@@ -328,7 +329,13 @@ class TripViewModel(
             return
         }
 
+        if (showLoading && isLoadingTripsJobActive) {
+            Log.d(TAG, "loadTrips skipped because a visible load is already active")
+            return
+        }
+
         if (showLoading) {
+            isLoadingTripsJobActive = true
             Log.d("TripRating", "hide pending cards while loading trips")
             uiState = uiState.copy(
                 isLoading = true,
@@ -352,6 +359,7 @@ class TripViewModel(
 
         val persistedPendingDriverIds = sessionManager.getPendingDriverRatingRideIds(authId)
         val persistedPendingRiderIds = sessionManager.getPendingRiderRatingRideIds(authId)
+        val persistedPendingRatings = localStorageManager.readPendingRatings(authId)
         // Only add pending if not skipped (resolve inconsistencies)
         val validPendingDriverIds = persistedPendingDriverIds.filter { it !in skippedDriverIds }
         val validPendingRiderIds = persistedPendingRiderIds.filter { it !in skippedRiderIds }
@@ -552,7 +560,7 @@ class TripViewModel(
                     if (snapshot == null) {
                         // Only clear local pending if no valid snapshot exists;
                         // prevents a backend response with missing nested riders from wiping a good local snapshot
-                        if (!hasValidLocalDriverPending(authId, finishedDriverRideForRating.id)) {
+                        if (!hasValidLocalDriverPending(authId, finishedDriverRideForRating.id, persistedPendingRatings)) {
                             Log.d("TripRating", "remove driver pending because all riders already rated rideId=${finishedDriverRideForRating.id}")
                             pendingDriverIds.remove(finishedDriverRideForRating.id)
                             sessionManager.removePendingDriverRatingRideId(authId, finishedDriverRideForRating.id)
@@ -562,7 +570,7 @@ class TripViewModel(
                         }
                         null
                     } else {
-                        if (hasValidLocalDriverPending(authId, finishedDriverRideForRating.id)) {
+                        if (hasValidLocalDriverPending(authId, finishedDriverRideForRating.id, persistedPendingRatings)) {
                             Log.d("TripRating", "keeping existing local partial pending snapshot rideId=${finishedDriverRideForRating.id}")
                         } else {
                             localStorageManager.savePendingRating(snapshot)
@@ -586,7 +594,7 @@ class TripViewModel(
                     .lastOrNull { it !in skippedDriverIds }
 
                 val safeCurrentPendingDriverRating = currentPendingDriverRating
-                    ?.takeIf { !hasActiveTrip && isDriverPendingStillValid(authId, it) }
+                    ?.takeIf { !hasActiveTrip && isDriverPendingStillValid(authId, it, persistedPendingRatings) }
 
                 // Preserve in-session pending if not skipped and no active driver trip;
                 // avoids losing the pending card due to backend timing after trip finish
@@ -690,7 +698,7 @@ class TripViewModel(
                     .lastOrNull { it !in skippedRiderIds }
 
                 val safeCurrentPendingRiderRating = currentPendingRiderRating
-                    ?.takeIf { !hasActiveTrip && isRiderPendingStillValid(authId, it) }
+                    ?.takeIf { !hasActiveTrip && isRiderPendingStillValid(authId, it, persistedPendingRatings) }
 
                 // Preserve in-session pending rider rating if not skipped and no active rider trips
                 val finalRiderPendingRideId = when {
@@ -801,6 +809,10 @@ class TripViewModel(
                     isLoading = false,
                     errorMessage = "No se pudo cargar la informacion de viajes."
                 )
+            } finally {
+                if (showLoading) {
+                    isLoadingTripsJobActive = false
+                }
             }
 
         }
@@ -1355,9 +1367,13 @@ class TripViewModel(
         }
     }
 
-    private fun isDriverPendingStillValid(authId: String, rideId: Int): Boolean {
+    private fun isDriverPendingStillValid(
+        authId: String,
+        rideId: Int,
+        pendingRatings: List<PendingRatingDto> = localStorageManager.readPendingRatings(authId)
+    ): Boolean {
         val inSession = rideId in sessionManager.getPendingDriverRatingRideIds(authId)
-        val inLocal = localStorageManager.readPendingRatings(authId).any {
+        val inLocal = pendingRatings.any {
             it.rideId == rideId &&
                 it.ratingType == "rider" &&
                 it.driverId != null &&
@@ -1366,9 +1382,13 @@ class TripViewModel(
         return inSession && inLocal
     }
 
-    private fun isRiderPendingStillValid(authId: String, rideId: Int): Boolean {
+    private fun isRiderPendingStillValid(
+        authId: String,
+        rideId: Int,
+        pendingRatings: List<PendingRatingDto> = localStorageManager.readPendingRatings(authId)
+    ): Boolean {
         val inSession = rideId in sessionManager.getPendingRiderRatingRideIds(authId)
-        val inLocal = localStorageManager.readPendingRatings(authId).any {
+        val inLocal = pendingRatings.any {
             it.rideId == rideId &&
                 it.ratingType == "driver" &&
                 it.riderId != null &&
@@ -1543,8 +1563,12 @@ class TripViewModel(
         )
     }
 
-    private fun hasValidLocalDriverPending(authId: String, rideId: Int): Boolean {
-        return localStorageManager.readPendingRatings(authId).any { pending ->
+    private fun hasValidLocalDriverPending(
+        authId: String,
+        rideId: Int,
+        pendingRatings: List<PendingRatingDto> = localStorageManager.readPendingRatings(authId)
+    ): Boolean {
+        return pendingRatings.any { pending ->
             pending.rideId == rideId &&
                 pending.ratingType == "rider" &&
                 pending.driverId != null &&
@@ -1559,9 +1583,10 @@ class TripViewModel(
         pendingRideIds: Set<Int>,
         skippedRideIds: Set<Int>
     ) {
+        val pendingRatings = localStorageManager.readPendingRatings(authId)
         for (rideId in pendingRideIds) {
             // Skip if already skipped or has valid local snapshot
-            if (rideId in skippedRideIds || hasValidLocalDriverPending(authId, rideId)) {
+            if (rideId in skippedRideIds || hasValidLocalDriverPending(authId, rideId, pendingRatings)) {
                 continue
             }
 

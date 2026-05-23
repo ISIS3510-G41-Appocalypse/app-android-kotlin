@@ -83,7 +83,15 @@ fun TripScreen(
     var finishRequestedRideId by rememberSaveable { mutableStateOf<Int?>(null) }
     val configuration = LocalConfiguration.current
     val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
-    val canAutoRefresh = viewModel.connectivity && !state.isOfflineData
+    val canAutoRefresh = remember(viewModel.connectivity, state.isOfflineData) {
+        viewModel.connectivity && !state.isOfflineData
+    }
+    val hasPendingDriverRating = remember(state.finishedRideIdForRating, state.activeDriverTrip) {
+        state.finishedRideIdForRating != null && state.activeDriverTrip == null
+    }
+    val hasPendingRiderRating = remember(state.finishedRiderRideIdForRating, state.activeRiderTrips) {
+        state.finishedRiderRideIdForRating != null && state.activeRiderTrips.isEmpty()
+    }
 
     val locationPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
@@ -195,26 +203,26 @@ fun TripScreen(
             Spacer(modifier = Modifier.height(10.dp))
         }
 
-        if (state.finishedRideIdForRating != null && state.activeDriverTrip == null) {
+        if (hasPendingDriverRating) {
             PendingRatingCard(
                 title = "Calificación pendiente",
                 message = "Tu viaje fue finalizado. Puedes calificar a tus pasajeros.",
                 buttonText = "Calificar pasajeros",
                 onRate = {
-                    onRateRidersClick(state.finishedRideIdForRating)
+                    state.finishedRideIdForRating?.let { onRateRidersClick(it) }
                 },
                 onSkip = viewModel::clearFinishedRideForRating
             )
             Spacer(modifier = Modifier.height(10.dp))
         }
 
-        if (state.finishedRiderRideIdForRating != null && state.activeRiderTrips.isEmpty()) {
+        if (hasPendingRiderRating) {
             PendingRatingCard(
                 title = "Calificación pendiente",
                 message = "Tu viaje fue finalizado. Puedes calificar al conductor.",
                 buttonText = "Calificar conductor",
                 onRate = {
-                    onRateDriverClick(state.finishedRiderRideIdForRating)
+                    state.finishedRiderRideIdForRating?.let { onRateDriverClick(it) }
                 },
                 onSkip = viewModel::clearFinishedRiderRideForRating
             )
