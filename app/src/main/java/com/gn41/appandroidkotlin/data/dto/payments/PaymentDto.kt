@@ -37,3 +37,8 @@ data class UpdatePaymentDtoRequest (
     val state: String,
     val type: String
 )
+
+data class CreatePaymentDtoRequest (
+    @SerializedName("r_id")
+    val rideId: Int
+)

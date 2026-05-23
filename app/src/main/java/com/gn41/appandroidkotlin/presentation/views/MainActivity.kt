@@ -105,6 +105,7 @@ class MainActivity : ComponentActivity() {
                 val tripViewModelFactory = TripViewModelFactory(
                     tripRepository = tripRepository,
                     ratingRepository = ratingRepository,
+                    paymentsRepository = paymentsRepository,
                     sessionManager = sessionManager,
                     locationRepository = locationRepository,
                     networkHelper = networkHelper,

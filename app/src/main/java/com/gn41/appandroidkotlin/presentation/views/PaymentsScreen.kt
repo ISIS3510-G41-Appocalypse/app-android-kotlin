@@ -76,7 +76,8 @@ fun PaymentsScreen(
                     text = "Mis pagos",
                     textAlign = TextAlign.Center,
                     style = MaterialTheme.typography.titleLarge,
-                    color = MaterialTheme.colorScheme.onBackground
+                    color = MaterialTheme.colorScheme.onBackground,
+                    modifier = Modifier.fillMaxWidth()
                 )
             }
 

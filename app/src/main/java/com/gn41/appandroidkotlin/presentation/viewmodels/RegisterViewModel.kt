@@ -123,7 +123,7 @@ class RegisterViewModel(
                 firstName = draft.firstName
                 lastName = draft.lastName
                 email = draft.email
-                password = draft.password
+                //password = draft.password
                 // confirmPassword is not saved in draft as it's a runtime check
                 selectedRole = draft.role
                 selectedZoneId = draft.zoneId ?: -1
@@ -492,7 +492,7 @@ class RegisterViewModel(
         }
 
         if (!networkHelper.isInternetAvailable()) {
-            registrationError = "No internet connection. Your registration information was saved locally. Please reconnect and try again."
+            registrationError = "Sin conexión a internet. Tu información de registro fue guardada. Intenta de nuevo cuando tengas conexión."
             return
         }
 

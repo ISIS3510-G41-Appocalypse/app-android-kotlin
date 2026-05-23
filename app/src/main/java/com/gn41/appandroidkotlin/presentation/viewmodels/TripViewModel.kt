@@ -11,6 +11,7 @@ import com.gn41.appandroidkotlin.core.connectivity.NetworkHelper
 import com.gn41.appandroidkotlin.data.dto.trips.TripReservationDto
 import com.gn41.appandroidkotlin.data.local.SessionManager
 import com.gn41.appandroidkotlin.data.repositories.LocationRepository
+import com.gn41.appandroidkotlin.data.repositories.PaymentsRepository
 import com.gn41.appandroidkotlin.data.repositories.RatingRepository
 import com.gn41.appandroidkotlin.data.repositories.TripRepository
 import com.gn41.appandroidkotlin.domain.UserSharedLocation
@@ -29,6 +30,7 @@ import java.util.TimeZone
 class TripViewModel(
     private val tripRepository: TripRepository,
     private val ratingRepository: RatingRepository,
+    private val paymentsRepository: PaymentsRepository,
     private val sessionManager: SessionManager,
     private val locationRepository: LocationRepository,
     private val networkHelper: NetworkHelper,
@@ -918,6 +920,9 @@ class TripViewModel(
         }
 
         val current = uiState.activeDriverTrip ?: return
+
+        viewModelScope.launch { paymentsRepository.create(current.rideId) }
+
         changeRideState(
             rideId = current.rideId,
             newState = "FINALIZADO",
