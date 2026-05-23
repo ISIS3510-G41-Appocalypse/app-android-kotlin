@@ -1,10 +1,15 @@
 package com.gn41.appandroidkotlin.data.repositories
 
+import com.gn41.appandroidkotlin.core.connectivity.NetworkHelper
 import com.gn41.appandroidkotlin.data.dto.payments.PaymentDto
 import com.gn41.appandroidkotlin.data.dto.payments.RidePaymentDto
 import com.gn41.appandroidkotlin.data.services.payments.PaymentsService
+import com.gn41.appandroidkotlin.localStorage.LocalStorageManager
 
-class PaymentsRepository (private val paymentsService: PaymentsService) {
+class PaymentsRepository (private val paymentsService: PaymentsService,
+    private val networkHelper: NetworkHelper,
+    private val localStorageManager: LocalStorageManager
+) {
     suspend fun getRides(selectedRole: String) : List<RidePaymentDto> {
         return paymentsService.getRides(selectedRole)
     }
@@ -23,5 +28,21 @@ class PaymentsRepository (private val paymentsService: PaymentsService) {
 
     suspend fun confirmarPago(id:Int) {
         paymentsService.confirmarPago(id)
+    }
+
+    fun availableConnection(): Boolean {
+        return networkHelper.isInternetAvailable()
+    }
+
+    suspend fun saveCache() {
+        localStorageManager.savePaymentsState()
+    }
+
+    suspend fun readLocalStorage() {
+        localStorageManager.readPaymentsState()
+    }
+
+    suspend fun clearLocalStorage() {
+        localStorageManager.clearPaymentsState()
     }
 }

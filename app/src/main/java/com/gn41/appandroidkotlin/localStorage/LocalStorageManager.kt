@@ -4,6 +4,8 @@ import android.content.Context
 import android.util.ArrayMap
 import android.util.Log
 import com.gn41.appandroidkotlin.cache.CacheManager
+import com.gn41.appandroidkotlin.data.dto.payments.PaymentDto
+import com.gn41.appandroidkotlin.data.dto.payments.RidePaymentDto
 import com.gn41.appandroidkotlin.presentation.viewmodels.ActiveDriverTripUiModel
 import com.gn41.appandroidkotlin.presentation.viewmodels.ActiveRiderTripUiModel
 import com.gn41.appandroidkotlin.presentation.viewmodels.TripReservationItemUiModel
@@ -22,6 +24,7 @@ class LocalStorageManager (private val context: Context) {
 
     private val gson = Gson()
     private val tripFileName = "trip_state.json"
+
     private val ratingDraftsFileName = "rating_drafts.json"
     private val pendingRatingsFileName = "pending_ratings.json"
 
@@ -40,6 +43,56 @@ class LocalStorageManager (private val context: Context) {
 
         FileOutputStream(file).use { stream ->
             stream.write(jsonString.toByteArray())
+        }
+    }
+
+    suspend fun savePaymentsState() = withContext(Dispatchers.IO) {
+        val ridesRiderPayments = CacheManager.getRidesRiderPayments()
+
+        val ridesDriverPayments = CacheManager.getRidesDriverPayments()
+
+        val paymentsRider = CacheManager.getPaymentsRider()
+
+        val paymentsDriver = CacheManager.getPaymentsDriver()
+
+        val jsonString1 = gson.toJson(ridesRiderPayments)
+
+        val jsonString2 = gson.toJson(ridesDriverPayments)
+
+        val jsonString3 = gson.toJson(paymentsRider)
+
+        val jsonString4 = gson.toJson(paymentsDriver)
+
+        var fileName = "rides_rider_payments.json"
+
+        var file = File(context.filesDir, fileName)
+
+        FileOutputStream(file).use { stream ->
+            stream.write(jsonString1.toByteArray())
+        }
+
+        fileName = "rides_driver_payments.json"
+
+        file = File(context.filesDir, fileName)
+
+        FileOutputStream(file).use { stream ->
+            stream.write(jsonString2.toByteArray())
+        }
+
+        fileName = "payments_rider.json"
+
+        file = File(context.filesDir, fileName)
+
+        FileOutputStream(file).use { stream ->
+            stream.write(jsonString3.toByteArray())
+        }
+
+        fileName = "payments_driver.json"
+
+        file = File(context.filesDir, fileName)
+
+        FileOutputStream(file).use { stream ->
+            stream.write(jsonString4.toByteArray())
         }
     }
 
@@ -64,9 +117,86 @@ class LocalStorageManager (private val context: Context) {
         }
     }
 
+    suspend fun readPaymentsState():String = withContext(Dispatchers.IO) {
+        var fileName = "rides_rider_payments.json"
+        var file = File(context.filesDir, fileName)
+        if (file.exists()) {
+
+            var jsonString = file.readText()
+
+            var type = object : TypeToken<MutableList<RidePaymentDto>>() {}.type
+
+            val ridesRiderPayments = gson.fromJson<MutableList<RidePaymentDto>>(jsonString, type)
+
+            CacheManager.setRidesRiderPayments(ridesRiderPayments)
+
+            fileName = "rides_driver_payments.json"
+            file = File(context.filesDir, fileName)
+
+            if (file.exists()) {
+                jsonString = file.readText()
+                type = object : TypeToken<MutableList<RidePaymentDto>>() {}.type
+                val ridesDriverPayments = gson.fromJson<MutableList<RidePaymentDto>>(jsonString, type)
+                CacheManager.setRidesDriverPayments(ridesDriverPayments)
+
+                fileName = "payments_rider.json"
+                file = File(context.filesDir, fileName)
+                if (file.exists()) {
+                    jsonString = file.readText()
+                    type = object : TypeToken<MutableMap<Int, List<PaymentDto>>>() {}.type
+                    val paymentsRider = gson.fromJson<MutableMap<Int, List<PaymentDto>>>(jsonString, type)
+                    CacheManager.setPaymentsRider(paymentsRider)
+
+                    fileName = "payments_driver.json"
+                    file = File(context.filesDir, fileName)
+                    if (file.exists()) {
+                        jsonString = file.readText()
+                        type = object : TypeToken<MutableMap<Int, List<PaymentDto>>>() {}.type
+                        val paymentsDriver = gson.fromJson<MutableMap<Int, List<PaymentDto>>>(jsonString, type)
+                        CacheManager.setPaymentsDriver(paymentsDriver)
+                        return@withContext "payments state cargados"
+                    }
+                    else{
+                        return@withContext "payments state no encontrados"
+                    }
+                }
+                else{
+                    return@withContext "payments state no encontrados"
+                }
+            }
+            else
+            {
+                return@withContext "payments state no encontrados"
+            }
+
+        }
+        else
+        {
+            return@withContext "payments state no encontrados"
+        }
+    }
+
     suspend fun clearFormState() = withContext(Dispatchers.IO) {
         val fileName = "form_state.json"
         val file = File(context.filesDir, fileName)
+        file.delete()
+    }
+
+    suspend fun clearPaymentsState() = withContext(Dispatchers.IO) {
+        var fileName = "rides_rider_payments.json"
+        var file = File(context.filesDir, fileName)
+        file.delete()
+
+        fileName = "rides_driver_payments.json"
+        file = File(context.filesDir, fileName)
+        file.delete()
+
+        fileName = "payments_rider.json"
+        file = File(context.filesDir, fileName)
+        file.delete()
+
+        fileName = "payments_driver.json"
+        file = File(context.filesDir, fileName)
         file.delete()
     }
 

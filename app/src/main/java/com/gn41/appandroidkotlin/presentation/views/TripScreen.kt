@@ -186,10 +186,10 @@ fun TripScreen(
             Text(
                 text = state.offlineMessage,
                 style = MaterialTheme.typography.bodyMedium,
-                color = Color(0xFF78350F),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(Color(0xFFFEF3C7), RoundedCornerShape(10.dp))
+                    .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(10.dp))
                     .padding(10.dp)
             )
             Spacer(modifier = Modifier.height(10.dp))
