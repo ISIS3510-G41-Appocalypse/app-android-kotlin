@@ -18,4 +18,10 @@ interface ZoneApi {
         @Header("apikey") apiKey: String,
         @Query("name") name: String
     ) : List<ZoneDto>
+
+
+    @GET("rest/v1/zones")
+    suspend fun getPublicZones(
+        @Header("apikey") apiKey: String
+    ): List<ZoneDto>
 }

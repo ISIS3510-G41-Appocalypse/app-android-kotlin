@@ -1,6 +1,5 @@
 package com.gn41.appandroidkotlin.data.services.userId
 
-import android.util.Base64
 import android.util.Log
 import com.gn41.appandroidkotlin.BuildConfig
 import com.gn41.appandroidkotlin.data.dto.user.UserIdDto
@@ -74,11 +73,37 @@ class UserIdService(
             userId = "eq.$userId"
         )
 
-        return@withContext response.firstOrNull()?.id
-            ?: throw Exception("Driver not found")
+        val id = response.firstOrNull()?.id
+        if (id == null) {
+            return@withContext -1
+        }
+        else{
+            return@withContext id
+        }
     }
 
-    private fun extractAuthIdFromToken(token: String): String? {
+    suspend fun getRiderIdByUserId(userId: Int): Int = withContext(Dispatchers.IO) {
+        val token = sessionManager.getToken()
+        if (token.isEmpty()) {
+            throw Exception("No auth token")
+        }
+
+        val response = userIdApi.getRiderByUserId(
+            token = "Bearer $token",
+            apiKey = BuildConfig.SUPABASE_KEY,
+            userId = "eq.$userId"
+        )
+
+        val id = response.firstOrNull()?.id
+        if (id == null) {
+            return@withContext -1
+        }
+        else{
+            return@withContext id
+        }
+    }
+
+/*    private fun extractAuthIdFromToken(token: String): String? {
         return try {
             val parts = token.split('.')
             if (parts.size < 2) return null
@@ -91,5 +116,5 @@ class UserIdService(
         } catch (_: Exception) {
             null
         }
-    }
+    }*/
 }

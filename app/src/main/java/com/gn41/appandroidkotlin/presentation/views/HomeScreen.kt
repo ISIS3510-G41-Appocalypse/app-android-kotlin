@@ -21,19 +21,28 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AttachMoney
 import androidx.compose.material.icons.filled.DirectionsCar
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.LocalTaxi
-import androidx.compose.material.icons.filled.Logout
 import androidx.compose.material.icons.filled.SearchOff
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.WifiOff
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SelectableDates
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TimeInput
+import androidx.compose.material3.rememberDatePickerState
+import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -54,17 +63,12 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import com.gn41.appandroidkotlin.presentation.components.RideItemCard
 import com.gn41.appandroidkotlin.presentation.viewmodels.HomeViewModel
-import com.gn41.appandroidkotlin.ui.theme.AutumnEmber
-import com.gn41.appandroidkotlin.ui.theme.BrightSnow
-import com.gn41.appandroidkotlin.ui.theme.CoolSteel
-import com.gn41.appandroidkotlin.ui.theme.DarkCyan
-import com.gn41.appandroidkotlin.ui.theme.PrussianBlue
 import kotlinx.coroutines.delay
-
-val darkBlue = Color(0xFF0B1E3B)
-val headerBlue = Color(0xFF1A2744)
-val whiteCard = BrightSnow
-val selectedBottomItemColor = AutumnEmber
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Date
+import java.util.Locale
+import java.util.TimeZone
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Estados visuales para la zona de rides
@@ -75,7 +79,7 @@ val selectedBottomItemColor = AutumnEmber
 private fun OfflineStateView() {
     EmptyStateCard(
         icon = Icons.Default.WifiOff,
-        iconTint = AutumnEmber,
+        iconTint = MaterialTheme.colorScheme.primary,
         title = "Sin conexión a internet",
         message = "No podemos cargar los viajes ahora mismo.\nRevisa tu conexión e intenta de nuevo."
     )
@@ -86,7 +90,7 @@ private fun OfflineStateView() {
 private fun EmptyRidesStateView() {
     EmptyStateCard(
         icon = Icons.Default.DirectionsCar,
-        iconTint = CoolSteel,
+        iconTint = MaterialTheme.colorScheme.tertiary,
         title = "Sin viajes disponibles",
         message = "No hay viajes disponibles en este momento."
     )
@@ -97,7 +101,7 @@ private fun EmptyRidesStateView() {
 private fun EmptyFilteredStateView() {
     EmptyStateCard(
         icon = Icons.Default.SearchOff,
-        iconTint = CoolSteel,
+        iconTint = MaterialTheme.colorScheme.tertiary,
         title = "Sin resultados",
         message = "Intenta cambiar los filtros para encontrar más viajes."
     )
@@ -121,7 +125,7 @@ fun EmptyStateCard(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(8.dp),
             modifier = Modifier
-                .background(headerBlue, RoundedCornerShape(16.dp))
+                .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(16.dp))
                 .padding(horizontal = 24.dp, vertical = 28.dp)
         ) {
             Icon(
@@ -133,14 +137,14 @@ fun EmptyStateCard(
             Spacer(modifier = Modifier.height(4.dp))
             Text(
                 text = title,
-                color = Color.White,
+                color = MaterialTheme.colorScheme.onSurface,
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.Bold,
                 textAlign = TextAlign.Center
             )
             Text(
                 text = message,
-                color = CoolSteel,
+                color = MaterialTheme.colorScheme.tertiary,
                 style = MaterialTheme.typography.bodySmall,
                 textAlign = TextAlign.Center
             )
@@ -156,8 +160,9 @@ fun EmptyStateCard(
 fun HomeScreen(
     viewModel: HomeViewModel,
     onTripsClick: () -> Unit,
+    onPagosClick: () -> Unit,
     onCreateRideClick: () -> Unit,
-    onLogoutClick: () -> Unit
+    onSettingsClick: () -> Unit
 ) {
     val state = viewModel.uiState
     var selectedBottomTab by remember { mutableStateOf("Inicio") }
@@ -185,12 +190,12 @@ fun HomeScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(PrussianBlue)
+            .background(MaterialTheme.colorScheme.background)
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
 
             if (isLandscape) {
-                HomeHeader(onLogoutClick = { viewModel.logout { onLogoutClick() } })
+                HomeHeader(onSettingsClick = onSettingsClick)
 
                 Row(
                     modifier = Modifier
@@ -208,15 +213,15 @@ fun HomeScreen(
                         item {
                             FilterCard(
                                 selectedZone = state.selectedZone,
+                                preferredZoneName = state.preferredZoneName,
                                 zoneOptions = state.zoneOptions,
-                                selectedDay = state.selectedDay,
+                                selectedDate = state.selectedDate,
                                 selectedTripType = state.selectedTripType,
                                 selectedDepartureTime = state.selectedDepartureTime,
-                                departureOptions = state.departureTimeOptions,
                                 hasActiveFilters = state.hasActiveFilters,
                                 activeFilterCount = state.activeFilterCount,
                                 onZoneChange = viewModel::onZoneChange,
-                                onDayChange = viewModel::onDayChange,
+                                onDateChange = viewModel::onDateChange,
                                 onTripTypeChange = viewModel::onTripTypeChange,
                                 onDepartureTimeChange = viewModel::onDepartureTimeChange,
                                 onClearFilters = viewModel::clearFilters
@@ -276,20 +281,20 @@ fun HomeScreen(
                         .padding(horizontal = 16.dp, vertical = 16.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    item { HomeHeader(onLogoutClick = { viewModel.logout { onLogoutClick() } }) }
+                    item { HomeHeader(onSettingsClick = onSettingsClick) }
                     item { OfertaViajestitle() }
                     item {
                         FilterCard(
                             selectedZone = state.selectedZone,
+                            preferredZoneName = state.preferredZoneName,
                             zoneOptions = state.zoneOptions,
-                            selectedDay = state.selectedDay,
+                            selectedDate = state.selectedDate,
                             selectedTripType = state.selectedTripType,
                             selectedDepartureTime = state.selectedDepartureTime,
-                            departureOptions = state.departureTimeOptions,
                             hasActiveFilters = state.hasActiveFilters,
                             activeFilterCount = state.activeFilterCount,
                             onZoneChange = viewModel::onZoneChange,
-                            onDayChange = viewModel::onDayChange,
+                            onDateChange = viewModel::onDateChange,
                             onTripTypeChange = viewModel::onTripTypeChange,
                             onDepartureTimeChange = viewModel::onDepartureTimeChange,
                             onClearFilters = viewModel::clearFilters
@@ -340,7 +345,12 @@ fun HomeScreen(
                 selectedTab = selectedBottomTab,
                 onTabClick = {
                     selectedBottomTab = it
-                    if (it == "Viajes") onTripsClick()
+                    if (it == "Viajes"){
+                        onTripsClick()
+                    }
+                    else if (it == "Pagos"){
+                        onPagosClick()
+                    }
                 }
             )
         }
@@ -351,9 +361,8 @@ fun HomeScreen(
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
                     .padding(end = 24.dp, bottom = 116.dp),
-                isBlocked = state.hasActiveDriverTrip || state.hasActiveRiderReservation || state.isOffline,
-                blockedMessage = when {
-                    state.isOffline -> "Necesitas internet para crear un viaje"
+                isBlocked = state.hasActiveDriverTrip || state.hasActiveRiderReservation,
+                blockedMessage = when{
                     state.hasActiveDriverTrip && state.hasActiveRiderReservation -> "Ya tienes un viaje o reserva activa"
                     state.hasActiveDriverTrip -> "Ya tienes un viaje activo"
                     state.hasActiveRiderReservation -> "Ya tienes una reserva activa"
@@ -378,12 +387,12 @@ private fun ReservationMessageBanner(message: String, onDismiss: () -> Unit) {
     val isSuccess = message.contains("correctamente")
     Text(
         text = message,
-        color = if (isSuccess) DarkCyan else Color(0xFFEF4444),
+        color = if (isSuccess) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.error,
         style = MaterialTheme.typography.bodyMedium,
         modifier = Modifier
             .fillMaxWidth()
             .background(
-                if (isSuccess) Color(0xFFE6FFFA) else Color(0xFFFFEDED),
+                if (isSuccess) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.errorContainer,
                 RoundedCornerShape(8.dp)
             )
             .padding(horizontal = 12.dp, vertical = 8.dp)
@@ -397,11 +406,11 @@ private fun LoadingView() {
         contentAlignment = Alignment.Center
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            CircularProgressIndicator(color = Color.White)
+            CircularProgressIndicator(color = MaterialTheme.colorScheme.onBackground)
             Spacer(modifier = Modifier.height(8.dp))
             Text(
                 text = "Cargando viajes...",
-                color = Color.LightGray,
+                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
                 style = MaterialTheme.typography.bodyMedium
             )
         }
@@ -416,11 +425,11 @@ private fun ErrorView(message: String) {
     ) {
         Text(
             text = message,
-            color = Color(0xFFEF4444),
+            color = MaterialTheme.colorScheme.error,
             style = MaterialTheme.typography.bodyMedium,
             textAlign = TextAlign.Center,
             modifier = Modifier
-                .background(Color(0xFFFFEDED), RoundedCornerShape(12.dp))
+                .background(MaterialTheme.colorScheme.errorContainer, RoundedCornerShape(12.dp))
                 .padding(horizontal = 16.dp, vertical = 12.dp)
         )
     }
@@ -443,7 +452,7 @@ fun ExpandableCreateRideButton(
         if (expanded) {
             Box(
                 modifier = Modifier
-                    .background(Color(0xFF1F2937), RoundedCornerShape(12.dp))
+                    .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(12.dp))
                     .clickable {
                         expanded = false
                         if (!isBlocked) onCreateRideClick()
@@ -452,7 +461,7 @@ fun ExpandableCreateRideButton(
             ) {
                 Text(
                     text = if (isBlocked) blockedMessage else "Crear Viaje",
-                    color = if (isBlocked) Color(0xFF94A3B8) else Color.White,
+                    color = if (isBlocked) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.onSurface,
                     style = MaterialTheme.typography.bodyMedium
                 )
             }
@@ -462,7 +471,7 @@ fun ExpandableCreateRideButton(
         Box(
             modifier = Modifier
                 .background(
-                    color = if (isBlocked) Color(0xFF374151) else Color(0xFF1F2937),
+                    color = if (isBlocked) MaterialTheme.colorScheme.tertiary.copy(alpha = 0.5f) else MaterialTheme.colorScheme.surface,
                     shape = RoundedCornerShape(10.dp)
                 )
                 .clickable { expanded = !expanded }
@@ -470,7 +479,7 @@ fun ExpandableCreateRideButton(
         ) {
             Text(
                 text = "+",
-                color = if (isBlocked) Color(0xFF94A3B8) else Color.White,
+                color = if (isBlocked) MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f) else MaterialTheme.colorScheme.onSurface,
                 style = MaterialTheme.typography.titleMedium
             )
         }
@@ -482,11 +491,11 @@ fun ExpandableCreateRideButton(
 // ─────────────────────────────────────────────────────────────────────────────
 
 @Composable
-fun HomeHeader(onLogoutClick: () -> Unit) {
+fun HomeHeader(onSettingsClick: () -> Unit) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .background(headerBlue, shape = RoundedCornerShape(16.dp))
+            .background(MaterialTheme.colorScheme.surface, shape = RoundedCornerShape(16.dp))
             .padding(horizontal = 16.dp, vertical = 12.dp)
     ) {
         Row(
@@ -497,22 +506,22 @@ fun HomeHeader(onLogoutClick: () -> Unit) {
             Icon(
                 imageVector = Icons.Default.DirectionsCar,
                 contentDescription = "HappyRide",
-                tint = AutumnEmber,
+                tint = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.size(24.dp)
             )
             Spacer(modifier = Modifier.width(8.dp))
             Text(
                 text = "HappyRide",
-                color = Color.White,
+                color = MaterialTheme.colorScheme.onSurface,
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold
             )
         }
-        IconButton(onClick = onLogoutClick, modifier = Modifier.align(Alignment.CenterEnd)) {
+        IconButton(onClick = onSettingsClick, modifier = Modifier.align(Alignment.CenterEnd)) {
             Icon(
-                imageVector = Icons.Default.Logout,
-                contentDescription = "Cerrar sesión",
-                tint = Color.White,
+                imageVector = Icons.Default.Settings,
+                contentDescription = "Configuración",
+                tint = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.size(20.dp)
             )
         }
@@ -528,20 +537,20 @@ fun OfertaViajestitle() {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .background(PrussianBlue, shape = RoundedCornerShape(16.dp))
+            .background(MaterialTheme.colorScheme.background, shape = RoundedCornerShape(16.dp))
             .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
             text = "Oferta de viajes",
-            color = Color.White,
+            color = MaterialTheme.colorScheme.onBackground,
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold
         )
         Spacer(modifier = Modifier.height(4.dp))
         Text(
             text = "Encuentra el viaje perfecto para tu trayecto.",
-            color = Color.White,
+            color = MaterialTheme.colorScheme.onBackground,
             style = MaterialTheme.typography.bodySmall,
             textAlign = TextAlign.Center
         )
@@ -553,41 +562,49 @@ fun OfertaViajestitle() {
 // ─────────────────────────────────────────────────────────────────────────────
 
 @Composable
+@OptIn(ExperimentalMaterial3Api::class)
 fun FilterCard(
     selectedZone: String,
+    preferredZoneName: String,
     zoneOptions: List<String>,
-    selectedDay: String,
+    selectedDate: String,
     selectedTripType: String,
     selectedDepartureTime: String,
-    departureOptions: List<String>,
     hasActiveFilters: Boolean,
     activeFilterCount: Int,
     onZoneChange: (String) -> Unit,
-    onDayChange: (String) -> Unit,
+    onDateChange: (String) -> Unit,
     onTripTypeChange: (String) -> Unit,
     onDepartureTimeChange: (String) -> Unit,
     onClearFilters: () -> Unit
 ) {
-    val dayOptions = listOf("Hoy", "Próximos viajes")
+    var showDatePicker by remember { mutableStateOf(false) }
+    var showTimePicker by remember { mutableStateOf(false) }
+
     val tripTypeOptions = listOf("Todos", "Hacia la universidad", "Desde la universidad")
 
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .background(BrightSnow, shape = RoundedCornerShape(16.dp))
+            .background(MaterialTheme.colorScheme.surface, shape = RoundedCornerShape(16.dp))
             .padding(16.dp)
     ) {
-        FilterDropdownField(label = "Zona", selectedValue = selectedZone, options = zoneOptions, onValueSelected = onZoneChange)
+        FilterDropdownField(
+            label = "Zona",
+            selectedValue = selectedZone,
+            options = zoneOptions,
+            onValueSelected = onZoneChange,
+            defaultValue = preferredZoneName
+        )
         Spacer(modifier = Modifier.height(8.dp))
         Row(modifier = Modifier.fillMaxWidth()) {
             Column(modifier = Modifier.weight(1f)) {
-                FilterDropdownField(
-                    label = "Dia",
-                    selectedValue = selectedDay,
-                    options = dayOptions,
-                    onValueSelected = onDayChange,
-                    defaultValue = "Hoy",
-                    neutralLabelColor = PrussianBlue
+                FilterPickerField(
+                    label = "Fecha",
+                    selectedValue = formatDateForUi(selectedDate),
+                    onClick = { showDatePicker = true },
+                    isActive = selectedDate != todayDateString(),
+                    neutralLabelColor = MaterialTheme.colorScheme.onSurface
                 )
             }
             Spacer(modifier = Modifier.width(8.dp))
@@ -601,13 +618,21 @@ fun FilterCard(
             }
         }
         Spacer(modifier = Modifier.height(8.dp))
-        FilterDropdownField(
+        FilterPickerField(
             label = "Hora de salida",
-            selectedValue = selectedDepartureTime,
-            options = departureOptions,
-            onValueSelected = onDepartureTimeChange,
-            defaultValue = "Todas"
+            selectedValue = if (selectedDepartureTime == "Todas") "Todas" else selectedDepartureTime,
+            onClick = { showTimePicker = true },
+            isActive = selectedDepartureTime != "Todas"
         )
+        if (selectedDepartureTime != "Todas") {
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = "Limpiar hora",
+                color = MaterialTheme.colorScheme.secondary,
+                style = MaterialTheme.typography.bodySmall,
+                modifier = Modifier.clickable { onDepartureTimeChange("Todas") }
+            )
+        }
         Spacer(modifier = Modifier.height(10.dp))
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -616,19 +641,117 @@ fun FilterCard(
         ) {
             Text(
                 text = if (hasActiveFilters) "$activeFilterCount filtros aplicados" else "Sin filtros aplicados",
-                color = if (hasActiveFilters) DarkCyan else CoolSteel,
+                color = if (hasActiveFilters) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.tertiary,
                 style = MaterialTheme.typography.bodyMedium
             )
             if (hasActiveFilters) {
                 Text(
                     text = "Limpiar",
-                    color = DarkCyan,
+                    color = MaterialTheme.colorScheme.secondary,
                     style = MaterialTheme.typography.bodyMedium,
                     modifier = Modifier.clickable { onClearFilters() }
                 )
             }
         }
     }
+
+    if (showDatePicker) {
+        val utcTimeZone = TimeZone.getTimeZone("UTC")
+        val minDateUtcMillis = remember {
+            Calendar.getInstance(utcTimeZone).apply {
+                set(Calendar.HOUR_OF_DAY, 0)
+                set(Calendar.MINUTE, 0)
+                set(Calendar.SECOND, 0)
+                set(Calendar.MILLISECOND, 0)
+            }.timeInMillis
+        }
+
+        val initialSelectedDateMillis = remember(selectedDate) {
+            runCatching {
+                SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).apply {
+                    isLenient = false
+                    timeZone = utcTimeZone
+                }.parse(selectedDate)?.time
+            }.getOrNull()
+        }
+
+        val datePickerState = rememberDatePickerState(
+            initialSelectedDateMillis = initialSelectedDateMillis,
+            selectableDates = object : SelectableDates {
+                override fun isSelectableDate(utcTimeMillis: Long): Boolean {
+                    return utcTimeMillis >= minDateUtcMillis
+                }
+            }
+        )
+
+        DatePickerDialog(
+            onDismissRequest = { showDatePicker = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    datePickerState.selectedDateMillis?.let { millis ->
+                        val formattedDate = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).apply {
+                            timeZone = utcTimeZone
+                        }.format(Date(millis))
+                        onDateChange(formattedDate)
+                    }
+                    showDatePicker = false
+                }) {
+                    Text("Aceptar")
+                }
+            }
+        ) {
+            DatePicker(state = datePickerState, showModeToggle = false)
+        }
+    }
+
+    if (showTimePicker) {
+        val parsedHour = selectedDepartureTime.takeIf { it != "Todas" }
+            ?.split(":")
+            ?.getOrNull(0)
+            ?.toIntOrNull()
+            ?: 8
+        val parsedMinute = selectedDepartureTime.takeIf { it != "Todas" }
+            ?.split(":")
+            ?.getOrNull(1)
+            ?.toIntOrNull()
+            ?: 0
+
+        val timeState = rememberTimePickerState(
+            initialHour = parsedHour,
+            initialMinute = parsedMinute,
+            is24Hour = true
+        )
+
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { showTimePicker = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    val time = String.format(Locale.getDefault(), "%02d:%02d", timeState.hour, timeState.minute)
+                    onDepartureTimeChange(time)
+                    showTimePicker = false
+                }) {
+                    Text("Aceptar")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showTimePicker = false }) {
+                    Text("Cancelar")
+                }
+            },
+            text = { TimeInput(state = timeState) }
+        )
+    }
+}
+
+private fun formatDateForUi(date: String): String {
+    val input = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).apply { isLenient = false }
+    val output = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+    val parsedDate = runCatching { input.parse(date) }.getOrNull() ?: return date
+    return output.format(parsedDate)
+}
+
+private fun todayDateString(): String {
+    return SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
 }
 
 @Composable
@@ -643,12 +766,12 @@ fun FilterDropdownField(
 ) {
     var expanded by remember { mutableStateOf(false) }
     val isActive = useSelectionHighlight && selectedValue != defaultValue
-    val backgroundColor = if (isActive) Color(0xFFCCFBF1) else Color(0xFFF0F4F8)
-    val borderColor = if (isActive) DarkCyan.copy(alpha = 0.35f) else Color.Transparent
+    val backgroundColor = if (isActive) MaterialTheme.colorScheme.secondary.copy(alpha = 0.1f) else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f)
+    val borderColor = if (isActive) MaterialTheme.colorScheme.secondary.copy(alpha = 0.35f) else Color.Transparent
 
     Text(
         text = label,
-        color = PrussianBlue,
+        color = MaterialTheme.colorScheme.onSurface,
         style = MaterialTheme.typography.titleSmall,
         fontWeight = FontWeight.SemiBold
     )
@@ -661,7 +784,7 @@ fun FilterDropdownField(
             .clickable { expanded = true }
             .padding(horizontal = 10.dp, vertical = 10.dp)
     ) {
-        Text(text = selectedValue, style = MaterialTheme.typography.bodyMedium, color = PrussianBlue)
+        Text(text = selectedValue, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface)
         DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
             options.forEach { option ->
                 DropdownMenuItem(
@@ -683,14 +806,14 @@ fun BottomNavigationBar(
     selectedTab: String,
     onTabClick: (String) -> Unit
 ) {
-    val items = listOf("Inicio", "Viajes")
-    val icons = listOf(Icons.Default.Home, Icons.Default.LocalTaxi)
+    val items = listOf("Inicio", "Viajes", "Pagos")
+    val icons = listOf(Icons.Default.Home, Icons.Default.LocalTaxi, Icons.Default.AttachMoney)
 
     Row(
         modifier = Modifier
             .then(modifier)
             .fillMaxWidth()
-            .background(headerBlue, RoundedCornerShape(16.dp))
+            .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(16.dp))
             .padding(vertical = 12.dp, horizontal = 16.dp),
         horizontalArrangement = Arrangement.Center
     ) {
@@ -703,16 +826,50 @@ fun BottomNavigationBar(
                 Icon(
                     imageVector = icons[index],
                     contentDescription = item,
-                    tint = if (isSelected) AutumnEmber else CoolSteel,
+                    tint = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.tertiary,
                     modifier = Modifier.size(24.dp)
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
                     text = item,
-                    color = if (isSelected) AutumnEmber else CoolSteel,
+                    color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.tertiary,
                     style = MaterialTheme.typography.labelSmall
                 )
             }
         }
+    }
+}
+
+@Composable
+fun FilterPickerField(
+    label: String,
+    selectedValue: String,
+    onClick: () -> Unit,
+    isActive: Boolean,
+    neutralLabelColor: Color = Color.Unspecified
+) {
+    val backgroundColor = if (isActive) MaterialTheme.colorScheme.secondary.copy(alpha = 0.1f) else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f)
+    val borderColor = if (isActive) MaterialTheme.colorScheme.secondary.copy(alpha = 0.35f) else Color.Transparent
+
+    Text(
+        text = label,
+        color = if (neutralLabelColor == Color.Unspecified) MaterialTheme.colorScheme.onSurface else neutralLabelColor,
+        style = MaterialTheme.typography.titleSmall,
+        fontWeight = FontWeight.SemiBold
+    )
+    Spacer(modifier = Modifier.height(4.dp))
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .border(1.dp, borderColor, RoundedCornerShape(8.dp))
+            .background(backgroundColor, RoundedCornerShape(8.dp))
+            .clickable { onClick() }
+            .padding(horizontal = 10.dp, vertical = 10.dp)
+    ) {
+        Text(
+            text = selectedValue,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurface
+        )
     }
 }

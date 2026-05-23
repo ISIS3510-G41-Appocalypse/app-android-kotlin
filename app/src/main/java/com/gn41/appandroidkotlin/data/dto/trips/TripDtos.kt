@@ -23,6 +23,13 @@ data class TripUserNestedDto(
 data class TripRiderNestedDto(
     val id: Int,
     val cancellation_odds: Double,
+    val rating: Double? = null,
+    val users: TripUserNestedDto? = null
+)
+
+data class TripDriverNestedDto(
+    val id: Int? = null,
+    val user_id: Int? = null,
     val users: TripUserNestedDto? = null
 )
 
@@ -32,7 +39,8 @@ data class TripRideNestedDto(
     val destination: String,
     val state: String,
     val departure_time: String,
-    val date: String
+    val date: String,
+    val drivers: TripDriverNestedDto? = null
 )
 
 data class TripReservationDto(

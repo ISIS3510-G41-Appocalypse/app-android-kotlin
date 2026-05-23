@@ -2,7 +2,6 @@ package com.gn41.appandroidkotlin.presentation.viewmodels
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
-import com.gn41.appandroidkotlin.core.connectivity.NetworkHelper
 import com.gn41.appandroidkotlin.data.local.SessionManager
 import com.gn41.appandroidkotlin.data.repositories.RideRepository
 import com.gn41.appandroidkotlin.data.repositories.VehicleRepository

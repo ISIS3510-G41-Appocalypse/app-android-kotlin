@@ -9,15 +9,27 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.gn41.appandroidkotlin.core.connectivity.NetworkHelper
 import com.gn41.appandroidkotlin.data.dto.rides.RideDto
+import com.gn41.appandroidkotlin.data.dto.vehicle.VehicleDto
+import com.gn41.appandroidkotlin.data.dto.zone.ZoneDto
 import com.gn41.appandroidkotlin.data.local.SessionManager
 import com.gn41.appandroidkotlin.data.repositories.ReservationsRepository
 import com.gn41.appandroidkotlin.data.repositories.RidesRepository
 import com.gn41.appandroidkotlin.data.repositories.TripRepository
 import com.gn41.appandroidkotlin.data.repositories.VehicleRepository
+import com.gn41.appandroidkotlin.data.repositories.ZoneRepository
+import com.gn41.appandroidkotlin.data.services.performance.Supervisor
+import com.gn41.appandroidkotlin.localStorage.LocalStorageManager
+import com.gn41.appandroidkotlin.presentation.cache.TripMemoryCache
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import kotlin.time.measureTimedValue
 
 data class HomeUiState(
     val isLoading: Boolean = false,
@@ -25,11 +37,11 @@ data class HomeUiState(
     val errorMessage: String = "",
     val reservationMessage: String = "",
     val selectedZone: String = "Todos",
+    val preferredZoneName: String = "Todos",
     val zoneOptions: List<String> = listOf("Todos"),
     val selectedTripType: String = "Todos",
-    val selectedDay: String = "Hoy",
+    val selectedDate: String = todayDateString(),
     val selectedDepartureTime: String = "Todas",
-    val departureTimeOptions: List<String> = buildDepartureTimeOptions(),
     val hasActiveFilters: Boolean = false,
     val activeFilterCount: Int = 0,
     val hasActiveRiderReservation: Boolean = false,
@@ -39,28 +51,42 @@ data class HomeUiState(
     val isOffline: Boolean = false
 )
 
-private fun buildDepartureTimeOptions(): List<String> {
-    val slots = (5..21).map { hour ->
-        String.format(Locale.getDefault(), "%02d:00", hour)
-    }
-    return listOf("Todas") + slots
+private fun todayDateString(): String {
+    return SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
 }
+
+// Data class to group results from parallel Home data loading
+private data class HomeDataResult(
+    val rides: List<RideDto>?,
+    val zones: List<ZoneDto>,
+    val vehicles: List<VehicleDto>,
+    val isDriver: Boolean
+)
 
 class HomeViewModel(
     private val ridesRepository: RidesRepository,
     private val sessionManager: SessionManager,
     private val reservationsRepository: ReservationsRepository? = null,
     private val tripRepository: TripRepository? = null,
+    private val zoneRepository: ZoneRepository,
     private val vehicleRepository: VehicleRepository,
-    private val networkHelper: NetworkHelper
+    private val networkHelper: NetworkHelper,
+    private val localStorageManager: LocalStorageManager
 ) : ViewModel() {
 
     private var allRides: List<RideDto> = emptyList()
+    private var recommendationByRideId: Map<Int, Double> = emptyMap()
     private var lastConnectionState: Boolean? = null
-    
-    // IDs resueltos confiably desde el token (no desde SessionManager directo)
+
+    private var defaultZoneApplied = false
+    private var preferredZoneName: String = "Todos"
+    private var preferredZoneId: Int? = null
+
+    // IDs resueltos confiablemente desde el token (no desde SessionManager directo)
     private var currentResolvedUserId: Int? = null
+    private var currentResolvedAuthId: String? = null
     private var currentResolvedDriverId: Int? = null
+    private var currentResolvedZoneId: Int? = null
 
     var uiState by mutableStateOf(HomeUiState())
         private set
@@ -79,8 +105,8 @@ class HomeViewModel(
         applyFilters()
     }
 
-    fun onDayChange(value: String) {
-        uiState = uiState.copy(selectedDay = value)
+    fun onDateChange(value: String) {
+        uiState = uiState.copy(selectedDate = value)
         applyFilters()
     }
 
@@ -90,6 +116,7 @@ class HomeViewModel(
     }
 
     fun onReserveClicked(rideId: Int) {
+        val startTime = System.currentTimeMillis()
         // FASE 5: bloquear reserva sin internet
         if (uiState.isOffline) {
             uiState = uiState.copy(reservationMessage = "Necesitas conexión a internet para reservar un viaje.")
@@ -147,13 +174,15 @@ class HomeViewModel(
                     return@launch
                 }
 
-                val created = repository.createReservation(
-                    rideId = rideId,
-                    riderId = rider.id,
-                    meetingPoint = meetingPoint,
-                    destinationPoint = destinationPoint,
-                    token = token
-                )
+                val (created, time) = measureTimedValue {
+                    repository.createReservation(
+                        rideId = rideId,
+                        riderId = rider.id,
+                        meetingPoint = meetingPoint,
+                        destinationPoint = destinationPoint,
+                        token = token
+                    )
+                }
 
                 uiState = if (created) {
                     uiState.copy(
@@ -167,10 +196,13 @@ class HomeViewModel(
                 if (created) {
                     checkBlockingStates()
                 }
+                Supervisor.addDuration("CreateReservation", time.inWholeMilliseconds.toDouble(), "BACKEND")
             } catch (e: Exception) {
                 Log.e("HomeViewModel", "Exception creating reservation", e)
                 uiState = uiState.copy(reservationMessage = "No se pudo crear la reserva. Intenta de nuevo.")
             }
+            val duration = System.currentTimeMillis() - startTime
+            Supervisor.addDuration("CreateReservation", duration.toDouble(), "FRONTEND")
         }
     }
 
@@ -188,8 +220,9 @@ class HomeViewModel(
 
     fun clearFilters() {
         uiState = uiState.copy(
-            selectedZone = "Todos",
-            selectedDay = "Hoy",
+            selectedZone = preferredZoneName,
+            preferredZoneName = preferredZoneName,
+            selectedDate = todayDateString(),
             selectedTripType = "Todos",
             selectedDepartureTime = "Todas"
         )
@@ -204,17 +237,10 @@ class HomeViewModel(
             isLenient = false
         }
         val now = Date()
-        val today = dateFormatter.format(now)
-
+        // Current implementation loads offered rides and filters them locally.
+        // Backend filtering by date can be added later if the dataset grows.
         val filteredRides = allRides.filter { ride ->
-            val isOfferedRide = isRideOffered(ride.state)
-
-            val isUpcomingRide = isRideUpcoming(
-                ride = ride,
-                now = now,
-                dateFormatter = dateFormatter,
-                dateTimeFormatter = dateTimeFormatter
-            )
+            val hasAvailableSeats = isRideWithAvailableSeats(ride)
 
             val isNotOwnRide = !isRideCreatedByCurrentUser(
                 ride = ride,
@@ -224,7 +250,7 @@ class HomeViewModel(
 
             val matchesZone = when (uiState.selectedZone) {
                 "Todos" -> true
-                else -> ride.zones?.name == uiState.selectedZone
+                else -> sameZone(ride.zones?.name.orEmpty(), uiState.selectedZone)
             }
 
             val matchesTripType = when (uiState.selectedTripType) {
@@ -234,30 +260,27 @@ class HomeViewModel(
                 else -> true
             }
 
-            val matchesDay = when (uiState.selectedDay) {
-                "Hoy" -> ride.date == today
-                "Próximos viajes" -> {
-                    val rideDate = dateFormatter.parse(ride.date)
-                    val todayDate = dateFormatter.parse(today)
-                    rideDate != null && todayDate != null && rideDate.after(todayDate)
-                }
-                else -> true
-            }
+            val matchesDate = ride.date == uiState.selectedDate
 
             val matchesDepartureTime = when (uiState.selectedDepartureTime) {
                 "Todas" -> true
-                else -> matchesHourSlot(
+                else -> matchesDepartureTimeRange(
                     rideTime = ride.departure_time,
-                    selectedSlot = uiState.selectedDepartureTime
+                    selectedTime = uiState.selectedDepartureTime
                 )
             }
 
-            isOfferedRide && isUpcomingRide && isNotOwnRide && matchesZone && matchesTripType && matchesDay && matchesDepartureTime
+            isRelevantHomeRide(
+                ride = ride,
+                now = now,
+                dateFormatter = dateFormatter,
+                dateTimeFormatter = dateTimeFormatter
+            ) && hasAvailableSeats && isNotOwnRide && matchesZone && matchesTripType && matchesDate && matchesDepartureTime
         }
 
         val activeFilterCount = countActiveFilters(
             zone = uiState.selectedZone,
-            day = uiState.selectedDay,
+            date = uiState.selectedDate,
             tripType = uiState.selectedTripType,
             departureTime = uiState.selectedDepartureTime
         )
@@ -265,7 +288,11 @@ class HomeViewModel(
         uiState = uiState.copy(
             rides = filteredRides
                 .sortedByDescending { it.drivers?.rating ?: 0.0 }
-                .map { mapToRideUiModel(it) },
+                .map { ride ->
+                    mapToRideUiModel(ride).copy(
+                        recommendationRating = recommendationByRideId[ride.id]
+                    )
+                },
             hasActiveFilters = activeFilterCount > 0,
             activeFilterCount = activeFilterCount
         )
@@ -273,10 +300,10 @@ class HomeViewModel(
 
     // FASE 4: validar si el conductor puede crear viaje (necesita internet)
     fun onCreateRideRequested(onNavigate: () -> Unit) {
-        if (uiState.isOffline) {
+/*        if (uiState.isOffline) {
             uiState = uiState.copy(reservationMessage = "Necesitas conexión a internet para crear un viaje.")
             return
-        }
+        }*/
         onNavigate()
     }
 
@@ -316,8 +343,20 @@ class HomeViewModel(
         sessionManager.clearToken()
         sessionManager.clearUserId()
         sessionManager.clearDriverId()
+        TripMemoryCache.clear()
+        localStorageManager.clearTripState()
         currentResolvedUserId = null
+        currentResolvedAuthId = null
         currentResolvedDriverId = null
+        currentResolvedZoneId = null
+        preferredZoneId = null
+        preferredZoneName = "Todos"
+        defaultZoneApplied = false
+        uiState = uiState.copy(
+            selectedZone = "Todos",
+            preferredZoneName = "Todos",
+            zoneOptions = listOf("Todos")
+        )
         onNavigateToLogin()
     }
 
@@ -334,27 +373,73 @@ class HomeViewModel(
 
     private fun countActiveFilters(
         zone: String,
-        day: String,
+        date: String,
         tripType: String,
         departureTime: String
     ): Int {
         var count = 0
-        if (zone != "Todos") count++
-        if (day != "Hoy") count++
+        if (!sameZone(zone, preferredZoneName)) count++
+        if (date != todayDateString()) count++
         if (tripType != "Todos") count++
         if (departureTime != "Todas") count++
         return count
     }
 
-    private fun matchesHourSlot(rideTime: String, selectedSlot: String): Boolean {
-        // valida que la hora coincida
-        val rideHour = rideTime.split(":").firstOrNull()?.toIntOrNull() ?: return false
-        val slotHour = selectedSlot.split(":").firstOrNull()?.toIntOrNull() ?: return false
-        return rideHour == slotHour
+    private fun sameZone(a: String, b: String): Boolean {
+        return a.trim().equals(b.trim(), ignoreCase = true)
+    }
+
+    private fun matchesDepartureTimeRange(rideTime: String?, selectedTime: String): Boolean {
+        if (selectedTime == "Todas") return true
+
+        val rideMinutes = parseTimeToMinutes(rideTime) ?: return false
+        val selectedMinutes = parseTimeToMinutes(selectedTime) ?: return false
+        val endMinutes = selectedMinutes + 60
+
+        return rideMinutes in selectedMinutes..endMinutes
+    }
+
+    private fun parseTimeToMinutes(value: String?): Int? {
+        val normalized = normalizeRideTime(value ?: return null) ?: return null
+        val parts = normalized.split(":")
+        if (parts.size < 2) return null
+
+        val hour = parts[0].toIntOrNull() ?: return null
+        val minute = parts[1].toIntOrNull() ?: return null
+
+        return (hour * 60) + minute
     }
 
     private fun isRideOffered(state: String?): Boolean {
         return state?.trim()?.equals("OFERTADO", ignoreCase = true) == true
+    }
+
+    private fun isRelevantHomeRide(
+        ride: RideDto,
+        now: Date,
+        dateFormatter: SimpleDateFormat,
+        dateTimeFormatter: SimpleDateFormat
+    ): Boolean {
+        val normalizedState = normalizeState(ride.state)
+        val blockedStates = setOf("FINALIZADO", "CANCELADO", "RECHAZADA")
+        // Filtra viajes pasados o cerrados para reducir carga de datos y renderizado en Home.
+        return normalizedState !in blockedStates &&
+            isRideOffered(ride.state) &&
+            isRideUpcoming(
+                ride = ride,
+                now = now,
+                dateFormatter = dateFormatter,
+                dateTimeFormatter = dateTimeFormatter
+            )
+    }
+
+    private fun isRideWithAvailableSeats(ride: RideDto): Boolean {
+        val totalSeats = ride.vehicles?.number_slots ?: 0
+        val activeBookedSeats = ride.reservations.orEmpty().count { reservation ->
+            val reservationState = normalizeState(reservation.state)
+            reservationState == "ACEPTADA" || reservationState == "EN_CURSO"
+        }
+        return (totalSeats - activeBookedSeats) > 0
     }
 
     private fun normalizeState(state: String?): String {
@@ -366,7 +451,7 @@ class HomeViewModel(
             "OFERTADO", "OFFERED", "ACTIVE" -> "OFERTADO"
             "FINALIZADO", "FINALIZADA", "FINISHED", "COMPLETED" -> "FINALIZADO"
             "CANCELADO", "CANCELADA", "CANCELLED" -> "CANCELADO"
-            "RECHAZADA", "REJECTED" -> "RECHAZADA"
+            "RECHAZADO", "RECHAZADA", "REJECTED" -> "RECHAZADA"
             else -> rawState
         }
     }
@@ -467,11 +552,24 @@ class HomeViewModel(
     private suspend fun resolveCurrentUserFromToken(token: String) {
         try {
             val authId = extractAuthIdFromToken(token) ?: return
+            if (currentResolvedAuthId != null && currentResolvedAuthId != authId) {
+                // Evita arrastrar zona preferida del usuario anterior.
+                defaultZoneApplied = false
+                preferredZoneId = null
+                preferredZoneName = "Todos"
+                currentResolvedUserId = null
+                currentResolvedDriverId = null
+                currentResolvedZoneId = null
+            }
+            currentResolvedAuthId = authId
+
             val resRepo = reservationsRepository ?: return
 
             val user = resRepo.getUserByAuthId(authId, token)
             if (user != null) {
                 currentResolvedUserId = user.id
+                currentResolvedZoneId = user.zone_id
+                preferredZoneId = user.zone_id
                 Log.d("HomeViewModel", "[RESOLVE] currentUserId set to: ${user.id}")
 
                 // Resolver driver si existe
@@ -487,16 +585,54 @@ class HomeViewModel(
                 Log.w("HomeViewModel", "[RESOLVE] Could not resolve user from token")
                 currentResolvedUserId = null
                 currentResolvedDriverId = null
+                currentResolvedZoneId = null
+                preferredZoneId = null
+                preferredZoneName = "Todos"
+                defaultZoneApplied = false
             }
         } catch (e: Exception) {
             Log.e("HomeViewModel", "[RESOLVE] Exception resolving current user", e)
             currentResolvedUserId = null
             currentResolvedDriverId = null
+            currentResolvedZoneId = null
+            preferredZoneId = null
+            preferredZoneName = "Todos"
+            defaultZoneApplied = false
         }
+    }
+
+    private fun loadZoneOptions(
+        allZones: List<ZoneDto>,
+        offeredRides: List<RideDto>
+    ): List<String> {
+        val zoneNamesFromTable = allZones
+            .mapNotNull { it.name.trim() }
+            .filter { it.isNotEmpty() }
+            .distinct()
+            .sorted()
+
+        if (zoneNamesFromTable.isNotEmpty()) {
+            return listOf("Todos") + zoneNamesFromTable
+        }
+
+        // Fallback minimo si falla tabla zones.
+        return buildZoneOptions(offeredRides)
+    }
+
+    private fun resolvePreferredZoneNameFromZones(allZones: List<ZoneDto>, zoneId: Int?): String {
+        if (zoneId == null) return "Todos"
+
+        val zoneName = allZones
+            .firstOrNull { it.id == zoneId }
+            ?.name
+            ?.trim()
+
+        return if (zoneName.isNullOrEmpty()) "Todos" else zoneName
     }
 
     private fun applyOfflineState() {
         allRides = emptyList()
+        recommendationByRideId = emptyMap()
         val driverKnownLocally = uiState.isDriver || sessionManager.getDriverId() > 0
         uiState = uiState.copy(
             isOffline = true,
@@ -527,30 +663,78 @@ class HomeViewModel(
 
         viewModelScope.launch {
             try {
-                val userVehicles = vehicleRepository.getUserVehicles()
-                val isDriver = userVehicles.isNotEmpty()
+                // Move IO operations to Dispatchers.IO and load independent data in parallel
+                val homeData = withContext(Dispatchers.IO) {
+                    loadHomeDataInParallel(token)
+                }
 
+                withContext(Dispatchers.IO) {
+                    // resolve user/driver data in IO because it queries repositories
+                    resolveCurrentUserFromToken(token)
+                }
+
+                val isDriver = homeData.isDriver
                 uiState = uiState.copy(isDriver = isDriver)
 
-                // Resolver usuario actual confiably desde el token
-                resolveCurrentUserFromToken(token)
-
-                val result = ridesRepository.getRides(token)
+                val allZones = homeData.zones
+                val result = homeData.rides
 
                 if (result != null) {
-                    val offeredRides = result.filter { ride -> isRideOffered(ride.state) }
-                    Log.d("HomeViewModel", "Rides loaded: ${result.size}")
-                    Log.d("HomeViewModel", "[FILTRO] OFERTADO rides: ${offeredRides.size}")
+                    val now = Date()
+                    val dateFormatter = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).apply {
+                        isLenient = false
+                    }
+                    val dateTimeFormatter = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault()).apply {
+                        isLenient = false
+                    }
+                    val offeredRides = result.filter { ride ->
+                        isRelevantHomeRide(
+                            ride = ride,
+                            now = now,
+                            dateFormatter = dateFormatter,
+                            dateTimeFormatter = dateTimeFormatter
+                        )
+                    }
+                    Log.d("HomeViewModel", "Backend upcoming offered rides loaded: ${result.size}")
+                    Log.d("HomeViewModel", "Home relevant rides after local safety filter: ${offeredRides.size}")
                     Log.d("HomeViewModel", "[FILTRO] Resolved userId: $currentResolvedUserId, driverId: $currentResolvedDriverId")
                     allRides = offeredRides
+
+                    // Load recommendations in parallel for all rides
+                    recommendationByRideId = withContext(Dispatchers.IO) {
+                        loadRecommendationsForRides(
+                            rides = offeredRides,
+                            token = token
+                        )
+                    }
+
                     uiState = uiState.copy(
                         isLoading = false,
                         errorMessage = "",
-                        zoneOptions = buildZoneOptions(offeredRides)
+                        zoneOptions = loadZoneOptions(
+                            allZones = allZones,
+                            offeredRides = offeredRides
+                        )
                     )
+
+                    if (!defaultZoneApplied) {
+                        preferredZoneName = resolvePreferredZoneNameFromZones(
+                            allZones = allZones,
+                            zoneId = preferredZoneId
+                        )
+                        uiState = uiState.copy(
+                            selectedZone = preferredZoneName,
+                            preferredZoneName = preferredZoneName
+                        )
+                        defaultZoneApplied = true
+                    } else {
+                        uiState = uiState.copy(preferredZoneName = preferredZoneName)
+                    }
+
                     applyFilters()
                     checkBlockingStates()
                 } else {
+                    recommendationByRideId = emptyMap()
                     Log.e("HomeViewModel", "Rides result is null")
                     uiState = uiState.copy(
                         isLoading = false,
@@ -558,6 +742,7 @@ class HomeViewModel(
                     )
                 }
             } catch (e: Exception) {
+                recommendationByRideId = emptyMap()
                 Log.e("HomeViewModel", "Exception loading rides", e)
                 uiState = uiState.copy(
                     isLoading = false,
@@ -565,6 +750,81 @@ class HomeViewModel(
                 )
             }
         }
+    }
+
+    // Runs independent Home data requests in parallel using coroutineScope and async.
+    // Vehicles, zones, and rides are fetched concurrently since they don't depend on each other.
+    private suspend fun loadHomeDataInParallel(token: String): HomeDataResult = coroutineScope {
+        val vehiclesJob = async {
+            try {
+                vehicleRepository.getUserVehicles()
+            } catch (e: Exception) {
+                Log.e("HomeViewModel", "Exception loading vehicles", e)
+                emptyList<VehicleDto>()
+            }
+        }
+
+        val zonesJob = async {
+            try {
+                zoneRepository.getZones()
+            } catch (e: Exception) {
+                Log.e("HomeViewModel", "Exception loading zones", e)
+                emptyList<ZoneDto>()
+            }
+        }
+
+        val ridesJob = async {
+            try {
+                ridesRepository.getUpcomingOfferedRides(token)
+            } catch (e: Exception) {
+                Log.e("HomeViewModel", "Exception loading rides", e)
+                null
+            }
+        }
+
+        // Wait for all parallel tasks to complete
+        val vehicles = vehiclesJob.await()
+        val zones = zonesJob.await()
+        val rides = ridesJob.await()
+        val isDriver = vehicles.isNotEmpty()
+
+        HomeDataResult(
+            rides = rides,
+            zones = zones,
+            vehicles = vehicles,
+            isDriver = isDriver
+        )
+    }
+
+    // Loads recommendations for all rides in parallel using async + awaitAll.
+    // Each ride recommendation request is independent, so they can be executed concurrently.
+    private suspend fun loadRecommendationsForRides(
+        rides: List<RideDto>,
+        token: String
+    ): Map<Int, Double> = coroutineScope {
+        val repository = reservationsRepository ?: return@coroutineScope emptyMap()
+        val currentUserId = currentResolvedUserId ?: return@coroutineScope emptyMap()
+        val rider = repository.getRiderByUserId(currentUserId, token) ?: return@coroutineScope emptyMap()
+
+        // Launch parallel async tasks for each ride recommendation
+        rides.map { ride ->
+            async {
+                try {
+                    val rating = ridesRepository.getRiderDriverRecommendation(
+                        riderId = rider.id,
+                        driverId = ride.driver_id,
+                        token = token
+                    )
+                    ride.id to rating
+                } catch (_: Exception) {
+                    ride.id to null
+                }
+            }
+        }.awaitAll()
+            .mapNotNull { (rideId, rating) ->
+                rating?.let { rideId to it.coerceIn(0.0, 5.0) }
+            }
+            .toMap()
     }
 
     // verifica si el usuario ya tiene reserva activa o viaje activo como conductor

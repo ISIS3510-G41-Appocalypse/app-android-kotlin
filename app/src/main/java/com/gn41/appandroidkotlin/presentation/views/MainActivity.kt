@@ -1,60 +1,87 @@
 package com.gn41.appandroidkotlin.presentation.views
 
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.annotation.RequiresApi
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.rememberNavController
 import com.gn41.appandroidkotlin.core.connectivity.NetworkHelper
+import com.gn41.appandroidkotlin.data.local.RegisterDraftManager
 import com.gn41.appandroidkotlin.data.local.SessionManager
-import com.gn41.appandroidkotlin.data.repositories.AuthRepositoryImpl
-import com.gn41.appandroidkotlin.data.repositories.ReservationsRepositoryImpl
-import com.gn41.appandroidkotlin.data.repositories.RideRepositoryImpl
-import com.gn41.appandroidkotlin.data.repositories.RidesRepositoryImpl
-import com.gn41.appandroidkotlin.data.repositories.TripRepositoryImpl
-import com.gn41.appandroidkotlin.data.repositories.VehicleRepositoryImpl
-import com.gn41.appandroidkotlin.data.repositories.ZoneRepositoryImpl
+import com.gn41.appandroidkotlin.data.repositories.ReservationsRepository
+import com.gn41.appandroidkotlin.data.repositories.RatingRepository
+import com.gn41.appandroidkotlin.data.repositories.RideRepository
+import com.gn41.appandroidkotlin.data.repositories.RidesRepository
+import com.gn41.appandroidkotlin.data.repositories.TripRepository
+import com.gn41.appandroidkotlin.data.repositories.VehicleRepository
+import com.gn41.appandroidkotlin.data.repositories.ZoneRepository
 import com.gn41.appandroidkotlin.data.services.auth.AuthService
 import com.gn41.appandroidkotlin.data.services.reservations.ReservationsService
 import com.gn41.appandroidkotlin.data.services.rides.RideService
 import com.gn41.appandroidkotlin.data.services.rides.RidesService
+import com.gn41.appandroidkotlin.data.services.ratings.RatingService
 import com.gn41.appandroidkotlin.data.services.trips.TripService
 import com.gn41.appandroidkotlin.data.services.userId.UserIdService
 import com.gn41.appandroidkotlin.data.services.vehicles.VehicleService
 import com.gn41.appandroidkotlin.data.services.zones.ZoneService
 import com.gn41.appandroidkotlin.presentation.navigation.AppNavigation
+import com.gn41.appandroidkotlin.presentation.cache.TripMemoryCache
 import com.gn41.appandroidkotlin.presentation.viewmodels.CreateRideViewModelFactory
 import com.gn41.appandroidkotlin.presentation.viewmodels.HomeViewModelFactory
+import com.gn41.appandroidkotlin.presentation.viewmodels.RatingViewModelFactory
+import com.gn41.appandroidkotlin.presentation.viewmodels.RegisterViewModelFactory
+import com.gn41.appandroidkotlin.presentation.viewmodels.SettingsViewModelFactory
 import com.gn41.appandroidkotlin.presentation.viewmodels.TripViewModelFactory
 import com.gn41.appandroidkotlin.presentation.viewmodels.WelcomeViewModel
 import com.gn41.appandroidkotlin.presentation.viewmodels.WelcomeViewModelFactory
 import com.gn41.appandroidkotlin.ui.theme.AppAndroidKotlinTheme
 import com.gn41.appandroidkotlin.data.services.location.LocationService
-import com.gn41.appandroidkotlin.data.repositories.LocationRepositoryImpl
-import com.gn41.appandroidkotlin.presentation.viewmodels.ActiveRideViewModelFactory
 import com.mapbox.common.MapboxOptions
 import com.gn41.appandroidkotlin.BuildConfig
+import com.gn41.appandroidkotlin.data.repositories.AuthRepository
+import com.gn41.appandroidkotlin.data.repositories.LocationRepository
+import com.gn41.appandroidkotlin.data.repositories.PaymentsRepository
+import com.gn41.appandroidkotlin.data.services.payments.PaymentsService
 import com.gn41.appandroidkotlin.localStorage.LocalStorageManager
+import com.gn41.appandroidkotlin.presentation.viewmodels.PaymentsViewModelFactory
 
 
 class MainActivity : ComponentActivity() {
+    @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         MapboxOptions.accessToken = BuildConfig.MAPBOX_ACCESS_TOKEN
         setContent {
-            AppAndroidKotlinTheme {
-                val sessionManager = SessionManager(this)
+            val sessionManager = remember { SessionManager(this) }
+            val localStorageManager = remember { LocalStorageManager(this) }
+            
+            var darkThemeEnabled by remember { 
+                mutableStateOf(sessionManager.isDarkModeEnabled()) 
+            }
+
+            AppAndroidKotlinTheme(
+                darkTheme = darkThemeEnabled
+            ) {
                 val networkHelper = NetworkHelper(this)
-                val localStorageManager = LocalStorageManager(this)
 
                 val authService = AuthService()
-                val authRepository = AuthRepositoryImpl(authService)
+                val authRepository = AuthRepository(authService)
 
                 val tripService = TripService()
-                val tripRepository = TripRepositoryImpl(tripService, networkHelper)
+                val tripRepository = TripRepository(tripService, networkHelper)
+
+                val userIdService = UserIdService(sessionManager)
+                val paymentsService = PaymentsService(sessionManager, userIdService)
+                val paymentsRepository = PaymentsRepository(paymentsService, networkHelper, localStorageManager)
 
                 val welcomeFactory = WelcomeViewModelFactory(
                     context = this,
@@ -65,35 +92,56 @@ class MainActivity : ComponentActivity() {
                 val welcomeViewModel: WelcomeViewModel = viewModel(factory = welcomeFactory)
 
                 val reservationsService = ReservationsService()
-                val reservationsRepository = ReservationsRepositoryImpl(reservationsService)
+                val reservationsRepository = ReservationsRepository(reservationsService)
 
                 val ridesService = RidesService()
-                val ridesRepository = RidesRepositoryImpl(ridesService)
+                val ridesRepository = RidesRepository(ridesService)
                 val locationService = LocationService()
-                val locationRepository = LocationRepositoryImpl(locationService,sessionManager)
+                val locationRepository = LocationRepository(locationService, sessionManager)
+
+                val ratingService = RatingService()
+                val ratingRepository = RatingRepository(ratingService)
 
                 val tripViewModelFactory = TripViewModelFactory(
                     tripRepository = tripRepository,
+                    ratingRepository = ratingRepository,
+                    paymentsRepository = paymentsRepository,
                     sessionManager = sessionManager,
-                    locationRepository = locationRepository
+                    locationRepository = locationRepository,
+                    networkHelper = networkHelper,
+                    localStorageManager = localStorageManager
                 )
 
-                val userIdService = UserIdService(sessionManager)
+                val paymentsViewModelFactory = PaymentsViewModelFactory(
+                    paymentsRepository = paymentsRepository
+                )
+
+                val ratingViewModelFactory = RatingViewModelFactory(
+                    tripRepository = tripRepository,
+                    ratingRepository = ratingRepository,
+                    sessionManager = sessionManager,
+                    networkHelper = networkHelper,
+                    localStorageManager = localStorageManager
+                )
+
+
                 val rideService = RideService(sessionManager, userIdService)
                 val vehicleService = VehicleService(sessionManager, userIdService)
                 val zoneService = ZoneService(sessionManager)
 
-                val rideRepository = RideRepositoryImpl(rideService, networkHelper, localStorageManager)
-                val vehicleRepository = VehicleRepositoryImpl(vehicleService)
-                val zoneRepository = ZoneRepositoryImpl(zoneService)
+                val rideRepository = RideRepository(rideService, networkHelper, localStorageManager)
+                val vehicleRepository = VehicleRepository(vehicleService)
+                val zoneRepository = ZoneRepository(zoneService)
 
                 val homeFactory = HomeViewModelFactory(
                     ridesRepository = ridesRepository,
                     reservationsRepository = reservationsRepository,
                     sessionManager = sessionManager,
                     tripRepository = tripRepository,
+                    zoneRepository = zoneRepository,
                     vehicleRepository = vehicleRepository,
-                    networkHelper = networkHelper
+                    networkHelper = networkHelper,
+                    localStorageManager = localStorageManager
                 )
 
 
@@ -104,8 +152,17 @@ class MainActivity : ComponentActivity() {
                     sessionManager = sessionManager
                 )
 
-                val activeRideViewModelFactory = ActiveRideViewModelFactory(
-                    rideRepository = rideRepository
+                val settingsViewModelFactory = SettingsViewModelFactory(
+                    sessionManager = sessionManager,
+                    localStorageManager = localStorageManager
+                )
+
+                val registerDraftManager = remember { RegisterDraftManager(this) }
+                val registerViewModelFactory = RegisterViewModelFactory(
+                    registerDraftManager = registerDraftManager,
+                    networkHelper = networkHelper,
+                    authRepository = authRepository,
+                    zoneRepository = zoneRepository
                 )
 
                 val navController = rememberNavController()
@@ -114,6 +171,8 @@ class MainActivity : ComponentActivity() {
                     com.gn41.appandroidkotlin.data.local.SessionEvents.onSessionExpired.collect {
                         sessionManager.clearToken()
                         sessionManager.clearUserId()
+                        TripMemoryCache.clear()
+                        localStorageManager.clearTripState()
 
                         welcomeViewModel.resetLoginState()
 
@@ -128,12 +187,16 @@ class MainActivity : ComponentActivity() {
                     welcomeViewModel = welcomeViewModel,
                     homeViewModelFactory = homeFactory,
                     createRideViewModelFactory = createRideViewModelFactory,
-                    /*activeRideViewModelFactory = activeRideViewModelFactory*/
-                    tripViewModelFactory = tripViewModelFactory
+                    tripViewModelFactory = tripViewModelFactory,
+                    ratingViewModelFactory = ratingViewModelFactory,
+                    settingsViewModelFactory = settingsViewModelFactory,
+                    registerViewModelFactory = registerViewModelFactory,
+                    paymentsViewModelFactory = paymentsViewModelFactory,
+                    onDarkModeChanged = { enabled ->
+                        darkThemeEnabled = enabled
+                    }
                 )
             }
         }
     }
 }
-
-/*2.0.0*/

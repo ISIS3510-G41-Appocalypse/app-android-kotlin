@@ -60,7 +60,8 @@ fun TripLocationCard(
     isUsingCachedLocations: Boolean,
     cachedLocationMessage: String,
     onRefreshLocations: () -> Unit,
-    mapMarkers: List<MapUserMarkerUiState>
+    mapMarkers: List<MapUserMarkerUiState>,
+    isOfflineMode: Boolean = false
 ) {
     val configuration = LocalConfiguration.current
     val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
@@ -129,7 +130,8 @@ fun TripLocationCard(
                         message = cachedLocationMessage,
                         rideLocations = rideLocations,
                         currentUserId = currentUserId,
-                        onRefreshLocations = onRefreshLocations
+                        onRefreshLocations = onRefreshLocations,
+                        isOfflineMode = isOfflineMode
                     )
                 } else {
                     MapboxMap(
@@ -238,7 +240,8 @@ fun TripLocationCard(
 
                 Switch(
                     checked = isLocationSharingEnabled,
-                    onCheckedChange = onToggleLocationSharing
+                    onCheckedChange = if (isOfflineMode) null else onToggleLocationSharing,
+                    enabled = !isOfflineMode
                 )
             }
 
@@ -249,6 +252,15 @@ fun TripLocationCard(
                 style = MaterialTheme.typography.bodyMedium,
                 color = TripLocationSecondaryText
             )
+
+            if (isOfflineMode) {
+                Spacer(modifier = Modifier.height(6.dp))
+                Text(
+                    text = "No disponible en modo offline.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Color.LightGray
+                )
+            }
 
             Spacer(modifier = Modifier.height(6.dp))
 
@@ -294,7 +306,8 @@ private fun CachedLocationFallback(
     message: String,
     rideLocations: List<UserSharedLocation>,
     currentUserId: Int,
-    onRefreshLocations: () -> Unit
+    onRefreshLocations: () -> Unit,
+    isOfflineMode: Boolean
 ) {
     val latestLocations = rideLocations
         .filter { it.isSharingEnabled }
@@ -326,7 +339,10 @@ private fun CachedLocationFallback(
                 )
             }
 
-        Button(onClick = onRefreshLocations) {
+        Button(
+            onClick = onRefreshLocations,
+            enabled = !isOfflineMode
+        ) {
             Text("Reintentar")
         }
     }

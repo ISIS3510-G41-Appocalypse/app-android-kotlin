@@ -1,9 +1,21 @@
 package com.gn41.appandroidkotlin.data.repositories
 
 import com.gn41.appandroidkotlin.data.dto.auth.LoginResponseDto
+import com.gn41.appandroidkotlin.data.services.auth.AuthService
+import com.gn41.appandroidkotlin.data.dto.auth.CreateCompleteUserRequestDto
+import com.gn41.appandroidkotlin.data.dto.auth.CreateCompleteUserResponseDto
 
-interface AuthRepository {
-    // CON SUSPEND EVITAMOS QUE EL HILO SE QUEDE ESPERANDO TODA LA VIDA UNA RESPUESTA.
-    suspend fun login(email: String, password: String): LoginResponseDto?
+class AuthRepository(private val authService: AuthService) {
+    //EVITAMOS QUE EL HILO SE QUEDE ESPERANDO TODA LA VIDA UNA RESPUESTA.
+    suspend fun login(email: String, password: String): LoginResponseDto? {
+        return authService.login(email, password)
+    }
 
+    suspend fun createCompleteUser(
+        request: CreateCompleteUserRequestDto
+    ): CreateCompleteUserResponseDto {
+
+        return authService.createCompleteUser(request)
+    }
 }
+

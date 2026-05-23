@@ -6,6 +6,7 @@ import kotlin.math.roundToInt
 
 data class RideItemUiModel(
     val id: Int,
+    val driverId: Int,
     val source: String,
     val destination: String,
     val date: String,
@@ -18,7 +19,8 @@ data class RideItemUiModel(
     val totalSlots: Int,
     val availableSlots: Int,
     val zoneName: String,
-    val cancellationRiskPercent: Int?
+    val cancellationRiskPercent: Int?,
+    val recommendationRating: Double? = null
 )
 
 fun mapToRideUiModel(dto: RideDto): RideItemUiModel {
@@ -44,7 +46,8 @@ fun mapToRideUiModel(dto: RideDto): RideItemUiModel {
 
     val totalSlots = dto.vehicles?.number_slots ?: 0
     val bookedSlots = dto.reservations.orEmpty().count {
-        it.state == "PENDIENTE" || it.state == "ACEPTADA" || it.state == "EN_CURSO"
+        val reservationState = normalizeReservationState(it.state)
+        reservationState == "ACEPTADA" || reservationState == "EN_CURSO"
     }
     val availableSlots = (totalSlots - bookedSlots).coerceAtLeast(0)
 
@@ -62,6 +65,7 @@ fun mapToRideUiModel(dto: RideDto): RideItemUiModel {
 
     return RideItemUiModel(
         id = dto.id,
+        driverId = dto.driver_id,
         source = dto.source,
         destination = dto.destination,
         date = dto.date,
@@ -74,6 +78,20 @@ fun mapToRideUiModel(dto: RideDto): RideItemUiModel {
         totalSlots = totalSlots,
         availableSlots = availableSlots,
         zoneName = zoneName,
-        cancellationRiskPercent = cancellationRiskPercent
+        cancellationRiskPercent = cancellationRiskPercent,
+        recommendationRating = null
     )
+}
+
+private fun normalizeReservationState(state: String?): String {
+    val rawState = state?.trim()?.uppercase(Locale.getDefault()).orEmpty()
+    return when (rawState) {
+        "PENDIENTE", "PENDING" -> "PENDIENTE"
+        "ACEPTADA", "ACCEPTED" -> "ACEPTADA"
+        "EN_CURSO", "IN_PROGRESS" -> "EN_CURSO"
+        "FINALIZADO", "FINALIZADA", "FINISHED", "COMPLETED" -> "FINALIZADO"
+        "CANCELADO", "CANCELADA", "CANCELLED" -> "CANCELADO"
+        "RECHAZADA", "REJECTED" -> "RECHAZADA"
+        else -> rawState
+    }
 }

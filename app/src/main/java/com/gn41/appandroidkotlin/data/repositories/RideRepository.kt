@@ -1,21 +1,43 @@
 package com.gn41.appandroidkotlin.data.repositories
 
-import com.gn41.appandroidkotlin.data.dto.createRide.ActiveRideDto
 import com.gn41.appandroidkotlin.core.connectivity.NetworkHelper
 import com.gn41.appandroidkotlin.data.dto.createRide.CreateRideRequestDto
-import com.gn41.appandroidkotlin.data.dto.createRide.RideUserDto
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
+import com.gn41.appandroidkotlin.data.services.rides.RideService
+import com.gn41.appandroidkotlin.localStorage.LocalStorageManager
 
-interface RideRepository {
-    suspend fun createRide(request: CreateRideRequestDto): Result<Unit>
-    suspend fun cancelRide(id: Int): Result<Unit>
-    suspend fun getActiveRide(): ActiveRideDto?
-    suspend fun getRideUsers(id: Int, state: String): List<RideUserDto>?
+class RideRepository(private val rideService: RideService,
+    private val networkHelper: NetworkHelper,
+    private val localStorageManager: LocalStorageManager
+) {
+    suspend fun createRide(request: CreateRideRequestDto) : Result<Unit> {
+        return rideService.create(request)
+    }
 
-    fun availableConnection(): Boolean
+/*    override suspend fun cancelRide(id: Int) : Result<Unit> {
+        return rideService.cancelRide(id)
+    }
 
-    suspend fun saveCache()
-    suspend fun readLocalStorage():String
-    suspend fun clearLocalStorage()
+    override suspend fun getActiveRide(): ActiveRideDto? {
+        return rideService.getActiveRide()
+    }
+
+    override suspend fun getRideUsers(id: Int, state: String): List<RideUserDto>? {
+        return rideService.getRideUsers(id, state)
+    }*/
+
+    fun availableConnection() : Boolean {
+        return networkHelper.isInternetAvailable()
+    }
+
+    suspend fun saveCache() {
+        localStorageManager.saveFormState()
+    }
+
+    suspend fun readLocalStorage(): String {
+        return localStorageManager.readFormState()
+    }
+
+    suspend fun clearLocalStorage() {
+        localStorageManager.clearFormState()
+    }
 }

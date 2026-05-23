@@ -29,11 +29,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.gn41.appandroidkotlin.presentation.components.LoginCard
 import com.gn41.appandroidkotlin.presentation.viewmodels.WelcomeViewModel
-import com.gn41.appandroidkotlin.ui.theme.BrightSnow
-import com.gn41.appandroidkotlin.ui.theme.CoolSteel
 
 @Composable
-fun WelcomeScreen(viewModel: WelcomeViewModel){
+fun WelcomeScreen(viewModel: WelcomeViewModel, onRegisterClick: () -> Unit){
 
     val configuration = LocalConfiguration.current
     val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
@@ -65,7 +63,16 @@ fun WelcomeScreen(viewModel: WelcomeViewModel){
                     verticalArrangement = Arrangement.Center,
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    LoginCard(viewModel = viewModel, isLandscape = true)
+                    LoginCard(
+                        viewModel = viewModel,
+                        isLandscape = isLandscape,
+                        onRegisterClick = {
+                            onRegisterClick()
+                        },
+                        onCloseClick = {
+                            viewModel.showLoginCard = false
+                        }
+                    )
                 }
             }
             else{
@@ -91,7 +98,7 @@ fun WelcomeScreen(viewModel: WelcomeViewModel){
                 ) {
                     WelcomeButtons(
                         onLoginClick = { viewModel.onLoginClicked() },
-                        onRegisterClick = { viewModel.onRegisterClicked() }
+                        onRegisterClick = onRegisterClick
                     )
                 }
             }
@@ -115,11 +122,20 @@ fun WelcomeScreen(viewModel: WelcomeViewModel){
 
                 WelcomeHeader()
                 if (viewModel.showLoginCard) {
-                    LoginCard(viewModel = viewModel, isLandscape = false)
+                    LoginCard(
+                        viewModel = viewModel,
+                        isLandscape = isLandscape,
+                        onRegisterClick = {
+                            onRegisterClick()
+                        },
+                        onCloseClick = {
+                            viewModel.showLoginCard = false
+                        }
+                    )
                 }
                 else {
                     WelcomeMessage()
-                    WelcomeButtons(onLoginClick = {viewModel.onLoginClicked()}, onRegisterClick = {viewModel.onRegisterClicked()})
+                    WelcomeButtons(onLoginClick = {viewModel.onLoginClicked()}, onRegisterClick = onRegisterClick)
                 }
 
             }
@@ -195,8 +211,8 @@ fun WelcomeButtons(onLoginClick: () -> Unit, onRegisterClick: () -> Unit){
         Button(
             onClick = onLoginClick,
             colors = ButtonDefaults.buttonColors(
-                containerColor = CoolSteel,
-                contentColor = BrightSnow
+                containerColor = MaterialTheme.colorScheme.tertiary,
+                contentColor = MaterialTheme.colorScheme.onSecondary // Using onSecondary for BrightSnow equivalent contrast
             )
         ) {
             Text(text = "¿Ya tienes una cuenta? Inicia Sesión")

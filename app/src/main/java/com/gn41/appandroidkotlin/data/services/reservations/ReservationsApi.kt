@@ -16,7 +16,8 @@ data class ReservationDto(
 
 data class UserSimpleDto(
     val id: Int,
-    val auth_id: String?
+    val auth_id: String?,
+    val zone_id: Int? = null
 )
 
 data class RiderSimpleDto(
@@ -40,7 +41,7 @@ interface ReservationsApi {
         @Header("Authorization") token: String,
         @Header("apikey") apiKey: String,
         @Query("auth_id") authId: String,
-        @Query("select") select: String = "id,auth_id"
+        @Query("select") select: String = "id,auth_id,zone_id"
     ): Response<List<UserSimpleDto>>
 
     @GET("rest/v1/riders")

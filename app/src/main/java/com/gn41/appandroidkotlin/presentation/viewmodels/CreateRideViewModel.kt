@@ -1,6 +1,5 @@
 package com.gn41.appandroidkotlin.presentation.viewmodels
 
-import android.util.ArrayMap
 import android.util.Log
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.getValue
@@ -8,7 +7,6 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.gn41.appandroidkotlin.cache.CacheManager
-import com.gn41.appandroidkotlin.core.connectivity.NetworkHelper
 import com.gn41.appandroidkotlin.data.dto.createRide.CreateRideRequestDto
 import com.gn41.appandroidkotlin.data.dto.vehicle.VehicleDto
 import com.gn41.appandroidkotlin.data.dto.zone.ZoneDto
@@ -16,8 +14,10 @@ import com.gn41.appandroidkotlin.data.local.SessionManager
 import com.gn41.appandroidkotlin.data.repositories.RideRepository
 import com.gn41.appandroidkotlin.data.repositories.VehicleRepository
 import com.gn41.appandroidkotlin.data.repositories.ZoneRepository
+import com.gn41.appandroidkotlin.data.services.performance.Supervisor
 import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
+import kotlin.time.measureTimedValue
 
 
 data class CreateRideFormState(
@@ -164,26 +164,41 @@ class CreateRideViewModel(
     fun onVehicleSelected(vehicleLicensePlate: String) {
         formState = formState.copy(vehicleId = vehicleLicensePlate)
         CacheManager.putFormState("vehicleId", vehicleLicensePlate)
+        viewModelScope.launch {
+            rideRepository.saveCache()
+        }
     }
 
     fun onZoneSelected(zoneName: String) {
         formState = formState.copy(zoneId = zoneName)
         CacheManager.putFormState("zoneId", zoneName)
+        viewModelScope.launch {
+            rideRepository.saveCache()
+        }
     }
 
     fun onTypeSelected(type: String) {
         formState = formState.copy(type = type)
         CacheManager.putFormState("type", type)
+        viewModelScope.launch {
+            rideRepository.saveCache()
+        }
     }
 
     fun onSourceChanged(value: String) {
         formState = formState.copy(source = value.take(MAX_SOURCE_LENGTH))
         CacheManager.putFormState("source", value.take(MAX_SOURCE_LENGTH))
+        viewModelScope.launch {
+            rideRepository.saveCache()
+        }
     }
 
     fun onDestinationChanged(value: String) {
         formState = formState.copy(destination = value.take(MAX_DESTINATION_LENGTH))
         CacheManager.putFormState("destination", value.take(MAX_DESTINATION_LENGTH))
+        viewModelScope.launch {
+            rideRepository.saveCache()
+        }
     }
 
     fun onPriceChanged(value: String) {
@@ -192,15 +207,22 @@ class CreateRideViewModel(
 
         formState = formState.copy(price = filteredValue)
         CacheManager.putFormState("price", filteredValue)
+        viewModelScope.launch {
+            rideRepository.saveCache()
+        }
     }
 
     fun onDateSelected(date: String) {
         timeValidationMessage = ""
         formState = formState.copy(date = date)
         CacheManager.putFormState("date", date)
+        viewModelScope.launch {
+            rideRepository.saveCache()
+        }
     }
 
     fun createRide() {
+        val startTime = System.currentTimeMillis()
         connectivity = rideRepository.availableConnection()
         if (connectivity) {
             viewModelScope.launch {
@@ -227,20 +249,22 @@ class CreateRideViewModel(
                         type = "FROM_UNIVERSITY"
                     }
 
-                    val result = rideRepository.createRide(
-                        CreateRideRequestDto(
-                            vehicleId = vehicleRepository.getVehicleByLicensePlate(formState.vehicleId).id,
-                            zoneId = zoneRepository.getZoneByName(formState.zoneId).id,
-                            source = formState.source,
-                            destination = formState.destination,
-                            price = formState.price.toDouble(),
-                            departureTime = formState.departureTime,
-                            date = formState.date,
-                            driverId = driverId,
-                            state = "OFERTADO",
-                            type = type
+                    val (result, time) = measureTimedValue {
+                        rideRepository.createRide(
+                            CreateRideRequestDto(
+                                vehicleId = vehicleRepository.getVehicleByLicensePlate(formState.vehicleId).id,
+                                zoneId = zoneRepository.getZoneByName(formState.zoneId).id,
+                                source = formState.source,
+                                destination = formState.destination,
+                                price = formState.price.toDouble(),
+                                departureTime = formState.departureTime,
+                                date = formState.date,
+                                driverId = driverId,
+                                state = "OFERTADO",
+                                type = type
+                            )
                         )
-                    )
+                    }
 
                     uiState = result.fold(
                         onSuccess = { CreateRideUiState.Success },
@@ -250,13 +274,16 @@ class CreateRideViewModel(
                             )
                         }
                     )
-
                     CacheManager.clearFormState()
+                    rideRepository.clearLocalStorage()
+                    Supervisor.addDuration("CreateRide", time.inWholeMilliseconds.toDouble(), "BACKEND")
                 } catch (e: Exception) {
                     Log.e("CreateRide", "Error creating ride", e)
                     uiState =
                         CreateRideUiState.Error("No se pudo crear el viaje. Revisa tus datos.")
                 }
+                val duration = System.currentTimeMillis() - startTime
+                Supervisor.addDuration("CreateRide", duration.toDouble(), "FRONTEND")
             }
         }
         else{

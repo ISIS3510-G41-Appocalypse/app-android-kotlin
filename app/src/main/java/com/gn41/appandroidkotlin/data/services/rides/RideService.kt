@@ -1,16 +1,12 @@
 package com.gn41.appandroidkotlin.data.services.rides
 
-import android.util.Log
 import com.gn41.appandroidkotlin.BuildConfig
-import com.gn41.appandroidkotlin.data.dto.createRide.ActiveRideDto
 import com.gn41.appandroidkotlin.data.dto.createRide.CreateRideRequestDto
-import com.gn41.appandroidkotlin.data.dto.createRide.RideUserDto
 import com.gn41.appandroidkotlin.data.local.SessionManager
 import com.gn41.appandroidkotlin.data.services.SupabaseClient
 import com.gn41.appandroidkotlin.data.services.userId.UserIdService
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import retrofit2.HttpException
 
 class RideService(
     private val sessionManager: SessionManager,
@@ -46,7 +42,7 @@ class RideService(
         }
     }
 
-    suspend fun cancelRide(id: Int) : Result<Unit> = withContext(Dispatchers.IO){
+/*    suspend fun cancelRide(id: Int) : Result<Unit> = withContext(Dispatchers.IO){
         val token = sessionManager.getToken()
 
         if (token.isEmpty()) {
@@ -152,6 +148,6 @@ class RideService(
             Log.e("API", e.response()?.errorBody()?.string() ?: "null")
             return@withContext null
         }
-    }
+    }*/
 
 }
