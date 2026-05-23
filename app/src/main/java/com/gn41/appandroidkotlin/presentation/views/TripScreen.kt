@@ -51,9 +51,11 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
+import com.gn41.appandroidkotlin.domain.UserSharedLocation
 import com.gn41.appandroidkotlin.presentation.components.TripLocationCard
 import com.gn41.appandroidkotlin.presentation.viewmodels.ActiveDriverTripUiModel
 import com.gn41.appandroidkotlin.presentation.viewmodels.ActiveRiderTripUiModel
+import com.gn41.appandroidkotlin.presentation.viewmodels.MapUserMarkerUiState
 import com.gn41.appandroidkotlin.presentation.viewmodels.TripReservationItemUiModel
 import com.gn41.appandroidkotlin.presentation.viewmodels.TripViewModel
 import com.gn41.appandroidkotlin.presentation.viewmodels.normalizeState
@@ -584,15 +586,19 @@ private fun LandscapeTripsContent(
 ) {
     val state = viewModel.uiState
 
-    val sharedUsersCount = state.rideLocations
-        .map { it.userId }
-        .distinct()
-        .size
+    val sharedUsersCount = remember(state.rideLocations) {
+        state.rideLocations
+            .map { it.userId }
+            .distinct()
+            .size
+    }
 
-    val totalUsersInRide = if (selectedSection == "Conductor") {
-        (driverTrip?.reservationsCount ?: 0) + 1
-    } else {
-        sharedUsersCount
+    val totalUsersInRide = remember(selectedSection, driverTrip?.reservationsCount, sharedUsersCount) {
+        if (selectedSection == "Conductor") {
+            (driverTrip?.reservationsCount ?: 0) + 1
+        } else {
+            sharedUsersCount
+        }
     }
 
     Row(
@@ -644,7 +650,7 @@ private fun LandscapeTripsContent(
         ) {
             if (selectedSection == "Conductor") {
                 if (driverTrip != null) {
-                    TripLocationCard(
+                    TripLocationSection(
                         isDriver = true,
                         isLocationSharingEnabled = state.isLocationSharingEnabled,
                         onToggleLocationSharing = viewModel::onToggleLocationSharing,
@@ -658,7 +664,7 @@ private fun LandscapeTripsContent(
                         isUsingCachedLocations = state.isUsingCachedLocations,
                         cachedLocationMessage = state.cachedLocationMessage,
                         onRefreshLocations = viewModel::loadLocationsForCurrentRide,
-                        mapMarkers = viewModel.getMapMarkers(),
+                        mapMarkersProvider = viewModel::getMapMarkers,
                         isOfflineMode = isOfflineMode
                     )
                 } else {
@@ -667,7 +673,7 @@ private fun LandscapeTripsContent(
             } else {
                 val firstTrip = riderTrips.firstOrNull()
                 if (firstTrip != null) {
-                    TripLocationCard(
+                    TripLocationSection(
                         isDriver = true,
                         isLocationSharingEnabled = state.isLocationSharingEnabled,
                         onToggleLocationSharing = viewModel::onToggleLocationSharing,
@@ -681,7 +687,7 @@ private fun LandscapeTripsContent(
                         isUsingCachedLocations = state.isUsingCachedLocations,
                         cachedLocationMessage = state.cachedLocationMessage,
                         onRefreshLocations = viewModel::loadLocationsForCurrentRide,
-                        mapMarkers = viewModel.getMapMarkers(),
+                        mapMarkersProvider = viewModel::getMapMarkers,
                         isOfflineMode = isOfflineMode
                     )
                 } else {
@@ -726,6 +732,70 @@ private fun SectionSwitch(
 }
 
 @Composable
+private fun TripLocationSection(
+    isDriver: Boolean,
+    isLocationSharingEnabled: Boolean,
+    onToggleLocationSharing: (Boolean) -> Unit,
+    hasLocationPermission: Boolean,
+    currentLatitude: Double?,
+    currentLongitude: Double?,
+    sharedUsersCount: Int,
+    totalUsersInRide: Int,
+    rideLocations: List<UserSharedLocation>,
+    currentUserId: Int,
+    isUsingCachedLocations: Boolean,
+    cachedLocationMessage: String,
+    onRefreshLocations: () -> Unit,
+    mapMarkersProvider: () -> List<MapUserMarkerUiState>,
+    isOfflineMode: Boolean = false
+) {
+    var showMap by rememberSaveable { mutableStateOf(false) }
+
+    if (!showMap) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(14.dp))
+                .padding(14.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            Text(
+                text = "Ubicación del viaje",
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            Text(
+                text = "El mapa se cargará cuando lo necesites.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            Button(onClick = { showMap = true }) {
+                Text("Ver mapa")
+            }
+        }
+        return
+    }
+
+    TripLocationCard(
+        isDriver = isDriver,
+        isLocationSharingEnabled = isLocationSharingEnabled,
+        onToggleLocationSharing = onToggleLocationSharing,
+        hasLocationPermission = hasLocationPermission,
+        currentLatitude = currentLatitude,
+        currentLongitude = currentLongitude,
+        sharedUsersCount = sharedUsersCount,
+        totalUsersInRide = totalUsersInRide,
+        rideLocations = rideLocations,
+        currentUserId = currentUserId,
+        isUsingCachedLocations = isUsingCachedLocations,
+        cachedLocationMessage = cachedLocationMessage,
+        onRefreshLocations = onRefreshLocations,
+        mapMarkers = mapMarkersProvider(),
+        isOfflineMode = isOfflineMode
+    )
+}
+
+@Composable
 private fun RiderSection(
     viewModel: TripViewModel,
     trips: List<ActiveRiderTripUiModel>,
@@ -739,10 +809,12 @@ private fun RiderSection(
 
     val state = viewModel.uiState
 
-    val sharedUsersCount = state.rideLocations
-        .map { it.userId }
-        .distinct()
-        .size
+    val sharedUsersCount = remember(state.rideLocations) {
+        state.rideLocations
+            .map { it.userId }
+            .distinct()
+            .size
+    }
 
     val totalUsersInRide = sharedUsersCount
 
@@ -769,7 +841,7 @@ private fun RiderSection(
                     isOfflineMode = isOfflineMode
                 )
 
-                TripLocationCard(
+                TripLocationSection(
                     isDriver = true,
                     isLocationSharingEnabled = state.isLocationSharingEnabled,
                     onToggleLocationSharing = viewModel::onToggleLocationSharing,
@@ -783,7 +855,7 @@ private fun RiderSection(
                     isUsingCachedLocations = state.isUsingCachedLocations,
                     cachedLocationMessage = state.cachedLocationMessage,
                     onRefreshLocations = viewModel::loadLocationsForCurrentRide,
-                    mapMarkers = viewModel.getMapMarkers(),
+                    mapMarkersProvider = viewModel::getMapMarkers,
                     isOfflineMode = isOfflineMode
                 )
             }
@@ -917,10 +989,12 @@ private fun DriverSection(
 
     val state = viewModel.uiState
 
-    val sharedUsersCount = state.rideLocations
-        .map { it.userId }
-        .distinct()
-        .size
+    val sharedUsersCount = remember(state.rideLocations) {
+        state.rideLocations
+            .map { it.userId }
+            .distinct()
+            .size
+    }
 
     val totalUsersInRide = trip.reservationsCount + 1
 
@@ -951,7 +1025,7 @@ private fun DriverSection(
                     isOfflineMode = isOfflineMode
                 )
 
-                TripLocationCard(
+                TripLocationSection(
                     isDriver = true,
                     isLocationSharingEnabled = state.isLocationSharingEnabled,
                     onToggleLocationSharing = viewModel::onToggleLocationSharing,
@@ -965,7 +1039,7 @@ private fun DriverSection(
                     isUsingCachedLocations = state.isUsingCachedLocations,
                     cachedLocationMessage = state.cachedLocationMessage,
                     onRefreshLocations = viewModel::loadLocationsForCurrentRide,
-                    mapMarkers = viewModel.getMapMarkers(),
+                    mapMarkersProvider = viewModel::getMapMarkers,
                     isOfflineMode = isOfflineMode
                 )
             }
