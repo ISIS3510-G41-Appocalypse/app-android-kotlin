@@ -275,6 +275,7 @@ class CreateRideViewModel(
                         }
                     )
                     CacheManager.clearFormState()
+                    rideRepository.clearLocalStorage()
                     Supervisor.addDuration("CreateRide", time.inWholeMilliseconds.toDouble(), "BACKEND")
                 } catch (e: Exception) {
                     Log.e("CreateRide", "Error creating ride", e)

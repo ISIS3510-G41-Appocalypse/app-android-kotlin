@@ -2,6 +2,7 @@ package com.gn41.appandroidkotlin.data.services.payments
 
 import com.gn41.appandroidkotlin.data.dto.payments.RideDriverPaymentDtoRequest
 import com.gn41.appandroidkotlin.BuildConfig
+import com.gn41.appandroidkotlin.data.dto.payments.CreatePaymentDtoRequest
 import com.gn41.appandroidkotlin.data.dto.payments.PaymentDriverDtoRequest
 import com.gn41.appandroidkotlin.data.dto.payments.PaymentDto
 import com.gn41.appandroidkotlin.data.dto.payments.PaymentRiderDtoRequest
@@ -105,26 +106,71 @@ class PaymentsService (
     }
 
     suspend fun rechazarPago(id: Int) : Result<Unit> = withContext(Dispatchers.IO) {
-        val token = sessionManager.getToken()
+        return@withContext try {
 
-        paymentsApi.actualizarEstado(
-            apiKey = BuildConfig.SUPABASE_KEY,
-            authorization = "Bearer $token",
-            id = "eq.$id",
-            request = mapOf("state" to "PENDIENTE")
-        )
-        return@withContext Result.success(Unit)
+            val token = sessionManager.getToken()
+
+            val response  = paymentsApi.actualizarEstado(
+                apiKey = BuildConfig.SUPABASE_KEY,
+                authorization = "Bearer $token",
+                id = "eq.$id",
+                request = mapOf("state" to "PENDIENTE")
+            )
+
+            if (response.isSuccessful) {
+                Result.success(Unit)
+            } else {
+                Result.failure(Exception("HTTP ${response.code()}"))
+            }
+
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
     }
 
     suspend fun confirmarPago(id: Int) : Result<Unit> = withContext(Dispatchers.IO) {
-        val token = sessionManager.getToken()
 
-        paymentsApi.actualizarEstado(
-            apiKey = BuildConfig.SUPABASE_KEY,
-            authorization = "Bearer $token",
-            id = "eq.$id",
-            request = mapOf("state" to "COMPLETADO")
-        )
-        return@withContext Result.success(Unit)
+        return@withContext try {
+
+            val token = sessionManager.getToken()
+
+            val response = paymentsApi.actualizarEstado(
+                apiKey = BuildConfig.SUPABASE_KEY,
+                authorization = "Bearer $token",
+                id = "eq.$id",
+                request = mapOf("state" to "COMPLETADO")
+            )
+
+            if (response.isSuccessful) {
+                Result.success(Unit)
+            } else {
+                Result.failure(Exception("HTTP ${response.code()}"))
+            }
+
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun create(rideId:Int) : Result<Unit> = withContext(Dispatchers.IO) {
+        return@withContext try {
+
+            val token = sessionManager.getToken()
+
+            val response = paymentsApi.create(
+                apiKey = BuildConfig.SUPABASE_KEY,
+                authorization = "Bearer $token",
+                request = CreatePaymentDtoRequest(rideId)
+            )
+
+            if (response.isSuccessful) {
+                Result.success(Unit)
+            } else {
+                Result.failure(Exception("HTTP ${response.code()}"))
+            }
+
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
     }
 }
