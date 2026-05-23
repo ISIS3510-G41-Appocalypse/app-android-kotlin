@@ -74,6 +74,7 @@ fun PaymentsScreen(
 
                 Text(
                     text = "Mis pagos",
+                    textAlign = TextAlign.Center,
                     style = MaterialTheme.typography.titleLarge,
                     color = MaterialTheme.colorScheme.onBackground
                 )
@@ -89,6 +90,16 @@ fun PaymentsScreen(
                 )
             }
 
+            item {
+
+                PaymentSectionSwitch(
+                    selectedSection = viewModel.selectedRole,
+                    onSectionSelected = {
+                        viewModel.onRoleChange(it)
+                    }
+                )
+            }
+
             if (viewModel.isLoadingData) {
                 item {
                     Box(
@@ -99,45 +110,53 @@ fun PaymentsScreen(
                     }
                 }
             } else {
-
-                item {
-
-                    PaymentSectionSwitch(
-                        selectedSection = viewModel.selectedRole,
-                        onSectionSelected = {
-                            viewModel.onRoleChange(it)
-                        }
-                    )
-                }
-
-                if (viewModel.selectedRole == "Conductor") {
-
-                    items(
-                        items = viewModel.rides,
-                        key = { it.id }
-                    ) { ride ->
-
-                        DriverPaymentCard(
-                            viewModel,
-                            ride = ride,
-                            payments = viewModel.payments.getOrDefault(ride.id, emptyList())
+                if (!viewModel.connectivity){
+                    item{
+                        OfflineInfoBanner(
+                            modifier = Modifier.padding(horizontal = 4.dp)
                         )
                     }
-
+                }
+                if (viewModel.rides.isEmpty()) {
+                    item { Spacer(modifier = Modifier.height(20.dp)) }
+                    item {
+                        Text(
+                            text = "No tienes pagos pendientes",
+                            textAlign = TextAlign.Center,
+                            style = MaterialTheme.typography.titleLarge,
+                            color = MaterialTheme.colorScheme.onBackground
+                        )
+                    }
                 } else {
+                    if (viewModel.selectedRole == "Conductor") {
 
-                    items(viewModel.rides) { ride ->
+                        items(
+                            items = viewModel.rides,
+                            key = { it.id }
+                        ) { ride ->
 
-                        RiderPaymentCard(
-                            viewModel,
-                            ride = ride,
-                            payments = viewModel.payments.getOrDefault(ride.id, emptyList())
-                        )
+                            DriverPaymentCard(
+                                viewModel,
+                                ride = ride,
+                                payments = viewModel.payments.getOrDefault(ride.id, emptyList())
+                            )
+                        }
+
+                    } else {
+
+                        items(viewModel.rides) { ride ->
+
+                            RiderPaymentCard(
+                                viewModel,
+                                ride = ride,
+                                payments = viewModel.payments.getOrDefault(ride.id, emptyList())
+                            )
+                        }
                     }
-                }
 
-                item {
-                    Spacer(modifier = Modifier.height(20.dp))
+                    item {
+                        Spacer(modifier = Modifier.height(20.dp))
+                    }
                 }
             }
         }
@@ -172,6 +191,13 @@ private fun DriverPaymentCard(
             .padding(14.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
+        Text(
+            text = "${payments.size} pasajeros no han pagado.",
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.primary,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis
+        )
 
         Text(
             text = "${ride.source} → ${ride.destination}",
@@ -263,6 +289,7 @@ private fun DriverPaymentCard(
                             onClick = {
                                 viewModel.onConfirmarPago(payment.id)
                             },
+                            enabled = viewModel.connectivity,
                             accentColor = MaterialTheme.colorScheme.secondary
                         )
 
@@ -271,6 +298,7 @@ private fun DriverPaymentCard(
                             onClick = {
                                 viewModel.onRechazarPago(payment.id)
                             },
+                            enabled = viewModel.connectivity,
                             accentColor = MaterialTheme.colorScheme.error
                         )
                     }
@@ -418,7 +446,7 @@ private fun RiderPaymentCard(
                 onClick = {
                     viewModel.onPayClicked(payment?.id ?: -1, selectedMethod?.methodName ?: "")
                 },
-                enabled = selectedMethod != null,
+                enabled = selectedMethod != null && viewModel.connectivity,
                 accentColor = MaterialTheme.colorScheme.secondary
             )
         }
@@ -523,6 +551,31 @@ private fun SmallActionButton(
             } else {
                 MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
             }
+        )
+    }
+}
+
+@Composable
+fun OfflineInfoBanner(
+    modifier: Modifier = Modifier
+) {
+
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .background(
+                MaterialTheme.colorScheme.surfaceVariant,
+                RoundedCornerShape(10.dp)
+            )
+            .padding(horizontal = 12.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Text(
+            text = "Sin conexión. Mostrando la última información disponible.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 2
         )
     }
 }
