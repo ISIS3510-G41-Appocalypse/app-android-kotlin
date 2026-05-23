@@ -7,11 +7,11 @@ import com.gn41.appandroidkotlin.data.dto.payments.RideDriverPaymentDtoRequest
 import com.gn41.appandroidkotlin.data.dto.payments.RidePaymentDto
 import com.gn41.appandroidkotlin.data.dto.payments.RideRiderPaymentDtoRequest
 import com.gn41.appandroidkotlin.data.dto.payments.UpdatePaymentDtoRequest
+import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.Header
 import retrofit2.http.PATCH
 import retrofit2.http.POST
-import retrofit2.http.PUT
 import retrofit2.http.Query
 
 
@@ -44,13 +44,13 @@ interface PaymentsApi {
         @Body request: PaymentRiderDtoRequest
     ) : List<PaymentDto>
 
-    @PUT("rest/v1/payments")
+    @PATCH("rest/v1/payments")
     suspend fun pay(
         @Header("apiKey") apiKey: String,
         @Header("Authorization") authorization: String,
         @Query("id") id: String,
         @Body update: UpdatePaymentDtoRequest
-    )
+    ) : Response<Unit>
 
     @PATCH("rest/v1/payments")
     suspend fun actualizarEstado(
@@ -58,5 +58,5 @@ interface PaymentsApi {
         @Header("Authorization") authorization: String,
         @Query("id") id: String,
         @Body request: Map<String,String>
-    )
+    ) : Response<Unit>
 }

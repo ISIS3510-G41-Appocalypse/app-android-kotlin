@@ -203,7 +203,7 @@ private fun DriverPaymentCard(
 
         payments.forEach { payment ->
 
-            Row(
+            Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .background(
@@ -211,34 +211,41 @@ private fun DriverPaymentCard(
                         RoundedCornerShape(10.dp)
                     )
                     .padding(10.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                verticalArrangement = Arrangement.spacedBy(6.dp)
             ) {
 
-                Column(
-                    modifier = Modifier.weight(1f)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
 
-                    Text(
-                        text = "${payment.firstName} ${payment.lastName}",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
+                    Column(
+                        modifier = Modifier.weight(1f),
+                        verticalArrangement = Arrangement.spacedBy(2.dp)
+                    ) {
+                        Text(
+                            text = "${payment.firstName} ${payment.lastName}",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+
+                        Text(
+                            text = "Pago pendiente",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.tertiary
+                        )
+                    }
 
                     Text(
-                        text = "Pago pendiente",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.tertiary
+                        text = "$ ${payment.amount}",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = AutumnEmber
                     )
                 }
 
-                Text(
-                    text = "$ ${payment.amount}",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = AutumnEmber
-                )
+                if (payment.state == "POR CONFIRMAR") {
 
-                if (payment.state=="POR CONFIRMAR"){
                     Text(
                         text = "El usuario ha pagado. Confirma el pago.",
                         style = MaterialTheme.typography.bodySmall,
@@ -246,7 +253,9 @@ private fun DriverPaymentCard(
                     )
 
                     Row(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
 
                         SmallActionButton(
@@ -334,76 +343,85 @@ private fun RiderPaymentCard(
 
         Spacer(modifier = Modifier.height(4.dp))
 
-        Text(
-            text = "Método de pago",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurface
-        )
-
-        ExposedDropdownMenuBox(
-            expanded = expanded,
-            onExpandedChange = {
-                expanded = !expanded
-            }
-        ) {
-
-            OutlinedTextField(
-                value = selectedMethod?.let {
-                    it.methodName
-                } ?: "Selecciona un método",
-                onValueChange = {},
-                readOnly = true,
-                modifier = Modifier
-                    .menuAnchor()
-                    .fillMaxWidth(),
-                trailingIcon = {
-                    ExposedDropdownMenuDefaults.TrailingIcon(
-                        expanded = expanded
-                    )
-                },
-                colors = TextFieldDefaults.colors(
-                    focusedContainerColor = MaterialTheme.colorScheme.surface,
-                    unfocusedContainerColor = MaterialTheme.colorScheme.surface
-                ),
-                shape = RoundedCornerShape(12.dp)
+        if (payment?.state == "POR CONFIRMAR"){
+            Text(
+                text = "En espera de confirmación.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+        else {
+            Text(
+                text = "Método de pago",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface
             )
 
-            ExposedDropdownMenu(
+            ExposedDropdownMenuBox(
                 expanded = expanded,
-                onDismissRequest = {
-                    expanded = false
+                onExpandedChange = {
+                    expanded = !expanded
                 }
             ) {
 
-                payment?.paymentMethods?.forEach { method ->
+                OutlinedTextField(
+                    value = selectedMethod?.let {
+                        it.methodName
+                    } ?: "Selecciona un método",
+                    onValueChange = {},
+                    readOnly = true,
+                    modifier = Modifier
+                        .menuAnchor()
+                        .fillMaxWidth(),
+                    trailingIcon = {
+                        ExposedDropdownMenuDefaults.TrailingIcon(
+                            expanded = expanded
+                        )
+                    },
+                    colors = TextFieldDefaults.colors(
+                        focusedContainerColor = MaterialTheme.colorScheme.surface,
+                        unfocusedContainerColor = MaterialTheme.colorScheme.surface
+                    ),
+                    shape = RoundedCornerShape(12.dp)
+                )
 
-                    DropdownMenuItem(
-                        text = {
-                            Column {
+                ExposedDropdownMenu(
+                    expanded = expanded,
+                    onDismissRequest = {
+                        expanded = false
+                    }
+                ) {
 
-                                Text(
-                                    text = method.methodName,
-                                    style = MaterialTheme.typography.bodyMedium
-                                )
+                    payment?.paymentMethods?.forEach { method ->
+
+                        DropdownMenuItem(
+                            text = {
+                                Column {
+
+                                    Text(
+                                        text = method.methodName,
+                                        style = MaterialTheme.typography.bodyMedium
+                                    )
+                                }
+                            },
+                            onClick = {
+                                selectedMethod = method
+                                expanded = false
                             }
-                        },
-                        onClick = {
-                            selectedMethod = method
-                            expanded = false
-                        }
-                    )
+                        )
+                    }
                 }
             }
-        }
 
-        SmallActionButton(
-            text = "Pagar",
-            onClick = {
-                viewModel.onPayClicked(payment?.id ?: -1, selectedMethod?.methodName ?: "")
-            },
-            enabled = selectedMethod != null,
-            accentColor = MaterialTheme.colorScheme.secondary
-        )
+            SmallActionButton(
+                text = "Pagar",
+                onClick = {
+                    viewModel.onPayClicked(payment?.id ?: -1, selectedMethod?.methodName ?: "")
+                },
+                enabled = selectedMethod != null,
+                accentColor = MaterialTheme.colorScheme.secondary
+            )
+        }
     }
 }
 
