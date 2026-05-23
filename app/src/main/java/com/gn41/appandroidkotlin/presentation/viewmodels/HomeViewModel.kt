@@ -695,8 +695,8 @@ class HomeViewModel(
                             dateTimeFormatter = dateTimeFormatter
                         )
                     }
-                    Log.d("HomeViewModel", "Rides loaded: ${result.size}")
-                    Log.d("HomeViewModel", "[FILTRO] OFERTADO rides: ${offeredRides.size}")
+                    Log.d("HomeViewModel", "Backend upcoming offered rides loaded: ${result.size}")
+                    Log.d("HomeViewModel", "Home relevant rides after local safety filter: ${offeredRides.size}")
                     Log.d("HomeViewModel", "[FILTRO] Resolved userId: $currentResolvedUserId, driverId: $currentResolvedDriverId")
                     allRides = offeredRides
 
@@ -775,7 +775,7 @@ class HomeViewModel(
 
         val ridesJob = async {
             try {
-                ridesRepository.getRides(token)
+                ridesRepository.getUpcomingOfferedRides(token)
             } catch (e: Exception) {
                 Log.e("HomeViewModel", "Exception loading rides", e)
                 null

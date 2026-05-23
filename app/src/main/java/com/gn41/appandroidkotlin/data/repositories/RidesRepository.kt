@@ -9,6 +9,10 @@ class RidesRepository(private val ridesService: RidesService) {
         return ridesService.getRides(token)
     }
 
+    suspend fun getUpcomingOfferedRides(token: String): List<RideDto>? {
+        return ridesService.getUpcomingOfferedRides(token)
+    }
+
     suspend fun getRiderDriverRecommendation(
         riderId: Int,
         driverId: Int,
