@@ -78,16 +78,30 @@ class PaymentsService (
     }
 
     suspend fun pay(id:Int,selectedMethod: String) : Result<Unit> = withContext(Dispatchers.IO) {
-        val token = sessionManager.getToken()
 
-        paymentsApi.pay(
-            apiKey = BuildConfig.SUPABASE_KEY,
-            authorization = "Bearer $token",
-            id = "eq.$id",
-            update = UpdatePaymentDtoRequest("POR CONFIRMAR",selectedMethod)
-        )
+        return@withContext try {
 
-        return@withContext Result.success(Unit)
+            val token = sessionManager.getToken()
+
+            val response = paymentsApi.pay(
+                apiKey = BuildConfig.SUPABASE_KEY,
+                authorization = "Bearer $token",
+                id = "eq.$id",
+                update = UpdatePaymentDtoRequest(
+                    state = "POR CONFIRMAR",
+                    type = selectedMethod
+                )
+            )
+
+            if (response.isSuccessful) {
+                Result.success(Unit)
+            } else {
+                Result.failure(Exception("HTTP ${response.code()}"))
+            }
+
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
     }
 
     suspend fun rechazarPago(id: Int) : Result<Unit> = withContext(Dispatchers.IO) {

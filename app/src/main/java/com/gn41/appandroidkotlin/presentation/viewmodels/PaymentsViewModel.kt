@@ -58,6 +58,7 @@ class PaymentsViewModel ( private val paymentsRepository: PaymentsRepository) : 
         viewModelScope.launch {
             paymentsRepository.pay(id,selectedMethod)
         }
+        loadData()
     }
 
     fun onRechazarPago(id:Int) {
