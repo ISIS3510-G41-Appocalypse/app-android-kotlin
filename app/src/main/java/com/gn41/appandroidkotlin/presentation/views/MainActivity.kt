@@ -81,7 +81,7 @@ class MainActivity : ComponentActivity() {
 
                 val userIdService = UserIdService(sessionManager)
                 val paymentsService = PaymentsService(sessionManager, userIdService)
-                val paymentsRepository = PaymentsRepository(paymentsService)
+                val paymentsRepository = PaymentsRepository(paymentsService, networkHelper, localStorageManager)
 
                 val welcomeFactory = WelcomeViewModelFactory(
                     context = this,

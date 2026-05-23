@@ -164,26 +164,41 @@ class CreateRideViewModel(
     fun onVehicleSelected(vehicleLicensePlate: String) {
         formState = formState.copy(vehicleId = vehicleLicensePlate)
         CacheManager.putFormState("vehicleId", vehicleLicensePlate)
+        viewModelScope.launch {
+            rideRepository.saveCache()
+        }
     }
 
     fun onZoneSelected(zoneName: String) {
         formState = formState.copy(zoneId = zoneName)
         CacheManager.putFormState("zoneId", zoneName)
+        viewModelScope.launch {
+            rideRepository.saveCache()
+        }
     }
 
     fun onTypeSelected(type: String) {
         formState = formState.copy(type = type)
         CacheManager.putFormState("type", type)
+        viewModelScope.launch {
+            rideRepository.saveCache()
+        }
     }
 
     fun onSourceChanged(value: String) {
         formState = formState.copy(source = value.take(MAX_SOURCE_LENGTH))
         CacheManager.putFormState("source", value.take(MAX_SOURCE_LENGTH))
+        viewModelScope.launch {
+            rideRepository.saveCache()
+        }
     }
 
     fun onDestinationChanged(value: String) {
         formState = formState.copy(destination = value.take(MAX_DESTINATION_LENGTH))
         CacheManager.putFormState("destination", value.take(MAX_DESTINATION_LENGTH))
+        viewModelScope.launch {
+            rideRepository.saveCache()
+        }
     }
 
     fun onPriceChanged(value: String) {
@@ -192,12 +207,18 @@ class CreateRideViewModel(
 
         formState = formState.copy(price = filteredValue)
         CacheManager.putFormState("price", filteredValue)
+        viewModelScope.launch {
+            rideRepository.saveCache()
+        }
     }
 
     fun onDateSelected(date: String) {
         timeValidationMessage = ""
         formState = formState.copy(date = date)
         CacheManager.putFormState("date", date)
+        viewModelScope.launch {
+            rideRepository.saveCache()
+        }
     }
 
     fun createRide() {
