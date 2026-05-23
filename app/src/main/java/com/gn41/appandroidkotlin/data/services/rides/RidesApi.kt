@@ -16,6 +16,16 @@ interface RidesApi {
         @Query("order") order: String
     ): Response<List<RideDto>>
 
+    @GET("rest/v1/rides")
+    suspend fun getUpcomingOfferedRides(
+        @Header("Authorization") token: String,
+        @Header("apikey") apiKey: String,
+        @Query("select") select: String,
+        @Query("order") order: String,
+        @Query("state") state: String = "eq.OFERTADO",
+        @Query("or", encoded = true) dateFilter: String
+    ): Response<List<RideDto>>
+
     @GET("rest/v1/rider_driver_recommendation")
     suspend fun getRiderDriverRecommendation(
         @Header("Authorization") token: String,
