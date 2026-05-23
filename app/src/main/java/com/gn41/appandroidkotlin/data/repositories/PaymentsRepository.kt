@@ -45,4 +45,8 @@ class PaymentsRepository (private val paymentsService: PaymentsService,
     suspend fun clearLocalStorage() {
         localStorageManager.clearPaymentsState()
     }
+
+    suspend fun create(rideId:Int) {
+        paymentsService.create(rideId)
+    }
 }

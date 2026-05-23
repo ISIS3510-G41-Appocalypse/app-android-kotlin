@@ -1,5 +1,6 @@
 package com.gn41.appandroidkotlin.data.services.payments
 
+import com.gn41.appandroidkotlin.data.dto.payments.CreatePaymentDtoRequest
 import com.gn41.appandroidkotlin.data.dto.payments.PaymentDriverDtoRequest
 import com.gn41.appandroidkotlin.data.dto.payments.PaymentDto
 import com.gn41.appandroidkotlin.data.dto.payments.PaymentRiderDtoRequest
@@ -58,5 +59,12 @@ interface PaymentsApi {
         @Header("Authorization") authorization: String,
         @Query("id") id: String,
         @Body request: Map<String,String>
+    ) : Response<Unit>
+
+    @POST("rest/v1/rpc/create_payments")
+    suspend fun create(
+        @Header("apiKey") apiKey: String,
+        @Header("Authorization") authorization: String,
+        @Body request: CreatePaymentDtoRequest
     ) : Response<Unit>
 }
