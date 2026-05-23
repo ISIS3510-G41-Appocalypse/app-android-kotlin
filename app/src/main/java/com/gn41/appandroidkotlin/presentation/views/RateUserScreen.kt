@@ -44,15 +44,25 @@ fun RateUserScreen(
     val normalizedRatingType = remember(ratingType) {
         if (ratingType == "rider") "rider" else "driver"
     }
-    val isRiderWithoutSelection = normalizedRatingType == "rider" && state.selectedRiderId == null
+    val isRiderWithoutSelection = remember(normalizedRatingType, state.selectedRiderId) {
+        normalizedRatingType == "rider" && state.selectedRiderId == null
+    }
     val noPendingRidersMessage = "No hay pasajeros pendientes por calificar."
     val driverAlreadyRatedMessage = "Ya calificaste al conductor de este viaje."
     val offlinePendingSavedMessage = "Sin conexión. Guardamos tu calificación para que puedas enviarla después."
-    val isNoPendingRidersState = normalizedRatingType == "rider" && state.errorMessage == noPendingRidersMessage
-    val isDriverAlreadyRatedState = normalizedRatingType == "driver" && state.errorMessage == driverAlreadyRatedMessage
-    val isFinalSuccess = state.successMessage != null &&
-        (normalizedRatingType != "rider" || state.ridersToRate.isEmpty())
-    val shouldShowBackToTrips = isFinalSuccess || isNoPendingRidersState || isDriverAlreadyRatedState
+    val isNoPendingRidersState = remember(normalizedRatingType, state.errorMessage) {
+        normalizedRatingType == "rider" && state.errorMessage == noPendingRidersMessage
+    }
+    val isDriverAlreadyRatedState = remember(normalizedRatingType, state.errorMessage) {
+        normalizedRatingType == "driver" && state.errorMessage == driverAlreadyRatedMessage
+    }
+    val isFinalSuccess = remember(normalizedRatingType, state.successMessage, state.ridersToRate) {
+        state.successMessage != null &&
+            (normalizedRatingType != "rider" || state.ridersToRate.isEmpty())
+    }
+    val shouldShowBackToTrips = remember(isFinalSuccess, isNoPendingRidersState, isDriverAlreadyRatedState) {
+        isFinalSuccess || isNoPendingRidersState || isDriverAlreadyRatedState
+    }
 
     LaunchedEffect(rideId, normalizedRatingType) {
         viewModel.loadRatingData(rideId, normalizedRatingType)

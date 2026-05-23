@@ -240,15 +240,7 @@ class HomeViewModel(
         // Current implementation loads offered rides and filters them locally.
         // Backend filtering by date can be added later if the dataset grows.
         val filteredRides = allRides.filter { ride ->
-            val isOfferedRide = isRideOffered(ride.state)
             val hasAvailableSeats = isRideWithAvailableSeats(ride)
-
-            val isUpcomingRide = isRideUpcoming(
-                ride = ride,
-                now = now,
-                dateFormatter = dateFormatter,
-                dateTimeFormatter = dateTimeFormatter
-            )
 
             val isNotOwnRide = !isRideCreatedByCurrentUser(
                 ride = ride,
@@ -278,7 +270,12 @@ class HomeViewModel(
                 )
             }
 
-            isOfferedRide && hasAvailableSeats && isUpcomingRide && isNotOwnRide && matchesZone && matchesTripType && matchesDate && matchesDepartureTime
+            isRelevantHomeRide(
+                ride = ride,
+                now = now,
+                dateFormatter = dateFormatter,
+                dateTimeFormatter = dateTimeFormatter
+            ) && hasAvailableSeats && isNotOwnRide && matchesZone && matchesTripType && matchesDate && matchesDepartureTime
         }
 
         val activeFilterCount = countActiveFilters(
@@ -417,6 +414,25 @@ class HomeViewModel(
         return state?.trim()?.equals("OFERTADO", ignoreCase = true) == true
     }
 
+    private fun isRelevantHomeRide(
+        ride: RideDto,
+        now: Date,
+        dateFormatter: SimpleDateFormat,
+        dateTimeFormatter: SimpleDateFormat
+    ): Boolean {
+        val normalizedState = normalizeState(ride.state)
+        val blockedStates = setOf("FINALIZADO", "CANCELADO", "RECHAZADA")
+        // Filtra viajes pasados o cerrados para reducir carga de datos y renderizado en Home.
+        return normalizedState !in blockedStates &&
+            isRideOffered(ride.state) &&
+            isRideUpcoming(
+                ride = ride,
+                now = now,
+                dateFormatter = dateFormatter,
+                dateTimeFormatter = dateTimeFormatter
+            )
+    }
+
     private fun isRideWithAvailableSeats(ride: RideDto): Boolean {
         val totalSeats = ride.vehicles?.number_slots ?: 0
         val activeBookedSeats = ride.reservations.orEmpty().count { reservation ->
@@ -435,7 +451,7 @@ class HomeViewModel(
             "OFERTADO", "OFFERED", "ACTIVE" -> "OFERTADO"
             "FINALIZADO", "FINALIZADA", "FINISHED", "COMPLETED" -> "FINALIZADO"
             "CANCELADO", "CANCELADA", "CANCELLED" -> "CANCELADO"
-            "RECHAZADA", "REJECTED" -> "RECHAZADA"
+            "RECHAZADO", "RECHAZADA", "REJECTED" -> "RECHAZADA"
             else -> rawState
         }
     }
@@ -664,9 +680,23 @@ class HomeViewModel(
                 val result = homeData.rides
 
                 if (result != null) {
-                    val offeredRides = result.filter { ride -> isRideOffered(ride.state) }
-                    Log.d("HomeViewModel", "Rides loaded: ${result.size}")
-                    Log.d("HomeViewModel", "[FILTRO] OFERTADO rides: ${offeredRides.size}")
+                    val now = Date()
+                    val dateFormatter = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).apply {
+                        isLenient = false
+                    }
+                    val dateTimeFormatter = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault()).apply {
+                        isLenient = false
+                    }
+                    val offeredRides = result.filter { ride ->
+                        isRelevantHomeRide(
+                            ride = ride,
+                            now = now,
+                            dateFormatter = dateFormatter,
+                            dateTimeFormatter = dateTimeFormatter
+                        )
+                    }
+                    Log.d("HomeViewModel", "Backend upcoming offered rides loaded: ${result.size}")
+                    Log.d("HomeViewModel", "Home relevant rides after local safety filter: ${offeredRides.size}")
                     Log.d("HomeViewModel", "[FILTRO] Resolved userId: $currentResolvedUserId, driverId: $currentResolvedDriverId")
                     allRides = offeredRides
 
@@ -745,7 +775,7 @@ class HomeViewModel(
 
         val ridesJob = async {
             try {
-                ridesRepository.getRides(token)
+                ridesRepository.getUpcomingOfferedRides(token)
             } catch (e: Exception) {
                 Log.e("HomeViewModel", "Exception loading rides", e)
                 null
