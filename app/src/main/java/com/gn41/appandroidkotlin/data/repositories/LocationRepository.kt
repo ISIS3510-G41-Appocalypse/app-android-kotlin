@@ -40,7 +40,12 @@ class LocationRepository(
         token: String
     ): LocationResult {
         return try {
-            val locations = locationService.getLocationsByRide(rideId, token).map { dto ->
+
+            val locations = locationService.getLocationsByRide(
+                rideId,
+                token
+            ).map { dto ->
+
                 UserSharedLocation(
                     id = dto.id,
                     userId = dto.user_id,
@@ -49,6 +54,28 @@ class LocationRepository(
                     longitude = dto.longitude,
                     timestamp = dto.timestamp,
                     isSharingEnabled = dto.is_sharing_enabled
+                )
+            }
+
+            if (locations.isEmpty()) {
+
+                val cachedLocations = locationsFromJson(
+                    sessionManager.getCachedRideLocations(rideId)
+                )
+
+                android.util.Log.d(
+                    "OfflineCache",
+                    "Loaded ${cachedLocations.size} cached locations for ride $rideId"
+                )
+
+                return LocationResult(
+                    locations = cachedLocations,
+                    isFromCache = true,
+                    message = if (cachedLocations.isNotEmpty()) {
+                        "Mostrando últimas ubicaciones conocidas."
+                    } else {
+                        "No hay ubicaciones guardadas todavía."
+                    }
                 )
             }
 
@@ -67,12 +94,12 @@ class LocationRepository(
                 android.util.Log.d(
                     "OfflineCache",
                     """
-        SAVED ->
-        User: ${location.userId}
-        Lat: ${location.latitude}
-        Lng: ${location.longitude}
-        Sharing: ${location.isSharingEnabled}
-        """.trimIndent()
+    SAVED ->
+    User: ${location.userId}
+    Lat: ${location.latitude}
+    Lng: ${location.longitude}
+    Sharing: ${location.isSharingEnabled}
+    """.trimIndent()
                 )
             }
 
@@ -80,6 +107,7 @@ class LocationRepository(
                 locations = locations,
                 isFromCache = false
             )
+
         } catch (_: Exception) {
 
             val cachedLocations = locationsFromJson(
@@ -105,13 +133,13 @@ class LocationRepository(
                     android.util.Log.d(
                         "OfflineCache",
                         """
-            LOADED ->
-            User: ${location.userId}
-            Lat: ${location.latitude}
-            Lng: ${location.longitude}
-            Sharing: ${location.isSharingEnabled}
-            Timestamp: ${location.timestamp}
-            """.trimIndent()
+        LOADED ->
+        User: ${location.userId}
+        Lat: ${location.latitude}
+        Lng: ${location.longitude}
+        Sharing: ${location.isSharingEnabled}
+        Timestamp: ${location.timestamp}
+        """.trimIndent()
                     )
                 }
             }
