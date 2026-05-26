@@ -87,12 +87,25 @@ fun TripLocationCard(
         null
     }
 
+    val fallbackPoint = rideLocations
+        .firstOrNull()
+        ?.let {
+            Point.fromLngLat(it.longitude, it.latitude)
+        }
+
     val mapViewportState = rememberMapViewportState()
 
-    LaunchedEffect(userPoint, isLocationSharingEnabled) {
-        if (userPoint != null && isLocationSharingEnabled) {
+    LaunchedEffect(
+        userPoint,
+        fallbackPoint,
+        isLocationSharingEnabled
+    ) {
+
+        val targetPoint = userPoint ?: fallbackPoint
+
+        if (targetPoint != null) {
             mapViewportState.setCameraOptions {
-                center(userPoint)
+                center(targetPoint)
                 zoom(16.0)
             }
         }
@@ -122,56 +135,65 @@ fun TripLocationCard(
                     .height(mapHeight)
                     .clip(RoundedCornerShape(16.dp))
             ) {
-                if (isUsingCachedLocations) {
-                    CachedLocationFallback(
-                        message = cachedLocationMessage,
-                        rideLocations = rideLocations,
-                        currentUserId = currentUserId,
-                        onRefreshLocations = onRefreshLocations,
-                        isOfflineMode = isOfflineMode
-                    )
-                } else {
-                    MapboxMap(
-                        modifier = Modifier.fillMaxSize(),
-                        mapViewportState = mapViewportState
-                    ) {
-                        mapMarkers.forEach { marker ->
-                            val markerPoint = Point.fromLngLat(marker.longitude, marker.latitude)
+                MapboxMap(
+                    modifier = Modifier.fillMaxSize(),
+                    mapViewportState = mapViewportState
+                ) {
+                    mapMarkers.forEach { marker ->
+                        val markerPoint = Point.fromLngLat(
+                            marker.longitude,
+                            marker.latitude
+                        )
 
-                            ViewAnnotation(
-                                options = viewAnnotationOptions {
-                                    geometry(markerPoint)
-                                    allowOverlap(true)
-                                }
-                            ) {
-                                Text(
-                                    text = if (marker.isCurrentUser) {
-                                        "Tú"
-                                    } else if (marker.distanceMeters != null) {
-                                        "U${marker.userId} · ${marker.distanceMeters} m"
-                                    } else {
-                                        "U${marker.userId}"
-                                    },
-                                    color = MaterialTheme.colorScheme.onPrimary,
-                                    modifier = Modifier
-                                        .background(
-                                            if (marker.isCurrentUser) MaterialTheme.colorScheme.secondary
-                                            else MaterialTheme.colorScheme.primary,
-                                            RoundedCornerShape(50)
-                                        )
-                                        .clickable {
-                                            mapViewportState.easeTo(
-                                                CameraOptions.Builder()
-                                                    .center(markerPoint)
-                                                    .zoom(16.0)
-                                                    .build()
-                                            )
-                                        }
-                                        .padding(horizontal = 10.dp, vertical = 6.dp)
-                                )
+                        ViewAnnotation(
+                            options = viewAnnotationOptions {
+                                geometry(markerPoint)
+                                allowOverlap(true)
                             }
+                        ) {
+                            Text(
+                                text = if (marker.isCurrentUser) {
+                                    "Tú"
+                                } else if (marker.distanceMeters != null) {
+                                    "U${marker.userId} · ${marker.distanceMeters} m"
+                                } else {
+                                    "U${marker.userId}"
+                                },
+                                color = MaterialTheme.colorScheme.onPrimary,
+                                modifier = Modifier
+                                    .background(
+                                        if (marker.isCurrentUser)
+                                            MaterialTheme.colorScheme.secondary
+                                        else
+                                            MaterialTheme.colorScheme.primary,
+                                        RoundedCornerShape(50)
+                                    )
+                                    .clickable {
+                                        mapViewportState.easeTo(
+                                            CameraOptions.Builder()
+                                                .center(markerPoint)
+                                                .zoom(16.0)
+                                                .build()
+                                        )
+                                    }
+                                    .padding(horizontal = 10.dp, vertical = 6.dp)
+                            )
                         }
                     }
+                }
+
+                if (isUsingCachedLocations) {
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.TopCenter)
+                            .padding(12.dp)
+                    ) {
+
+                        CachedLocationBanner(
+                            message = cachedLocationMessage
+                        )
+                    }
+                }
 
                     Column(
                         modifier = Modifier
@@ -302,54 +324,29 @@ fun TripLocationCard(
             )
         }
     }
-}
+
 
 @Composable
-private fun CachedLocationFallback(
-    message: String,
-    rideLocations: List<UserSharedLocation>,
-    currentUserId: Int,
-    onRefreshLocations: () -> Unit,
-    isOfflineMode: Boolean
+private fun CachedLocationBanner(
+    message: String
 ) {
-    val latestLocations = rideLocations
-        .filter { it.isSharingEnabled }
-        .groupBy { it.userId }
-        .mapNotNull { (_, locations) -> locations.maxByOrNull { it.timestamp } }
 
-    Column(
+    Box(
         modifier = Modifier
-            .fillMaxSize()
+            .fillMaxWidth()
             .background(
-                MaterialTheme.colorScheme.background,
-                RoundedCornerShape(16.dp)
+                MaterialTheme.colorScheme.surface.copy(alpha = 0.92f),
+                RoundedCornerShape(12.dp)
             )
-            .padding(14.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+            .padding(12.dp)
     ) {
+
         Text(
             text = message.ifBlank {
-                "No pudimos actualizar el mapa. Mostramos la última ubicación conocida."
+                "Mostrando últimas ubicaciones conocidas. Las posiciones no se actualizarán hasta recuperar conexión."
             },
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onBackground
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurface
         )
-
-        latestLocations
-            .filter { it.userId != currentUserId }
-            .forEach { location ->
-                Text(
-                    text = "U${location.userId}: última ubicación conocida",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.tertiary
-                )
-            }
-
-        Button(
-            onClick = onRefreshLocations,
-            enabled = !isOfflineMode
-        ) {
-            Text("Reintentar")
-        }
     }
 }

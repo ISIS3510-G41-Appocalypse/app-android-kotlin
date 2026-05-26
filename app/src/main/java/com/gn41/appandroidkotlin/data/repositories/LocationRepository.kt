@@ -57,14 +57,64 @@ class LocationRepository(
                 locationsJson = locationsToJson(locations)
             )
 
+            android.util.Log.d(
+                "OfflineCache",
+                "Saved ${locations.size} locations for ride $rideId"
+            )
+
+            locations.forEach { location ->
+
+                android.util.Log.d(
+                    "OfflineCache",
+                    """
+        SAVED ->
+        User: ${location.userId}
+        Lat: ${location.latitude}
+        Lng: ${location.longitude}
+        Sharing: ${location.isSharingEnabled}
+        """.trimIndent()
+                )
+            }
+
             LocationResult(
                 locations = locations,
                 isFromCache = false
             )
         } catch (_: Exception) {
+
             val cachedLocations = locationsFromJson(
                 sessionManager.getCachedRideLocations(rideId)
             )
+
+            android.util.Log.d(
+                "OfflineCache",
+                "Loaded ${cachedLocations.size} cached locations for ride $rideId"
+            )
+
+            if (cachedLocations.isEmpty()) {
+
+                android.util.Log.d(
+                    "OfflineCache",
+                    "No cached locations found"
+                )
+
+            } else {
+
+                cachedLocations.forEach { location ->
+
+                    android.util.Log.d(
+                        "OfflineCache",
+                        """
+            LOADED ->
+            User: ${location.userId}
+            Lat: ${location.latitude}
+            Lng: ${location.longitude}
+            Sharing: ${location.isSharingEnabled}
+            Timestamp: ${location.timestamp}
+            """.trimIndent()
+                    )
+                }
+            }
 
             LocationResult(
                 locations = cachedLocations,
