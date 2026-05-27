@@ -206,7 +206,7 @@ fun CreateRideScreen(
                                 })
                             },
                         shape = RoundedCornerShape(18.dp),
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.onPrimary),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                         elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
                     ) {
                         Column(
@@ -586,7 +586,7 @@ private fun SelectionField(
             {
                 Text(
                     text = text,
-                    color = MaterialTheme.colorScheme.background,
+                    color = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.weight(1f)
                 )
             }
@@ -638,7 +638,7 @@ private fun SmallSelectionField(
             {
                 Text(
                     text = text,
-                    color = MaterialTheme.colorScheme.background,
+                    color = MaterialTheme.colorScheme.onSurface,
                     fontSize = 13.sp
                 )
             }
@@ -672,8 +672,8 @@ private fun CustomOutlinedField(
             unfocusedContainerColor = Color.Transparent,
             focusedBorderColor = MaterialTheme.colorScheme.onSurface,
             unfocusedBorderColor = MaterialTheme.colorScheme.onSurface,
-            focusedTextColor = MaterialTheme.colorScheme.background,
-            unfocusedTextColor = MaterialTheme.colorScheme.background,
+            focusedTextColor = MaterialTheme.colorScheme.onSurface,
+            unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
             cursorColor = MaterialTheme.colorScheme.primary
         )
     )
@@ -690,8 +690,8 @@ private fun BottomNavBar(
         NavigationBarItem(
             selected = false,
             onClick = onBackClick,
-            icon = { Icon(Icons.Default.ArrowBack, contentDescription = "Volver", tint = MaterialTheme.colorScheme.onPrimary) },
-            label = { Text("Volver", fontSize = 10.sp, color = MaterialTheme.colorScheme.onPrimary) }
+            icon = { Icon(Icons.Default.ArrowBack, contentDescription = "Volver", tint = MaterialTheme.colorScheme.surface) },
+            label = { Text("Volver", fontSize = 10.sp, color = MaterialTheme.colorScheme.tertiary) }
         )
     }
 }

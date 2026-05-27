@@ -40,7 +40,12 @@ class LocationRepository(
         token: String
     ): LocationResult {
         return try {
-            val locations = locationService.getLocationsByRide(rideId, token).map { dto ->
+
+            val locations = locationService.getLocationsByRide(
+                rideId,
+                token
+            ).map { dto ->
+
                 UserSharedLocation(
                     id = dto.id,
                     userId = dto.user_id,
@@ -52,19 +57,92 @@ class LocationRepository(
                 )
             }
 
+            if (locations.isEmpty()) {
+
+                val cachedLocations = locationsFromJson(
+                    sessionManager.getCachedRideLocations(rideId)
+                )
+
+                android.util.Log.d(
+                    "OfflineCache",
+                    "Loaded ${cachedLocations.size} cached locations for ride $rideId"
+                )
+
+                return LocationResult(
+                    locations = cachedLocations,
+                    isFromCache = true,
+                    message = if (cachedLocations.isNotEmpty()) {
+                        "Mostrando últimas ubicaciones conocidas."
+                    } else {
+                        "No hay ubicaciones guardadas todavía."
+                    }
+                )
+            }
+
             sessionManager.saveCachedRideLocations(
                 rideId = rideId,
                 locationsJson = locationsToJson(locations)
             )
 
+            android.util.Log.d(
+                "OfflineCache",
+                "Saved ${locations.size} locations for ride $rideId"
+            )
+
+            locations.forEach { location ->
+
+                android.util.Log.d(
+                    "OfflineCache",
+                    """
+    SAVED ->
+    User: ${location.userId}
+    Lat: ${location.latitude}
+    Lng: ${location.longitude}
+    Sharing: ${location.isSharingEnabled}
+    """.trimIndent()
+                )
+            }
+
             LocationResult(
                 locations = locations,
                 isFromCache = false
             )
+
         } catch (_: Exception) {
+
             val cachedLocations = locationsFromJson(
                 sessionManager.getCachedRideLocations(rideId)
             )
+
+            android.util.Log.d(
+                "OfflineCache",
+                "Loaded ${cachedLocations.size} cached locations for ride $rideId"
+            )
+
+            if (cachedLocations.isEmpty()) {
+
+                android.util.Log.d(
+                    "OfflineCache",
+                    "No cached locations found"
+                )
+
+            } else {
+
+                cachedLocations.forEach { location ->
+
+                    android.util.Log.d(
+                        "OfflineCache",
+                        """
+        LOADED ->
+        User: ${location.userId}
+        Lat: ${location.latitude}
+        Lng: ${location.longitude}
+        Sharing: ${location.isSharingEnabled}
+        Timestamp: ${location.timestamp}
+        """.trimIndent()
+                    )
+                }
+            }
 
             LocationResult(
                 locations = cachedLocations,

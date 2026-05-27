@@ -1786,8 +1786,25 @@ class TripViewModel(
             userNames[reservation.id] = reservation.riderName
         }
 
+        Log.d(
+            "OfflineCache",
+            "rideLocations size = ${uiState.rideLocations.size}"
+        )
+
+        uiState.rideLocations.forEach {
+            Log.d(
+                "OfflineCache",
+                """
+        MAP ->
+        User: ${it.userId}
+        Sharing: ${it.isSharingEnabled}
+        Lat: ${it.latitude}
+        Lng: ${it.longitude}
+        """.trimIndent()
+            )
+        }
+
         val latestLocations = uiState.rideLocations
-            .filter { it.isSharingEnabled }
             .groupBy { it.userId }
             .mapNotNull { (_, list) -> list.maxByOrNull { it.timestamp } }
 
