@@ -47,6 +47,9 @@ class CreateRideViewModel(
     var connectivity by mutableStateOf<Boolean>(false)
         private set
 
+    var infoByEC by mutableStateOf<Boolean>(false)
+        private set
+
     var formState by mutableStateOf(CreateRideFormState())
         private set
 
@@ -287,7 +290,10 @@ class CreateRideViewModel(
             }
         }
         else{
-            viewModelScope.launch { rideRepository.saveCache() }
+            viewModelScope.launch {
+                rideRepository.saveCache()
+                infoByEC = true
+            }
         }
     }
 
