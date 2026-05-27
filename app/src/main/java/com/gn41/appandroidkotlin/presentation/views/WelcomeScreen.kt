@@ -212,7 +212,7 @@ fun WelcomeButtons(onLoginClick: () -> Unit, onRegisterClick: () -> Unit){
             onClick = onLoginClick,
             colors = ButtonDefaults.buttonColors(
                 containerColor = MaterialTheme.colorScheme.tertiary,
-                contentColor = MaterialTheme.colorScheme.onPrimary
+                contentColor = MaterialTheme.colorScheme.onSecondary // Using onSecondary for BrightSnow equivalent contrast
             )
         ) {
             Text(text = "¿Ya tienes una cuenta? Inicia Sesión")

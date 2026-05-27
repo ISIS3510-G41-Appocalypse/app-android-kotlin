@@ -32,7 +32,7 @@ class RegisterViewModel(
         private const val MAX_PASSWORD_LENGTH = 30
         private const val MAX_LICENSE_PLATE_LENGTH = 10
         private const val MAX_BRAND_MODEL_COLOR_LENGTH = 30
-        private const val REGISTRATION_DELAY_MS = 700L // Simulate network delay
+        private const val REGISTRATION_DELAY_MS = 2000L // Simulate network delay
     }
 
     // Step 1: Basic Registration
@@ -110,7 +110,6 @@ class RegisterViewModel(
         private set
     var registrationSuccess by mutableStateOf(false)
         private set
-
 
     init {
         restoreDraft()
@@ -200,172 +199,56 @@ class RegisterViewModel(
 
     // Input Handlers
     fun onFirstNameChange(newValue: String) {
-
         if (newValue.length > MAX_FIRST_NAME_LENGTH) {
-
-            firstNameInputError =
-                "Solo puedes escribir $MAX_FIRST_NAME_LENGTH caracteres"
-
-            return
+            firstNameInputError = "Solo puedes escribir $MAX_FIRST_NAME_LENGTH caracteres"
+        } else {
+            firstName = newValue
+            firstNameInputError = ""
         }
-
-        firstName = newValue
-
-        firstNameInputError =
-            when {
-
-                newValue.isBlank() -> {
-                    "El nombre debe tener al menos 1 caracter"
-                }
-
-                !newValue.matches(
-                    Regex("^[a-zA-ZáéíóúÁÉÍÓÚñÑ ]+$")
-                ) -> {
-
-                    "El nombre contiene caracteres no permitidos"
-                }
-
-                else -> {
-                    ""
-                }
-            }
-
         saveDraft()
         clearErrors()
     }
 
     fun onLastNameChange(newValue: String) {
-
         if (newValue.length > MAX_LAST_NAME_LENGTH) {
-
-            lastNameInputError =
-                "Solo puedes escribir $MAX_LAST_NAME_LENGTH caracteres"
-
-            return
+            lastNameInputError = "Solo puedes escribir $MAX_LAST_NAME_LENGTH caracteres"
+        } else {
+            lastName = newValue
+            lastNameInputError = ""
         }
-
-        lastName = newValue
-
-        lastNameInputError =
-            when {
-
-                newValue.isBlank() -> {
-                    "El apellido debe tener al menos 1 caracter"
-                }
-
-                !newValue.matches(
-                    Regex("^[a-zA-ZáéíóúÁÉÍÓÚñÑ ]+$")
-                ) -> {
-
-                    "El apellido contiene caracteres no permitidos"
-                }
-
-                else -> {
-                    ""
-                }
-            }
-
         saveDraft()
         clearErrors()
     }
 
     fun onEmailChange(newEmail: String) {
-
-        val sanitizedEmail = newEmail.trim().lowercase()
-
-        if (sanitizedEmail.length > MAX_EMAIL_LENGTH) {
-
-            emailInputError =
-                "Solo puedes escribir $MAX_EMAIL_LENGTH caracteres"
-
-            return
+        if (newEmail.length > MAX_EMAIL_LENGTH) {
+            emailInputError = "Solo puedes escribir $MAX_EMAIL_LENGTH caracteres"
+        } else {
+            email = newEmail
+            emailInputError = ""
         }
-
-        email = sanitizedEmail
-
-        emailInputError =
-            when {
-
-                sanitizedEmail.isBlank() -> {
-                    "El correo debe tener al menos 1 caracter"
-                }
-
-                sanitizedEmail.contains(" ") ||
-                        sanitizedEmail.contains("<") ||
-                        sanitizedEmail.contains(">") ||
-                        sanitizedEmail.contains("{") ||
-                        sanitizedEmail.contains("}") ||
-                        sanitizedEmail.contains(";") -> {
-
-                    "El correo contiene caracteres inválidos"
-                }
-
-                !android.util.Patterns.EMAIL_ADDRESS
-                    .matcher(sanitizedEmail)
-                    .matches() -> {
-
-                    "Formato de correo inválido"
-                }
-
-                !sanitizedEmail.endsWith("@uniandes.edu.co") -> {
-
-                    "Solo se permiten correos @uniandes.edu.co"
-                }
-
-                else -> {
-                    ""
-                }
-            }
-
         saveDraft()
         clearErrors()
     }
 
     fun onPasswordChange(newPassword: String) {
-
         if (newPassword.length > MAX_PASSWORD_LENGTH) {
-
-            passwordInputError =
-                "La contraseña no puede superar $MAX_PASSWORD_LENGTH caracteres"
-
-            return
+            passwordInputError = "Solo puedes escribir $MAX_PASSWORD_LENGTH caracteres"
+        } else {
+            password = newPassword
+            passwordInputError = ""
         }
-
-        password = newPassword
-
-        passwordInputError =
-            if (newPassword.length in 1..5) {
-                "La contraseña debe tener al menos 6 caracteres"
-            } else {
-                ""
-            }
-
         saveDraft()
         clearErrors()
     }
 
     fun onConfirmPasswordChange(newValue: String) {
-
         if (newValue.length > MAX_PASSWORD_LENGTH) {
-
-            confirmPasswordInputError =
-                "Solo puedes escribir $MAX_PASSWORD_LENGTH caracteres"
-
-            return
+            confirmPasswordInputError = "Solo puedes escribir $MAX_PASSWORD_LENGTH caracteres"
+        } else {
+            confirmPassword = newValue
+            confirmPasswordInputError = ""
         }
-
-        confirmPassword = newValue
-
-        confirmPasswordInputError =
-            if (
-                newValue.isNotEmpty() &&
-                newValue != password
-            ) {
-                "Las contraseñas no coinciden"
-            } else {
-                ""
-            }
-
         saveDraft()
         clearErrors()
     }
@@ -386,177 +269,59 @@ class RegisterViewModel(
     }
 
     fun onVehicleLicensePlateChange(newValue: String) {
-
-        val sanitizedValue = newValue.uppercase()
-
-        if (sanitizedValue.length > 6) {
-
-            vehicleLicensePlateError =
-                "La placa debe tener exactamente 6 caracteres"
-
-            return
+        if (newValue.length > MAX_LICENSE_PLATE_LENGTH) {
+            vehicleLicensePlateError = "Solo puedes escribir $MAX_LICENSE_PLATE_LENGTH caracteres"
+        } else {
+            vehicleLicensePlate = newValue
+            vehicleLicensePlateError = ""
         }
-
-        vehicleLicensePlate = sanitizedValue
-
-        vehicleLicensePlateError =
-            when {
-
-                sanitizedValue.isBlank() -> {
-                    "La placa debe tener al menos 1 caracter"
-                }
-
-                !sanitizedValue.matches(
-                    Regex("^[A-Z]{3}[0-9]{3}$")
-                ) -> {
-
-                    "Formato inválido. Usa: ABC123"
-                }
-
-                else -> {
-                    ""
-                }
-            }
-
         saveDraft()
         clearErrors()
     }
 
     fun onVehicleNumberSlotsChange(newValue: String) {
-
-        if (
-            newValue.isNotEmpty() &&
-            !newValue.matches(Regex("^[0-9]+$"))
-        ) {
-
-            vehicleNumberSlotsError =
-                "Solo puedes escribir números"
-
-            return
-        }
-
-        if (newValue.length > 2) {
-
-            vehicleNumberSlotsError =
-                "Máximo 2 dígitos"
-
-            return
-        }
-
         val num = newValue.toIntOrNull()
-
-        if (num != null && num > 10) {
-
-            vehicleNumberSlotsError =
-                "No puedes tener más de 10 cupos"
-
-            return
+        if (newValue.length > 2) {
+            vehicleNumberSlotsError = "Max 2 digitos"
+        } else if (num == null || num <= 0) {
+            vehicleNumberSlotsError = "Debe ser un número > 0"
+        } else {
+            vehicleNumberSlots = newValue
+            vehicleNumberSlotsError = ""
         }
-
-        vehicleNumberSlots = newValue
-
-        vehicleNumberSlotsError =
-            when {
-
-                newValue.isEmpty() -> ""
-
-                num == null -> "Debe ser un número válido"
-
-                num <= 0 -> "Debe ser mayor a 0"
-
-                else -> ""
-            }
-
         saveDraft()
         clearErrors()
     }
 
     fun onVehicleBrandChange(newValue: String) {
-
         if (newValue.length > MAX_BRAND_MODEL_COLOR_LENGTH) {
-
-            vehicleBrandError =
-                "Solo puedes escribir $MAX_BRAND_MODEL_COLOR_LENGTH caracteres"
-
-            return
+            vehicleBrandError = "Solo puedes escribir $MAX_BRAND_MODEL_COLOR_LENGTH caracteres"
+        } else {
+            vehicleBrand = newValue
+            vehicleBrandError = ""
         }
-
-        if (
-            newValue.isNotEmpty() &&
-            !newValue.matches(
-                Regex("^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ .-]+$")
-            )
-        ) {
-
-            vehicleBrandError =
-                "La marca contiene caracteres no permitidos"
-
-            return
-        }
-
-        vehicleBrand = newValue
-        vehicleBrandError = ""
-
         saveDraft()
         clearErrors()
     }
 
     fun onVehicleModelChange(newValue: String) {
-
         if (newValue.length > MAX_BRAND_MODEL_COLOR_LENGTH) {
-
-            vehicleModelError =
-                "Solo puedes escribir $MAX_BRAND_MODEL_COLOR_LENGTH caracteres"
-
-            return
+            vehicleModelError = "Solo puedes escribir $MAX_BRAND_MODEL_COLOR_LENGTH caracteres"
+        } else {
+            vehicleModel = newValue
+            vehicleModelError = ""
         }
-
-        if (
-            newValue.isNotEmpty() &&
-            !newValue.matches(
-                Regex("^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ .-]+$")
-            )
-        ) {
-
-            vehicleModelError =
-                "El modelo contiene caracteres no permitidos"
-
-            return
-        }
-
-        vehicleModel = newValue
-        vehicleModelError = ""
-
         saveDraft()
         clearErrors()
     }
 
     fun onVehicleColorChange(newValue: String) {
-
         if (newValue.length > MAX_BRAND_MODEL_COLOR_LENGTH) {
-
-            vehicleColorError =
-                "Solo puedes escribir $MAX_BRAND_MODEL_COLOR_LENGTH caracteres"
-
-            return
+            vehicleColorError = "Solo puedes escribir $MAX_BRAND_MODEL_COLOR_LENGTH caracteres"
+        } else {
+            vehicleColor = newValue
+            vehicleColorError = ""
         }
-
-        if (
-            newValue.isNotEmpty() &&
-            !newValue.matches(
-                Regex("^[a-zA-ZáéíóúÁÉÍÓÚñÑ ]+$")
-            )
-        ) {
-
-            vehicleColorError =
-                "El color contiene caracteres no permitidos"
-
-            return
-        }
-
-        vehicleColor = newValue
-        vehicleColorError = ""
-
         saveDraft()
         clearErrors()
     }
@@ -580,12 +345,19 @@ class RegisterViewModel(
     }
 
     private fun clearErrors() {
-
         registrationError = ""
-
+        firstNameInputError = ""
+        lastNameInputError = ""
+        emailInputError = ""
+        passwordInputError = ""
+        confirmPasswordInputError = ""
         roleSelectionError = ""
-
         zoneSelectionError = ""
+        vehicleLicensePlateError = ""
+        vehicleNumberSlotsError = ""
+        vehicleBrandError = ""
+        vehicleModelError = ""
+        vehicleColorError = ""
     }
 
     private fun validateStep1(): Boolean {
@@ -683,12 +455,6 @@ class RegisterViewModel(
                 isValid = false
             } else if (vehicleNumberSlots.length > 2) {
                 vehicleNumberSlotsError = "Cupos: Máx 2 dígitos"
-                isValid = false
-            } else if (slots > 10) {
-
-                vehicleNumberSlotsError =
-                    "No puedes tener más de 10 cupos"
-
                 isValid = false
             }
 
@@ -807,15 +573,4 @@ class RegisterViewModel(
             }
         }
     }
-
-
-    //validations
-    private fun isValidName(value: String): Boolean {
-        return value.matches(Regex("^[a-zA-ZáéíóúÁÉÍÓÚñÑ ]+$"))
-    }
-    private fun isValidPlate(value: String): Boolean {
-        return value.matches(Regex("^[A-Z0-9-]+$"))
-    }
-
-
 }

@@ -74,6 +74,7 @@ import java.util.TimeZone
 // Estados visuales para la zona de rides
 // ─────────────────────────────────────────────────────────────────────────────
 
+/** FASE 3 — Vista offline: reemplaza solo la zona de rides */
 @Composable
 private fun OfflineStateView() {
     EmptyStateCard(
@@ -84,6 +85,7 @@ private fun OfflineStateView() {
     )
 }
 
+/** FASE 6 caso A — Hay internet pero no hay rides ofertados en absoluto */
 @Composable
 private fun EmptyRidesStateView() {
     EmptyStateCard(
@@ -94,6 +96,7 @@ private fun EmptyRidesStateView() {
     )
 }
 
+/** FASE 6 caso B — Hay internet, hay rides, pero los filtros no devuelven resultados */
 @Composable
 private fun EmptyFilteredStateView() {
     EmptyStateCard(
@@ -104,6 +107,7 @@ private fun EmptyFilteredStateView() {
     )
 }
 
+/** Card reutilizable para cualquier estado vacío */
 @Composable
 fun EmptyStateCard(
     icon: ImageVector,

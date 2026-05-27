@@ -24,18 +24,14 @@ private val DarkColorScheme = darkColorScheme(
     onSurface = CoolSteel
 )
 private val LightColorScheme = lightColorScheme(
-
     primary = AutumnEmber,
     secondary = DarkCyan,
     tertiary = CoolSteel,
-
     background = BrightSnow,
     surface = BrightSnow,
-
     onPrimary = BrightSnow,
     onSecondary = BrightSnow,
-    onTertiary = PrussianBlue,
-
+    onTertiary = BrightSnow,
     onBackground = PrussianBlue,
     onSurface = PrussianBlue
 )

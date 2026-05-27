@@ -39,6 +39,9 @@ import com.mapbox.maps.extension.compose.annotation.ViewAnnotation
 import com.mapbox.maps.viewannotation.geometry
 import com.mapbox.maps.viewannotation.viewAnnotationOptions
 
+private val TripLocationCardBackground = Color(0xFF3A3946)
+private val TripLocationPrimaryText = Color(0xFFD6D6E0)
+private val TripLocationSecondaryText = Color(0xFFB8B8C7)
 
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 @OptIn(MapboxExperimental::class)
@@ -87,25 +90,12 @@ fun TripLocationCard(
         null
     }
 
-    val fallbackPoint = rideLocations
-        .firstOrNull()
-        ?.let {
-            Point.fromLngLat(it.longitude, it.latitude)
-        }
-
     val mapViewportState = rememberMapViewportState()
 
-    LaunchedEffect(
-        userPoint,
-        fallbackPoint,
-        isLocationSharingEnabled
-    ) {
-
-        val targetPoint = userPoint ?: fallbackPoint
-
-        if (targetPoint != null) {
+    LaunchedEffect(userPoint, isLocationSharingEnabled) {
+        if (userPoint != null && isLocationSharingEnabled) {
             mapViewportState.setCameraOptions {
-                center(targetPoint)
+                center(userPoint)
                 zoom(16.0)
             }
         }
@@ -118,13 +108,13 @@ fun TripLocationCard(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(MaterialTheme.colorScheme.surface)
+                .background(TripLocationCardBackground)
                 .padding(16.dp)
         ) {
             Text(
                 text = "Ubicación del viaje",
                 style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurface
+                color = TripLocationPrimaryText
             )
 
             Spacer(modifier = Modifier.height(topSpacing))
@@ -135,65 +125,55 @@ fun TripLocationCard(
                     .height(mapHeight)
                     .clip(RoundedCornerShape(16.dp))
             ) {
-                MapboxMap(
-                    modifier = Modifier.fillMaxSize(),
-                    mapViewportState = mapViewportState
-                ) {
-                    mapMarkers.forEach { marker ->
-                        val markerPoint = Point.fromLngLat(
-                            marker.longitude,
-                            marker.latitude
-                        )
+                if (isUsingCachedLocations) {
+                    CachedLocationFallback(
+                        message = cachedLocationMessage,
+                        rideLocations = rideLocations,
+                        currentUserId = currentUserId,
+                        onRefreshLocations = onRefreshLocations,
+                        isOfflineMode = isOfflineMode
+                    )
+                } else {
+                    MapboxMap(
+                        modifier = Modifier.fillMaxSize(),
+                        mapViewportState = mapViewportState
+                    ) {
+                        mapMarkers.forEach { marker ->
+                            val markerPoint = Point.fromLngLat(marker.longitude, marker.latitude)
 
-                        ViewAnnotation(
-                            options = viewAnnotationOptions {
-                                geometry(markerPoint)
-                                allowOverlap(true)
-                            }
-                        ) {
-                            Text(
-                                text = if (marker.isCurrentUser) {
-                                    "Tú"
-                                } else if (marker.distanceMeters != null) {
-                                    "U${marker.userId} · ${marker.distanceMeters} m"
-                                } else {
-                                    "U${marker.userId}"
-                                },
-                                color = MaterialTheme.colorScheme.onPrimary,
-                                modifier = Modifier
-                                    .background(
-                                        if (marker.isCurrentUser)
-                                            MaterialTheme.colorScheme.secondary
-                                        else
-                                            MaterialTheme.colorScheme.primary,
-                                        RoundedCornerShape(50)
-                                    )
-                                    .clickable {
-                                        mapViewportState.easeTo(
-                                            CameraOptions.Builder()
-                                                .center(markerPoint)
-                                                .zoom(16.0)
-                                                .build()
+                            ViewAnnotation(
+                                options = viewAnnotationOptions {
+                                    geometry(markerPoint)
+                                    allowOverlap(true)
+                                }
+                            ) {
+                                Text(
+                                    text = if (marker.isCurrentUser) {
+                                        "Tú"
+                                    } else if (marker.distanceMeters != null) {
+                                        "U${marker.userId} · ${marker.distanceMeters} m"
+                                    } else {
+                                        "U${marker.userId}"
+                                    },
+                                    color = Color.White,
+                                    modifier = Modifier
+                                        .background(
+                                            if (marker.isCurrentUser) Color(0xFF0D9488) else Color(0xFFB45309),
+                                            RoundedCornerShape(50)
                                         )
-                                    }
-                                    .padding(horizontal = 10.dp, vertical = 6.dp)
-                            )
+                                        .clickable {
+                                            mapViewportState.easeTo(
+                                                CameraOptions.Builder()
+                                                    .center(markerPoint)
+                                                    .zoom(16.0)
+                                                    .build()
+                                            )
+                                        }
+                                        .padding(horizontal = 10.dp, vertical = 6.dp)
+                                )
+                            }
                         }
                     }
-                }
-
-                if (isUsingCachedLocations) {
-                    Box(
-                        modifier = Modifier
-                            .align(Alignment.TopCenter)
-                            .padding(12.dp)
-                    ) {
-
-                        CachedLocationBanner(
-                            message = cachedLocationMessage
-                        )
-                    }
-                }
 
                     Column(
                         modifier = Modifier
@@ -203,12 +183,9 @@ fun TripLocationCard(
                     ) {
                         Text(
                             text = "+",
-                            color = MaterialTheme.colorScheme.onSurface,
+                            color = Color.Black,
                             modifier = Modifier
-                                .background(
-                                    MaterialTheme.colorScheme.surface,
-                                    shape = RoundedCornerShape(8.dp)
-                                )
+                                .background(Color.White, RoundedCornerShape(8.dp))
                                 .clickable {
                                     mapViewportState.easeTo(
                                         CameraOptions.Builder()
@@ -220,12 +197,10 @@ fun TripLocationCard(
                         )
 
                         Text(
-                            text = "-", color = MaterialTheme.colorScheme.onSurface,
+                            text = "-",
+                            color = Color.Black,
                             modifier = Modifier
-                                .background(
-                                    MaterialTheme.colorScheme.surface,
-                                    shape = RoundedCornerShape(8.dp)
-                                )
+                                .background(Color.White, RoundedCornerShape(8.dp))
                                 .clickable {
                                     mapViewportState.easeTo(
                                         CameraOptions.Builder()
@@ -244,7 +219,7 @@ fun TripLocationCard(
             Text(
                 text = roleMessage,
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurface
+                color = TripLocationPrimaryText
             )
 
             Spacer(modifier = Modifier.height(roleSpacing))
@@ -257,7 +232,7 @@ fun TripLocationCard(
                 Text(
                     text = "Compartir mi ubicación",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurface,
+                    color = TripLocationPrimaryText,
                     modifier = Modifier.weight(1f)
                 )
 
@@ -275,7 +250,7 @@ fun TripLocationCard(
             Text(
                 text = statusText,
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.tertiary
+                color = TripLocationSecondaryText
             )
 
             if (isOfflineMode) {
@@ -283,7 +258,7 @@ fun TripLocationCard(
                 Text(
                     text = "No disponible en modo offline.",
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.tertiary
+                    color = Color.LightGray
                 )
             }
 
@@ -292,7 +267,7 @@ fun TripLocationCard(
             Text(
                 text = if (hasLocationPermission) "Permiso: concedido" else "Permiso: no concedido",
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.tertiary
+                color = Color.LightGray
             )
 
             Spacer(modifier = Modifier.height(lineSpacing))
@@ -304,7 +279,7 @@ fun TripLocationCard(
                     "Ubicación no disponible"
                 },
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.tertiary
+                color = Color.LightGray
             )
 
             Spacer(modifier = Modifier.height(lineSpacing))
@@ -312,7 +287,7 @@ fun TripLocationCard(
             Text(
                 text = "Usuarios compartiendo: $sharedUsersCount",
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.tertiary
+                color = Color.LightGray
             )
 
             Spacer(modifier = Modifier.height(lineSpacing))
@@ -320,33 +295,55 @@ fun TripLocationCard(
             Text(
                 text = "Usuarios en el ride: $totalUsersInRide",
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.tertiary
+                color = Color.LightGray
             )
         }
     }
-
+}
 
 @Composable
-private fun CachedLocationBanner(
-    message: String
+private fun CachedLocationFallback(
+    message: String,
+    rideLocations: List<UserSharedLocation>,
+    currentUserId: Int,
+    onRefreshLocations: () -> Unit,
+    isOfflineMode: Boolean
 ) {
+    val latestLocations = rideLocations
+        .filter { it.isSharingEnabled }
+        .groupBy { it.userId }
+        .mapNotNull { (_, locations) -> locations.maxByOrNull { it.timestamp } }
 
-    Box(
+    Column(
         modifier = Modifier
-            .fillMaxWidth()
-            .background(
-                MaterialTheme.colorScheme.surface.copy(alpha = 0.92f),
-                RoundedCornerShape(12.dp)
-            )
-            .padding(12.dp)
+            .fillMaxSize()
+            .background(Color(0xFF1F2937), RoundedCornerShape(16.dp))
+            .padding(14.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-
         Text(
             text = message.ifBlank {
-                "Mostrando últimas ubicaciones conocidas. Las posiciones no se actualizarán hasta recuperar conexión."
+                "No pudimos actualizar el mapa. Mostramos la última ubicación conocida."
             },
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurface
+            style = MaterialTheme.typography.bodyMedium,
+            color = Color.White
         )
+
+        latestLocations
+            .filter { it.userId != currentUserId }
+            .forEach { location ->
+                Text(
+                    text = "U${location.userId}: última ubicación conocida",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Color.LightGray
+                )
+            }
+
+        Button(
+            onClick = onRefreshLocations,
+            enabled = !isOfflineMode
+        ) {
+            Text("Reintentar")
+        }
     }
 }
