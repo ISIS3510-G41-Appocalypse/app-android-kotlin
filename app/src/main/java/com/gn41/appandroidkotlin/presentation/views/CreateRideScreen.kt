@@ -190,6 +190,11 @@ fun CreateRideScreen(
                 Spacer(modifier = Modifier.height(20.dp))
 
                 if (!viewModel.connectivity) {
+                    if (viewModel.infoByEC){
+                        OfflineInfo(
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
                     EmptyStateCard(
                         icon = Icons.Default.WifiOff,
                         iconTint = MaterialTheme.colorScheme.primary,
@@ -692,6 +697,31 @@ private fun BottomNavBar(
             onClick = onBackClick,
             icon = { Icon(Icons.Default.ArrowBack, contentDescription = "Volver", tint = MaterialTheme.colorScheme.surface) },
             label = { Text("Volver", fontSize = 10.sp, color = MaterialTheme.colorScheme.tertiary) }
+        )
+    }
+}
+
+@Composable
+fun OfflineInfo(
+    modifier: Modifier = Modifier
+) {
+
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .background(
+                MaterialTheme.colorScheme.surfaceVariant,
+                RoundedCornerShape(10.dp)
+            )
+            .padding(horizontal = 12.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Text(
+            text = "Tu información se ha guardado para que intentes crear tu viaje después.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 2
         )
     }
 }
