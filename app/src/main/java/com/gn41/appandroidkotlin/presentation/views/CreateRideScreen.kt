@@ -690,8 +690,8 @@ private fun BottomNavBar(
         NavigationBarItem(
             selected = false,
             onClick = onBackClick,
-            icon = { Icon(Icons.Default.ArrowBack, contentDescription = "Volver", tint = MaterialTheme.colorScheme.onPrimary) },
-            label = { Text("Volver", fontSize = 10.sp, color = MaterialTheme.colorScheme.onPrimary) }
+            icon = { Icon(Icons.Default.ArrowBack, contentDescription = "Volver", tint = MaterialTheme.colorScheme.surface) },
+            label = { Text("Volver", fontSize = 10.sp, color = MaterialTheme.colorScheme.tertiary) }
         )
     }
 }
