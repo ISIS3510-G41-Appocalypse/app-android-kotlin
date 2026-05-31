@@ -264,6 +264,7 @@ class WelcomeViewModel(
             if (profile != null) {
 
                 UserProfileCache.put(profile)
+                sessionManager.saveUserProfile(profile)
 
                 Log.d(
                     "WelcomeVM",

@@ -72,7 +72,7 @@ fun SettingsScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
 
-            val userProfile = UserProfileCache.getCurrentUser()
+            val userProfile = viewModel.getCurrentUserProfile()
 
             SettingsItemCard {
                 Column(

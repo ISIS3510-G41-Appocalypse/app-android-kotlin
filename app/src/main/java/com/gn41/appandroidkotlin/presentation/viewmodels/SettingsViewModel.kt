@@ -9,6 +9,7 @@ import com.gn41.appandroidkotlin.presentation.cache.TripMemoryCache
 import com.gn41.appandroidkotlin.localStorage.LocalStorageManager
 import com.gn41.appandroidkotlin.BuildConfig
 import com.gn41.appandroidkotlin.data.local.UserProfileCache
+import com.gn41.appandroidkotlin.data.dto.auth.UserProfileDto
 
 class SettingsViewModel(
     private val sessionManager: SessionManager,
@@ -32,10 +33,27 @@ class SettingsViewModel(
         sessionManager.clearDriverId()
 
         UserProfileCache.clear()
+        sessionManager.clearUserProfile()
 
         TripMemoryCache.clear()
         localStorageManager.clearTripState()
 
         onLogoutSuccess()
+    }
+
+    fun getCurrentUserProfile(): UserProfileDto? {
+        val cachedUser = UserProfileCache.getCurrentUser()
+
+        if (cachedUser != null) {
+            return cachedUser
+        }
+
+        val storedUser = sessionManager.getUserProfile()
+
+        if (storedUser != null) {
+            UserProfileCache.put(storedUser)
+        }
+
+        return storedUser
     }
 }
