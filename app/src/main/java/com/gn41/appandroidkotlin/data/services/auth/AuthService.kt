@@ -6,6 +6,7 @@ import com.gn41.appandroidkotlin.data.dto.auth.CreateCompleteUserRequestDto
 import com.gn41.appandroidkotlin.data.dto.auth.CreateCompleteUserResponseDto
 import com.gn41.appandroidkotlin.data.dto.auth.LoginRequestDto
 import com.gn41.appandroidkotlin.data.dto.auth.LoginResponseDto
+import com.gn41.appandroidkotlin.data.dto.auth.UserProfileDto
 import com.gn41.appandroidkotlin.data.services.SupabaseClient
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -117,6 +118,35 @@ class AuthService {
                 error_code = "NETWORK_ERROR",
                 error = "No se pudo conectar con el servidor. Revisa tu conexión."
             )
+        }
+    }
+
+
+
+    suspend fun getUserProfile(
+        authId: String,
+        token: String
+    ): UserProfileDto? = withContext(Dispatchers.IO) {
+
+        return@withContext try {
+
+            val response = authApi.getUserProfile(
+                token = "Bearer $token",
+                apiKey = BuildConfig.SUPABASE_KEY,
+                authId = "eq.$authId"
+            )
+
+            if (
+                response.isSuccessful &&
+                !response.body().isNullOrEmpty()
+            ) {
+                response.body()!!.first()
+            } else {
+                null
+            }
+
+        } catch (e: Exception) {
+            null
         }
     }
 }
