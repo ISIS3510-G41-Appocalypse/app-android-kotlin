@@ -257,7 +257,19 @@ fun RegisterScreen(
 
                     Spacer(modifier = Modifier.height(24.dp))
 
+
                     ZoneDropdown(viewModel)
+
+                    if (viewModel.zoneLoadingError.isNotEmpty()) {
+
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        Text(
+                            text = viewModel.zoneLoadingError,
+                            color = MaterialTheme.colorScheme.error,
+                            textAlign = TextAlign.Center
+                        )
+                    }
 
                     if (viewModel.zoneSelectionError.isNotEmpty()) {
 
@@ -360,6 +372,8 @@ fun RegisterScreen(
 
                 Spacer(modifier = Modifier.height(16.dp))
             }
+
+            Spacer(modifier = Modifier.height(16.dp))
 
             Row(
                 modifier = Modifier.fillMaxWidth(),

@@ -111,6 +111,9 @@ class RegisterViewModel(
     var registrationSuccess by mutableStateOf(false)
         private set
 
+    var zoneLoadingError by mutableStateOf("")
+        private set
+
 
     init {
         restoreDraft()
@@ -162,13 +165,20 @@ class RegisterViewModel(
         viewModelScope.launch {
             isLoadingZones = true
             if (!networkHelper.isInternetAvailable()) {
-                // TODO: Implement zone caching for offline availability if needed
-                Log.d("RegisterViewModel", "No internet to load zones. Fallback/caching needed.")
-                // For now, if no internet, no zones will be available
+
+                Log.d(
+                    "RegisterViewModel",
+                    "No internet to load zones. Fallback/caching needed."
+                )
+
                 withContext(Dispatchers.Main) {
+
+                    zoneLoadingError = "No hay conexión a internet. No se pudieron cargar las zonas. Tranquilo tus cambios se guardaron vuelve a intentar registrarte"
+
                     zoneOptions = emptyList()
                     isLoadingZones = false
                 }
+
                 return@launch
             }
             try {
@@ -176,6 +186,7 @@ class RegisterViewModel(
                 Log.d("RegisterViewModel", "Zones response: $zones")
                 withContext(Dispatchers.Main) {
                     zoneOptions = zones.map { it.id to it.name }
+                    zoneLoadingError = ""
                     // If a draft zone was restored, set its name
                     if (selectedZoneId != -1 && selectedZoneName.isEmpty()) {
                         selectedZoneName = zoneOptions.firstOrNull { it.first == selectedZoneId }?.second ?: ""
@@ -189,7 +200,7 @@ class RegisterViewModel(
             } catch (e: Exception) {
                 Log.e("RegisterViewModel", "Error loading zones", e)
                 withContext(Dispatchers.Main) {
-                    registrationError = "No se pudieron cargar las zonas. Revisa tu conexión."
+                    zoneLoadingError = "No se pudieron cargar las zonas. Revisa tu conexión."
                     zoneOptions = emptyList()
                 }
             } finally {
