@@ -111,6 +111,9 @@ class RegisterViewModel(
     var registrationSuccess by mutableStateOf(false)
         private set
 
+    var zoneLoadingError by mutableStateOf("")
+        private set
+
 
     init {
         restoreDraft()
@@ -170,8 +173,7 @@ class RegisterViewModel(
 
                 withContext(Dispatchers.Main) {
 
-                    registrationError =
-                        "No hay conexión a internet. No se pudieron cargar las zonas."
+                    zoneLoadingError = "No hay conexión a internet. No se pudieron cargar las zonas. Tranquilo tus cambios se guardaron vuelve a intentar registrarte"
 
                     zoneOptions = emptyList()
                     isLoadingZones = false
@@ -184,6 +186,7 @@ class RegisterViewModel(
                 Log.d("RegisterViewModel", "Zones response: $zones")
                 withContext(Dispatchers.Main) {
                     zoneOptions = zones.map { it.id to it.name }
+                    zoneLoadingError = ""
                     // If a draft zone was restored, set its name
                     if (selectedZoneId != -1 && selectedZoneName.isEmpty()) {
                         selectedZoneName = zoneOptions.firstOrNull { it.first == selectedZoneId }?.second ?: ""
@@ -197,7 +200,7 @@ class RegisterViewModel(
             } catch (e: Exception) {
                 Log.e("RegisterViewModel", "Error loading zones", e)
                 withContext(Dispatchers.Main) {
-                    registrationError = "No se pudieron cargar las zonas. Revisa tu conexión."
+                    zoneLoadingError = "No se pudieron cargar las zonas. Revisa tu conexión."
                     zoneOptions = emptyList()
                 }
             } finally {
