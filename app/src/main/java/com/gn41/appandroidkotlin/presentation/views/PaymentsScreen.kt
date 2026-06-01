@@ -43,6 +43,13 @@ import com.gn41.appandroidkotlin.data.dto.payments.RidePaymentDto
 import com.gn41.appandroidkotlin.presentation.viewmodels.PaymentsViewModel
 import com.gn41.appandroidkotlin.ui.theme.AutumnEmber
 
+private val whiteCardColor = Color(0xFFF8FAFC)
+private val darkTextColor = Color(0xFF0F172A)
+private val secondaryTextColor = Color(0xFF475569)
+private val darkNavColor = Color(0xFF172033)
+private val orangeColor = Color(0xFFB45309)
+private val fieldBorderColor = Color(0xFFCBD5E1)
+
 @Composable
 fun PaymentsScreen(
     viewModel: PaymentsViewModel,
@@ -186,7 +193,7 @@ private fun DriverPaymentCard(
         modifier = Modifier
             .fillMaxWidth()
             .background(
-                MaterialTheme.colorScheme.surface,
+                whiteCardColor,
                 RoundedCornerShape(14.dp)
             )
             .padding(14.dp),
@@ -195,7 +202,7 @@ private fun DriverPaymentCard(
         Text(
             text = "${payments.size} pasajeros no han pagado.",
             style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.primary,
+            color = orangeColor,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis
         )
@@ -203,7 +210,7 @@ private fun DriverPaymentCard(
         Text(
             text = "${ride.source} → ${ride.destination}",
             style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.onSurface,
+            color = darkTextColor,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis
         )
@@ -211,13 +218,13 @@ private fun DriverPaymentCard(
         Text(
             text = "Fecha: ${ride.date}",
             style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurface
+            color = secondaryTextColor
         )
 
         Text(
             text = "Hora: ${ride.departureTime}",
             style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurface
+            color = secondaryTextColor
         )
 
         Spacer(modifier = Modifier.height(4.dp))
@@ -225,7 +232,7 @@ private fun DriverPaymentCard(
         Text(
             text = "Pagos pendientes",
             style = MaterialTheme.typography.titleSmall,
-            color = MaterialTheme.colorScheme.onSurface
+            color = darkTextColor
         )
 
         payments.forEach { payment ->
@@ -234,7 +241,7 @@ private fun DriverPaymentCard(
                 modifier = Modifier
                     .fillMaxWidth()
                     .background(
-                        MaterialTheme.colorScheme.surfaceVariant,
+                        Color.White,
                         RoundedCornerShape(10.dp)
                     )
                     .padding(10.dp),
@@ -254,13 +261,13 @@ private fun DriverPaymentCard(
                         Text(
                             text = "${payment.firstName} ${payment.lastName}",
                             style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurface
+                            color = darkTextColor
                         )
 
                         Text(
                             text = "Pago pendiente",
                             style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.tertiary
+                            color = secondaryTextColor
                         )
                     }
 
@@ -276,7 +283,7 @@ private fun DriverPaymentCard(
                     Text(
                         text = "El usuario ha pagado. Confirma el pago.",
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = secondaryTextColor
                     )
 
                     Row(
@@ -331,7 +338,7 @@ private fun RiderPaymentCard(
         modifier = Modifier
             .fillMaxWidth()
             .background(
-                MaterialTheme.colorScheme.surface,
+                whiteCardColor,
                 RoundedCornerShape(14.dp)
             )
             .padding(14.dp),
@@ -341,19 +348,19 @@ private fun RiderPaymentCard(
         Text(
             text = "${ride.source} → ${ride.destination}",
             style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.onSurface
+            color = darkTextColor
         )
 
         Text(
             text = "Fecha: ${ride.date}",
             style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurface
+            color = secondaryTextColor
         )
 
         Text(
             text = "Hora: ${ride.departureTime}",
             style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurface
+            color = secondaryTextColor
         )
 
         Spacer(modifier = Modifier.height(4.dp))
@@ -361,7 +368,7 @@ private fun RiderPaymentCard(
         Text(
             text = "Monto pendiente",
             style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.tertiary
+            color = secondaryTextColor
         )
 
         Text(
@@ -376,14 +383,14 @@ private fun RiderPaymentCard(
             Text(
                 text = "En espera de confirmación.",
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = secondaryTextColor
             )
         }
         else {
             Text(
                 text = "Método de pago",
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurface
+                color = darkTextColor
             )
 
             ExposedDropdownMenuBox(
@@ -408,8 +415,12 @@ private fun RiderPaymentCard(
                         )
                     },
                     colors = TextFieldDefaults.colors(
-                        focusedContainerColor = MaterialTheme.colorScheme.surface,
-                        unfocusedContainerColor = MaterialTheme.colorScheme.surface
+                        focusedContainerColor = whiteCardColor,
+                        unfocusedContainerColor = whiteCardColor,
+                        focusedTextColor = darkTextColor,
+                        unfocusedTextColor = darkTextColor,
+                        focusedIndicatorColor = darkTextColor,
+                        unfocusedIndicatorColor = fieldBorderColor
                     ),
                     shape = RoundedCornerShape(12.dp)
                 )
@@ -469,7 +480,7 @@ private fun PaymentSectionSwitch(
         modifier = Modifier
             .fillMaxWidth()
             .background(
-                MaterialTheme.colorScheme.surface,
+                darkNavColor,
                 RoundedCornerShape(12.dp)
             )
             .padding(6.dp),
@@ -486,13 +497,13 @@ private fun PaymentSectionSwitch(
                 color = if (selected) {
                     MaterialTheme.colorScheme.onPrimary
                 } else {
-                    MaterialTheme.colorScheme.tertiary
+                    Color(0xFFCBD5E1)
                 },
                 modifier = Modifier
                     .weight(1f)
                     .background(
                         color = if (selected) {
-                            AutumnEmber
+                            orangeColor
                         } else {
                             Color.Transparent
                         },
