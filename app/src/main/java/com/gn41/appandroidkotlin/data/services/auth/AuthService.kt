@@ -136,16 +136,46 @@ class AuthService {
                 authId = "eq.$authId"
             )
 
+            Log.d(
+                "PROFILE_RESPONSE",
+                "success=${response.isSuccessful}"
+            )
+
+            Log.d(
+                "PROFILE_RESPONSE",
+                "body=${response.body()}"
+            )
+
             if (
                 response.isSuccessful &&
                 !response.body().isNullOrEmpty()
             ) {
+
+                Log.d(
+                    "PROFILE_RESPONSE",
+                    "first=${response.body()!!.first()}"
+                )
+
                 response.body()!!.first()
+
             } else {
+
+                Log.e(
+                    "PROFILE_RESPONSE",
+                    "error=${response.errorBody()?.string()}"
+                )
+
                 null
             }
 
         } catch (e: Exception) {
+
+            Log.e(
+                "PROFILE_RESPONSE",
+                "exception",
+                e
+            )
+
             null
         }
     }

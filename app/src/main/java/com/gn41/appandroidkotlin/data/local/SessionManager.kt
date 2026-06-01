@@ -1,7 +1,10 @@
 package com.gn41.appandroidkotlin.data.local
 
 import android.content.Context
+import com.gn41.appandroidkotlin.data.dto.auth.DriverProfileDto
+import com.gn41.appandroidkotlin.data.dto.auth.RiderProfileDto
 import com.gn41.appandroidkotlin.data.dto.auth.UserProfileDto
+import com.gn41.appandroidkotlin.data.dto.auth.ZoneDto
 
 class SessionManager(context: Context) {
 
@@ -185,37 +188,123 @@ class SessionManager(context: Context) {
             .putInt("profile_id", profile.id)
             .putString("profile_first_name", profile.first_name)
             .putString("profile_last_name", profile.last_name)
-            .putInt("profile_zone_id", profile.zone_id)
-            .putString("profile_auth_id", profile.auth_id)
+
+            .putString(
+                "profile_zone_name",
+                profile.zones?.name
+            )
+
+            .putString(
+                "profile_driver_rating",
+                profile.drivers?.firstOrNull()?.rating?.toString()
+            )
+
+            .putString(
+                "profile_driver_cancellation_odds",
+                profile.drivers?.firstOrNull()?.cancellation_odds?.toString()
+            )
+
+            .putString(
+                "profile_rider_rating",
+                profile.riders?.firstOrNull()?.rating?.toString()
+            )
+
+            .putString(
+                "profile_rider_cancellation_odds",
+                profile.riders?.firstOrNull()?.cancellation_odds?.toString()
+            )
+
             .apply()
     }
 
     fun getUserProfile(): UserProfileDto? {
 
-        val id = sharedPreferences.getInt("profile_id", -1)
+        val id = sharedPreferences.getInt(
+            "profile_id",
+            -1
+        )
 
         if (id == -1) {
             return null
         }
 
+        val zoneName =
+            sharedPreferences.getString(
+                "profile_zone_name",
+                null
+            )
+
+        val driverRating =
+            sharedPreferences.getString(
+                "profile_driver_rating",
+                null
+            )?.toDoubleOrNull()
+
+        val driverCancellationOdds =
+            sharedPreferences.getString(
+                "profile_driver_cancellation_odds",
+                null
+            )?.toDoubleOrNull()
+
+        val riderRating =
+            sharedPreferences.getString(
+                "profile_rider_rating",
+                null
+            )?.toDoubleOrNull()
+
+        val riderCancellationOdds =
+            sharedPreferences.getString(
+                "profile_rider_cancellation_odds",
+                null
+            )?.toDoubleOrNull()
+
         return UserProfileDto(
             id = id,
+
             first_name = sharedPreferences.getString(
                 "profile_first_name",
                 ""
             ) ?: "",
+
             last_name = sharedPreferences.getString(
                 "profile_last_name",
                 ""
             ) ?: "",
-            zone_id = sharedPreferences.getInt(
-                "profile_zone_id",
-                -1
-            ),
-            auth_id = sharedPreferences.getString(
-                "profile_auth_id",
-                ""
-            ) ?: ""
+
+            zones =
+                zoneName?.let {
+                    ZoneDto(it)
+                },
+
+            drivers =
+                if (
+                    driverRating != null ||
+                    driverCancellationOdds != null
+                ) {
+                    listOf(
+                        DriverProfileDto(
+                            rating = driverRating,
+                            cancellation_odds = driverCancellationOdds
+                        )
+                    )
+                } else {
+                    null
+                },
+
+            riders =
+                if (
+                    riderRating != null ||
+                    riderCancellationOdds != null
+                ) {
+                    listOf(
+                        RiderProfileDto(
+                            rating = riderRating,
+                            cancellation_odds = riderCancellationOdds
+                        )
+                    )
+                } else {
+                    null
+                }
         )
     }
 
@@ -225,8 +314,11 @@ class SessionManager(context: Context) {
             .remove("profile_id")
             .remove("profile_first_name")
             .remove("profile_last_name")
-            .remove("profile_zone_id")
-            .remove("profile_auth_id")
+            .remove("profile_zone_name")
+            .remove("profile_driver_rating")
+            .remove("profile_driver_cancellation_odds")
+            .remove("profile_rider_rating")
+            .remove("profile_rider_cancellation_odds")
             .apply()
     }
 }
