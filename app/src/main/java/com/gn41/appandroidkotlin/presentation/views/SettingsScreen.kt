@@ -75,6 +75,35 @@ fun SettingsScreen(
             val userProfile = viewModel.getCurrentUserProfile()
 
             SettingsItemCard {
+
+                val role =
+                    when {
+                        userProfile?.drivers?.isNotEmpty() == true &&
+                                userProfile?.riders?.isNotEmpty() == true ->
+                            "Driver & Rider"
+
+                        userProfile?.drivers?.isNotEmpty() == true ->
+                            "Driver"
+
+                        userProfile?.riders?.isNotEmpty() == true ->
+                            "Rider"
+
+                        else ->
+                            "User"
+                    }
+
+                val driverRating =
+                    userProfile?.drivers?.firstOrNull()?.rating
+
+                val driverCancellationOdds =
+                    userProfile?.drivers?.firstOrNull()?.cancellation_odds
+
+                val riderRating =
+                    userProfile?.riders?.firstOrNull()?.rating
+
+                val riderCancellationOdds =
+                    userProfile?.riders?.firstOrNull()?.cancellation_odds
+
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -91,10 +120,52 @@ fun SettingsScreen(
                     Spacer(modifier = Modifier.width(4.dp))
 
                     Text(
-                        text = "Zona ID: ${userProfile?.zone_id ?: "-"}",
+                        text = "Zona: ${userProfile?.zones?.name ?: "Sin zona"}",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.tertiary
                     )
+
+                    Text(
+                        text = "Rol: $role",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.tertiary
+                    )
+
+                    if (driverRating != null) {
+
+                        Text(
+                            text = "Driver Rating: $driverRating",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.tertiary
+                        )
+                    }
+
+                    if (driverCancellationOdds != null) {
+
+                        Text(
+                            text = "Driver Cancellation Odds: $driverCancellationOdds",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.tertiary
+                        )
+                    }
+
+                    if (riderRating != null) {
+
+                        Text(
+                            text = "Rider Rating: $riderRating",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.tertiary
+                        )
+                    }
+
+                    if (riderCancellationOdds != null) {
+
+                        Text(
+                            text = "Rider Cancellation Odds: $riderCancellationOdds",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.tertiary
+                        )
+                    }
                 }
             }
 

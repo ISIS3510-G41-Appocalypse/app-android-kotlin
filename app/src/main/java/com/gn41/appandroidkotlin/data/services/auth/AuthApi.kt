@@ -38,7 +38,7 @@ interface AuthApi {
         @Query("auth_id") authId: String,
         @Query("select")
         select: String =
-            "id,first_name,last_name,zone_id,auth_id"
+            "id,first_name,last_name,zones(name),drivers(rating,cancellation_odds),riders(rating,cancellation_odds)"
     ): Response<List<UserProfileDto>>
 
 
