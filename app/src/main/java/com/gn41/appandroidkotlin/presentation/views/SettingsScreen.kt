@@ -134,7 +134,7 @@ fun SettingsScreen(
                     if (driverRating != null) {
 
                         Text(
-                            text = "Driver Rating: $driverRating",
+                            text = "Calificación como conductor: $driverRating",
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.tertiary
                         )
@@ -143,7 +143,7 @@ fun SettingsScreen(
                     if (driverCancellationOdds != null) {
 
                         Text(
-                            text = "Driver Cancellation Odds: $driverCancellationOdds",
+                            text = "Probabilidad de cancelación como conductor: $driverCancellationOdds",
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.tertiary
                         )
@@ -152,7 +152,7 @@ fun SettingsScreen(
                     if (riderRating != null) {
 
                         Text(
-                            text = "Rider Rating: $riderRating",
+                            text = "Calificación como pasajero: $riderRating",
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.tertiary
                         )
@@ -161,7 +161,7 @@ fun SettingsScreen(
                     if (riderCancellationOdds != null) {
 
                         Text(
-                            text = "Rider Cancellation Odds: $riderCancellationOdds",
+                            text = "Probabilidad de cancelación como pasajero: $riderCancellationOdds",
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.tertiary
                         )
