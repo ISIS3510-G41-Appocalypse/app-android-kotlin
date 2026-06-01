@@ -162,13 +162,21 @@ class RegisterViewModel(
         viewModelScope.launch {
             isLoadingZones = true
             if (!networkHelper.isInternetAvailable()) {
-                // TODO: Implement zone caching for offline availability if needed
-                Log.d("RegisterViewModel", "No internet to load zones. Fallback/caching needed.")
-                // For now, if no internet, no zones will be available
+
+                Log.d(
+                    "RegisterViewModel",
+                    "No internet to load zones. Fallback/caching needed."
+                )
+
                 withContext(Dispatchers.Main) {
+
+                    registrationError =
+                        "No hay conexión a internet. No se pudieron cargar las zonas."
+
                     zoneOptions = emptyList()
                     isLoadingZones = false
                 }
+
                 return@launch
             }
             try {
