@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -39,6 +40,9 @@ import com.mapbox.maps.extension.compose.annotation.ViewAnnotation
 import com.mapbox.maps.viewannotation.geometry
 import com.mapbox.maps.viewannotation.viewAnnotationOptions
 
+private val whiteCardColor = Color(0xFFF8FAFC)
+private val darkTextColor = Color(0xFF0F172A)
+private val secondaryTextColor = Color(0xFF475569)
 
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 @OptIn(MapboxExperimental::class)
@@ -113,18 +117,19 @@ fun TripLocationCard(
 
     Card(
         shape = RoundedCornerShape(18.dp),
+        colors = CardDefaults.cardColors(containerColor = whiteCardColor),
         modifier = Modifier.fillMaxWidth()
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(MaterialTheme.colorScheme.surface)
+                .background(whiteCardColor)
                 .padding(16.dp)
         ) {
             Text(
                 text = "Ubicación del viaje",
                 style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurface
+                color = darkTextColor
             )
 
             Spacer(modifier = Modifier.height(topSpacing))
@@ -203,10 +208,10 @@ fun TripLocationCard(
                     ) {
                         Text(
                             text = "+",
-                            color = MaterialTheme.colorScheme.onSurface,
+                            color = darkTextColor,
                             modifier = Modifier
                                 .background(
-                                    MaterialTheme.colorScheme.surface,
+                                    whiteCardColor,
                                     shape = RoundedCornerShape(8.dp)
                                 )
                                 .clickable {
@@ -220,10 +225,10 @@ fun TripLocationCard(
                         )
 
                         Text(
-                            text = "-", color = MaterialTheme.colorScheme.onSurface,
+                            text = "-", color = darkTextColor,
                             modifier = Modifier
                                 .background(
-                                    MaterialTheme.colorScheme.surface,
+                                    whiteCardColor,
                                     shape = RoundedCornerShape(8.dp)
                                 )
                                 .clickable {
@@ -241,23 +246,29 @@ fun TripLocationCard(
 
             Spacer(modifier = Modifier.height(sectionSpacing))
 
-            Text(
-                text = roleMessage,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-
-            Spacer(modifier = Modifier.height(roleSpacing))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
+                Text(
+                    text = roleMessage,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = secondaryTextColor
+                )
+
+                Spacer(modifier = Modifier.height(roleSpacing))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
                 Text(
                     text = "Compartir mi ubicación",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurface,
+                    color = darkTextColor,
                     modifier = Modifier.weight(1f)
                 )
 
@@ -268,60 +279,56 @@ fun TripLocationCard(
                     onCheckedChange = if (isOfflineMode) null else onToggleLocationSharing,
                     enabled = !isOfflineMode
                 )
-            }
+                }
 
-            Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = statusText,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = secondaryTextColor
+                )
 
-            Text(
-                text = statusText,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.tertiary
-            )
-
-            if (isOfflineMode) {
-                Spacer(modifier = Modifier.height(6.dp))
+                if (isOfflineMode) {
                 Text(
                     text = "No disponible en modo offline.",
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.tertiary
+                    color = secondaryTextColor
+                )
+                }
+
+                Text(
+                    text = if (hasLocationPermission) "Permiso: concedido" else "Permiso: no concedido",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = secondaryTextColor
+                )
+
+                Spacer(modifier = Modifier.height(lineSpacing))
+
+                Text(
+                    text = if (currentLatitude != null && currentLongitude != null) {
+                        "Ubicación disponible"
+                    } else {
+                        "Ubicación no disponible"
+                    },
+                    style = MaterialTheme.typography.bodySmall,
+                    color = secondaryTextColor
+                )
+
+                Spacer(modifier = Modifier.height(lineSpacing))
+
+                Text(
+                    text = "Usuarios compartiendo: $sharedUsersCount",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = secondaryTextColor
+                )
+
+                Spacer(modifier = Modifier.height(lineSpacing))
+
+                Text(
+                    text = "Usuarios en el ride: $totalUsersInRide",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = secondaryTextColor
                 )
             }
-
-            Spacer(modifier = Modifier.height(6.dp))
-
-            Text(
-                text = if (hasLocationPermission) "Permiso: concedido" else "Permiso: no concedido",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.tertiary
-            )
-
-            Spacer(modifier = Modifier.height(lineSpacing))
-
-            Text(
-                text = if (currentLatitude != null && currentLongitude != null) {
-                    "Ubicación disponible"
-                } else {
-                    "Ubicación no disponible"
-                },
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.tertiary
-            )
-
-            Spacer(modifier = Modifier.height(lineSpacing))
-
-            Text(
-                text = "Usuarios compartiendo: $sharedUsersCount",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.tertiary
-            )
-
-            Spacer(modifier = Modifier.height(lineSpacing))
-
-            Text(
-                text = "Usuarios en el ride: $totalUsersInRide",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.tertiary
-            )
         }
     }
 
@@ -335,7 +342,7 @@ private fun CachedLocationBanner(
         modifier = Modifier
             .fillMaxWidth()
             .background(
-                MaterialTheme.colorScheme.surface.copy(alpha = 0.92f),
+                whiteCardColor.copy(alpha = 0.92f),
                 RoundedCornerShape(12.dp)
             )
             .padding(12.dp)
@@ -346,7 +353,7 @@ private fun CachedLocationBanner(
                 "Mostrando últimas ubicaciones conocidas. Las posiciones no se actualizarán hasta recuperar conexión."
             },
             style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurface
+            color = secondaryTextColor
         )
     }
 }

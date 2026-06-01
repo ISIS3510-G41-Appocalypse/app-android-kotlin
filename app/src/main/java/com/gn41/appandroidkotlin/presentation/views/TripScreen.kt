@@ -31,7 +31,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -60,9 +59,20 @@ import com.gn41.appandroidkotlin.presentation.viewmodels.TripReservationItemUiMo
 import com.gn41.appandroidkotlin.presentation.viewmodels.TripViewModel
 import com.gn41.appandroidkotlin.presentation.viewmodels.normalizeState
 import com.gn41.appandroidkotlin.presentation.viewmodels.stateToReadableLabel
-import com.gn41.appandroidkotlin.ui.theme.AutumnEmber
 import kotlinx.coroutines.delay
 import java.util.Locale
+
+private val darkNavColor = Color(0xFF172033)
+private val whiteCardColor = Color(0xFFF8FAFC)
+private val darkTextColor = Color(0xFF0F172A)
+private val secondaryTextColor = Color(0xFF475569)
+private val orangeColor = Color(0xFFB45309)
+private val emptyCardColor = Color(0xFF172033)
+private val emptyTextColor = Color(0xFFCBD5E1)
+private val negativeColor = Color(0xFFDC2626)
+private val negativeSoftColor = Color(0xFFFEE2E2)
+private val warningBackgroundColor = Color(0xFFFEF3C7)
+private val warningTextColor = Color(0xFF92400E)
 
 @Composable
 fun TripScreen(
@@ -196,10 +206,10 @@ fun TripScreen(
             Text(
                 text = state.offlineMessage,
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                color = warningTextColor,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(10.dp))
+                    .background(warningBackgroundColor, RoundedCornerShape(10.dp))
                     .padding(10.dp)
             )
             Spacer(modifier = Modifier.height(10.dp))
@@ -360,7 +370,7 @@ fun TripScreen(
                         reservationToRejectId = null
                     }
                 ) {
-                    Text("Rechazar")
+                    Text("Rechazar", color = negativeColor)
                 }
             },
             dismissButton = {
@@ -388,7 +398,7 @@ fun TripScreen(
                         viewModel.onCancelTripClicked()
                     }
                 ) {
-                    Text("Cancelar viaje")
+                    Text("Cancelar viaje", color = negativeColor)
                 }
             }
         )
@@ -451,11 +461,11 @@ fun TripScreen(
     if (reservationToCancelId != null) {
         AlertDialog(
             onDismissRequest = { reservationToCancelId = null },
-            title = { Text("Cancelar reserva") },
+            title = { Text("Cancelar reserva", color = MaterialTheme.colorScheme.onSurface) },
             text = { Text("¿Deseas cancelar tu reserva para este viaje?") },
             dismissButton = {
                 TextButton(onClick = { reservationToCancelId = null }) {
-                    Text("Volver")
+                    Text("Volver", color = orangeColor)
                 }
             },
             confirmButton = {
@@ -466,7 +476,7 @@ fun TripScreen(
                         viewModel.onCancelReservationClicked(reservationId)
                     }
                 ) {
-                    Text("Cancelar reserva")
+                    Text("Cancelar reserva", color = orangeColor)
                 }
             }
         )
@@ -484,19 +494,19 @@ private fun PendingRatingCard(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(14.dp))
+            .background(whiteCardColor, RoundedCornerShape(14.dp))
             .padding(14.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
         Text(
             text = title,
             style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.onSurface
+            color = darkTextColor
         )
         Text(
             text = message,
             style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurface
+            color = secondaryTextColor
         )
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             SmallActionButton(
@@ -708,7 +718,7 @@ private fun SectionSwitch(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(12.dp))
+            .background(darkNavColor, RoundedCornerShape(12.dp))
             .padding(6.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
@@ -717,11 +727,11 @@ private fun SectionSwitch(
             Text(
                 text = item,
                 style = MaterialTheme.typography.bodyMedium,
-                color = if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.tertiary,
+                color = if (selected) MaterialTheme.colorScheme.onPrimary else Color(0xFFE2E8F0),
                 modifier = Modifier
                     .weight(1f)
                     .background(
-                        color = if (selected) AutumnEmber else Color.Transparent,
+                        color = if (selected) orangeColor else Color.Transparent,
                         shape = RoundedCornerShape(10.dp)
                     )
                     .clickable { onSectionSelected(item) }
@@ -755,19 +765,19 @@ private fun TripLocationSection(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(14.dp))
+                .background(whiteCardColor, RoundedCornerShape(14.dp))
                 .padding(14.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             Text(
                 text = "Ubicación del viaje",
                 style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurface
+                color = darkTextColor
             )
             Text(
                 text = "El mapa se cargará cuando lo necesites.",
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurface
+                color = secondaryTextColor
             )
             Button(onClick = { showMap = true }) {
                 Text("Ver mapa")
@@ -904,10 +914,14 @@ private fun RiderReservationCard(
     onCancel: () -> Unit,
     isOfflineMode: Boolean = false
 ) {
+    val routeSource = trip.source.ifBlank { "Origen" }
+    val routeDestination = trip.destination.ifBlank { "destino" }
+    val routeText = "$routeSource hacia $routeDestination"
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(14.dp))
+            .background(whiteCardColor, RoundedCornerShape(14.dp))
             .padding(14.dp)
     ) {
         Row(
@@ -916,9 +930,9 @@ private fun RiderReservationCard(
             verticalAlignment = Alignment.Top
         ) {
             Text(
-                text = "${trip.source} → ${trip.destination}",
+                text = routeText,
                 style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurface,
+                color = darkTextColor,
                 modifier = Modifier
                     .weight(1f)
                     .padding(end = 8.dp),
@@ -930,25 +944,46 @@ private fun RiderReservationCard(
 
         Spacer(modifier = Modifier.height(6.dp))
 
-        Text("Estado reserva: ${mapStateLabel(trip.status)}", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface)
-        Text("Estado viaje: ${mapStateLabel(trip.rideStatus)}", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface)
-        Text("Conductor: ${trip.driverName}", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface)
-        Text("Fecha de salida: ${trip.departureDate}", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface)
-        Text("Hora de salida: ${formatTimeText(trip.departureTime)}", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface)
+        Text("Estado reserva: ${mapStateLabel(trip.status)}", style = MaterialTheme.typography.bodyMedium, color = secondaryTextColor)
+        Text("Estado viaje: ${mapStateLabel(trip.rideStatus)}", style = MaterialTheme.typography.bodyMedium, color = secondaryTextColor)
+        Text("Conductor: ${trip.driverName}", style = MaterialTheme.typography.bodyMedium, color = secondaryTextColor)
+        Text("Fecha de salida: ${trip.departureDate}", style = MaterialTheme.typography.bodyMedium, color = secondaryTextColor)
+        Text("Hora de salida: ${formatTimeText(trip.departureTime)}", style = MaterialTheme.typography.bodyMedium, color = secondaryTextColor)
 
         Spacer(modifier = Modifier.height(10.dp))
 
         if (trip.showCancelButton) {
-            Button(
-                onClick = onCancel,
-                enabled = trip.canCancelReservation && !isOfflineMode,
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    disabledContainerColor = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.5f),
-                    disabledContentColor = MaterialTheme.colorScheme.onTertiary
-                )
+            val isCancelEnabled = trip.canCancelReservation && !isOfflineMode
+            val disabledColor = Color(0xFF94A3B8)
+            val disabledSoftColor = Color(0xFFE2E8F0)
+            val cancelBackgroundColor = if (isCancelEnabled) {
+                negativeSoftColor
+            } else {
+                disabledSoftColor.copy(alpha = 0.35f)
+            }
+            val cancelBorderColor = if (isCancelEnabled) {
+                negativeColor.copy(alpha = 0.65f)
+            } else {
+                disabledColor.copy(alpha = 0.45f)
+            }
+            val cancelTextColor = if (isCancelEnabled) negativeColor else disabledColor
+
+            Box(
+                modifier = Modifier
+                    .background(cancelBackgroundColor, RoundedCornerShape(10.dp))
+                    .border(
+                        1.dp,
+                        cancelBorderColor,
+                        RoundedCornerShape(10.dp)
+                    )
+                    .clickable(enabled = isCancelEnabled) { onCancel() }
+                    .padding(horizontal = 12.dp, vertical = 9.dp)
             ) {
-                Text("Cancelar reserva")
+                Text(
+                    text = "Cancelar reserva",
+                    color = cancelTextColor,
+                    style = MaterialTheme.typography.bodyMedium
+                )
             }
 
             if (trip.cancelDisabledReason != null) {
@@ -956,7 +991,7 @@ private fun RiderReservationCard(
                 Text(
                     text = trip.cancelDisabledReason,
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onTertiary
+                    color = secondaryTextColor
                 )
             }
 
@@ -965,7 +1000,7 @@ private fun RiderReservationCard(
                 Text(
                     text = "No disponible en modo offline.",
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onTertiary
+                    color = secondaryTextColor
                 )
             }
         }
@@ -1154,19 +1189,19 @@ private fun DriverMainCard(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(14.dp))
+            .background(whiteCardColor, RoundedCornerShape(14.dp))
             .padding(14.dp)
     ) {
-        Text("Mi viaje como conductor", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurface)
+        Text("Mi viaje como conductor", style = MaterialTheme.typography.titleMedium, color = darkTextColor)
         Spacer(modifier = Modifier.height(8.dp))
 
-        Text("Origen: ${trip.source}", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface)
-        Text("Destino: ${trip.destination}", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface)
-        Text("Estado: ${mapStateLabel(trip.status)}", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface)
-        Text("Fecha de salida: ${trip.departureDate}", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface)
-        Text("Hora de salida: ${formatTimeText(trip.departureTime)}", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface)
-        Text("Reservas: ${trip.reservationsCount}", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface)
-        Text("Cupos disponibles: ${trip.availableSeats}/${trip.totalSeats}", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface)
+        Text("Origen: ${trip.source}", style = MaterialTheme.typography.bodyMedium, color = secondaryTextColor)
+        Text("Destino: ${trip.destination}", style = MaterialTheme.typography.bodyMedium, color = secondaryTextColor)
+        Text("Estado: ${mapStateLabel(trip.status)}", style = MaterialTheme.typography.bodyMedium, color = secondaryTextColor)
+        Text("Fecha de salida: ${trip.departureDate}", style = MaterialTheme.typography.bodyMedium, color = secondaryTextColor)
+        Text("Hora de salida: ${formatTimeText(trip.departureTime)}", style = MaterialTheme.typography.bodyMedium, color = secondaryTextColor)
+        Text("Reservas: ${trip.reservationsCount}", style = MaterialTheme.typography.bodyMedium, color = secondaryTextColor)
+        Text("Cupos disponibles: ${trip.availableSeats}/${trip.totalSeats}", style = MaterialTheme.typography.bodyMedium, color = secondaryTextColor)
 
         Spacer(modifier = Modifier.height(10.dp))
 
@@ -1178,7 +1213,7 @@ private fun DriverMainCard(
                     text = "Cancelar viaje",
                     onClick = onCancelTrip,
                     enabled = !isOfflineMode,
-                    accentColor = MaterialTheme.colorScheme.error
+                    accentColor = negativeColor
                 )
                 SmallActionButton(
                     text = "Iniciar",
@@ -1211,7 +1246,7 @@ private fun DriverMainCard(
             Text(
                 text = "No se pueden realizar acciones en modo offline.",
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onTertiary
+                color = secondaryTextColor
             )
         }
     }
@@ -1236,21 +1271,21 @@ private fun DriverReservationRow(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(12.dp))
+            .background(whiteCardColor, RoundedCornerShape(12.dp))
             .padding(12.dp)
     ) {
-        Text(text = item.riderName, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurface)
+        Text(text = item.riderName, style = MaterialTheme.typography.titleMedium, color = darkTextColor)
         Spacer(modifier = Modifier.height(4.dp))
-        Text(text = "Estado: ${mapStateLabel(item.status)}", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface)
-        var color: Color = MaterialTheme.colorScheme.error
+        Text(text = "Estado: ${mapStateLabel(item.status)}", style = MaterialTheme.typography.bodyMedium, color = secondaryTextColor)
+        var color: Color = negativeColor
         item.cancellationOdds?.let {
             if (it < 0.30) {
-                color = MaterialTheme.colorScheme.secondary
+                color = negativeColor
             }
         }
-        Text(text = riderRatingText, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface)
+        Text(text = riderRatingText, style = MaterialTheme.typography.bodyMedium, color = secondaryTextColor)
         Text(text = "Probabilidad de cancelación: ${item.cancellationOdds?.times(100)}%", color = color)
-        Text(text = "Metodo de pago: ${item.paymentMethod}", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface)
+        Text(text = "Metodo de pago: ${item.paymentMethod}", style = MaterialTheme.typography.bodyMedium, color = secondaryTextColor)
 
         if (normalizeState(item.status) == "PENDIENTE" && canManageReservation) {
             Spacer(modifier = Modifier.height(8.dp))
@@ -1265,7 +1300,7 @@ private fun DriverReservationRow(
                     text = "Rechazar",
                     onClick = onReject,
                     enabled = !isOfflineMode,
-                    accentColor = MaterialTheme.colorScheme.error
+                    accentColor = negativeColor
                 )
             }
             if (!canAccept) {
@@ -1273,7 +1308,7 @@ private fun DriverReservationRow(
                 Text(
                     text = "No hay cupos disponibles.",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.error
+                    color = negativeColor
                 )
             }
             if (isOfflineMode) {
@@ -1281,7 +1316,7 @@ private fun DriverReservationRow(
                 Text(
                     text = "No disponible en modo offline.",
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onTertiary
+                    color = secondaryTextColor
                 )
             }
         } else if (normalizeState(item.status) == "PENDIENTE" && !canManageReservation) {
@@ -1289,7 +1324,7 @@ private fun DriverReservationRow(
             Text(
                 text = "No puedes gestionar reservas con el viaje en curso.",
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onTertiary
+                color = secondaryTextColor
             )
         }
     }
@@ -1302,19 +1337,23 @@ private fun SmallActionButton(
     enabled: Boolean = true,
     accentColor: Color = MaterialTheme.colorScheme.primary
 ) {
-    val backgroundColor = if (enabled) accentColor.copy(alpha = 0.12f) else MaterialTheme.colorScheme.surfaceVariant
+    val backgroundColor = when {
+        !enabled -> secondaryTextColor.copy(alpha = 0.12f)
+        accentColor == negativeColor -> negativeSoftColor
+        else -> accentColor.copy(alpha = 0.12f)
+    }
 
     Box(
         modifier = Modifier
             .background(backgroundColor, RoundedCornerShape(10.dp))
-            .border(1.dp, if (enabled) accentColor else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f), RoundedCornerShape(10.dp))
+            .border(1.dp, if (enabled) accentColor else secondaryTextColor.copy(alpha = 0.5f), RoundedCornerShape(10.dp))
             .clickable(enabled = enabled) { onClick() }
             .padding(horizontal = 10.dp, vertical = 8.dp)
     ) {
         Text(
             text = text,
             style = MaterialTheme.typography.bodyMedium,
-            color = if (enabled) accentColor else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+            color = if (enabled) accentColor else secondaryTextColor.copy(alpha = 0.7f)
         )
     }
 }
@@ -1324,13 +1363,13 @@ private fun EmptyStateCardTrip(message: String) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(14.dp))
+            .background(emptyCardColor, RoundedCornerShape(14.dp))
             .padding(14.dp)
     ) {
         Text(
             text = message,
             style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.tertiary
+            color = emptyTextColor
         )
     }
 }
@@ -1380,10 +1419,13 @@ private fun mapStateLabel(state: String): String {
 @Composable
 private fun StateChip(status: String) {
     val (bg, fg) = when (normalizeState(status)) {
-        "PENDIENTE" -> MaterialTheme.colorScheme.tertiaryContainer to MaterialTheme.colorScheme.onTertiaryContainer
-        "ACEPTADA" -> MaterialTheme.colorScheme.secondaryContainer to MaterialTheme.colorScheme.onSecondaryContainer
-        "EN_CURSO" -> MaterialTheme.colorScheme.primaryContainer to MaterialTheme.colorScheme.onPrimaryContainer
-        else -> MaterialTheme.colorScheme.surfaceVariant to MaterialTheme.colorScheme.onSurfaceVariant
+        "PENDIENTE" -> Color(0xFFFEF3C7) to Color(0xFF92400E)
+        "ACEPTADA" -> Color(0xFFD1FAE5) to Color(0xFF065F46)
+        "EN_CURSO" -> Color(0xFFDBEAFE) to Color(0xFF1D4ED8)
+        "RECHAZADA" -> negativeSoftColor to Color(0xFFB91C1C)
+        "CANCELADO" -> negativeSoftColor to Color(0xFFB91C1C)
+        "FINALIZADO" -> Color(0xFFE2E8F0) to secondaryTextColor
+        else -> Color(0xFFE2E8F0) to secondaryTextColor
     }
     Box(
         modifier = Modifier
