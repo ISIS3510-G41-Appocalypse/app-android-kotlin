@@ -50,6 +50,10 @@ private val darkNavColor = Color(0xFF172033)
 private val orangeColor = Color(0xFFB45309)
 private val fieldBorderColor = Color(0xFFCBD5E1)
 
+private val warningBackgroundColor = Color(0xFFFEF3C7)
+
+private val warningTextColor = Color(0xFF92400E)
+
 @Composable
 fun PaymentsScreen(
     viewModel: PaymentsViewModel,
@@ -101,11 +105,33 @@ fun PaymentsScreen(
             item {
 
                 PaymentSectionSwitch(
+                    enable = !viewModel.isLoadingData,
                     selectedSection = viewModel.selectedRole,
                     onSectionSelected = {
                         viewModel.onRoleChange(it)
                     }
                 )
+            }
+
+            if (viewModel.monto != -1) {
+                if (viewModel.selectedRole == "Conductor") {
+                    item {
+                        Text(
+                            text = "Te deben en total: $${viewModel.monto}",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = orangeColor
+                        )
+                    }
+                }
+                else{
+                    item {
+                        Text(
+                            text = "Debes en total: $${viewModel.monto}",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = orangeColor
+                        )
+                    }
+                }
             }
 
             if (viewModel.isLoadingData) {
@@ -187,7 +213,14 @@ private fun DriverPaymentCard(
     viewModel: PaymentsViewModel,
     ride: RidePaymentDto,
     payments: List<PaymentDto>
-) {
+) {;
+    val pendientes : String = if (payments.size==1){
+        "1 pasajero no ha pagado"
+    }
+    else
+    {
+        "${payments.size} pasajeros no han pagado"
+    }
 
     Column(
         modifier = Modifier
@@ -200,7 +233,7 @@ private fun DriverPaymentCard(
         verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
         Text(
-            text = "${payments.size} pasajeros no han pagado.",
+            text = pendientes,
             style = MaterialTheme.typography.titleMedium,
             color = orangeColor,
             maxLines = 2,
@@ -467,6 +500,7 @@ private fun RiderPaymentCard(
 
 @Composable
 private fun PaymentSectionSwitch(
+    enable: Boolean,
     selectedSection: String,
     onSectionSelected: (String) -> Unit
 ) {
@@ -509,7 +543,7 @@ private fun PaymentSectionSwitch(
                         },
                         shape = RoundedCornerShape(10.dp)
                     )
-                    .clickable {
+                    .clickable(enabled = enable) {
                         onSectionSelected(item)
                     }
                     .padding(vertical = 10.dp)
@@ -576,7 +610,7 @@ fun OfflineInfoBanner(
         modifier = modifier
             .fillMaxWidth()
             .background(
-                MaterialTheme.colorScheme.surfaceVariant,
+                warningBackgroundColor,
                 RoundedCornerShape(10.dp)
             )
             .padding(horizontal = 12.dp, vertical = 8.dp),
@@ -586,7 +620,7 @@ fun OfflineInfoBanner(
         Text(
             text = "Sin conexión. Mostrando la última información disponible.",
             style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            color = warningTextColor,
             maxLines = 2
         )
     }

@@ -28,6 +28,8 @@ class LocalStorageManager (private val context: Context) {
     private val ratingDraftsFileName = "rating_drafts.json"
     private val pendingRatingsFileName = "pending_ratings.json"
 
+    private val sharedPreferences = context.getSharedPreferences("happyride_session", Context.MODE_PRIVATE)
+
     companion object {
         private const val TAG = "TripCache"
     }
@@ -94,6 +96,14 @@ class LocalStorageManager (private val context: Context) {
         FileOutputStream(file).use { stream ->
             stream.write(jsonString4.toByteArray())
         }
+
+        sharedPreferences.edit()
+            .putString("monto_rider", CacheManager.getMontoRider().toString())
+            .apply()
+
+        sharedPreferences.edit()
+            .putString("monto_driver", CacheManager.getMontoDriver().toString())
+            .apply()
     }
 
     suspend fun readFormState():String = withContext(Dispatchers.IO) {
@@ -118,6 +128,8 @@ class LocalStorageManager (private val context: Context) {
     }
 
     suspend fun readPaymentsState():String = withContext(Dispatchers.IO) {
+        CacheManager.setMontoDriver(sharedPreferences.getString("monto_driver", "0")!!.toInt())
+        CacheManager.setMontoRider(sharedPreferences.getString("monto_rider", "0")!!.toInt())
         var fileName = "rides_rider_payments.json"
         var file = File(context.filesDir, fileName)
         if (file.exists()) {

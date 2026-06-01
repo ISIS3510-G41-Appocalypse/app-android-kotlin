@@ -16,6 +16,10 @@ object CacheManager {
 
     private val paymentsDriver : MutableMap<Int, List<PaymentDto>> = mutableMapOf()
 
+    private var montoRider : Int = 0
+
+    private var montoDriver : Int = 0
+
 
     fun putFormState(key: String, value: String) {
         cacheFormState[key] = value
@@ -77,6 +81,22 @@ object CacheManager {
     fun setPaymentsDriver(payments: MutableMap<Int, List<PaymentDto>>) {
         paymentsDriver.clear()
         paymentsDriver.putAll(payments)
+    }
+
+    fun getMontoDriver(): Int {
+        return montoDriver
+    }
+
+    fun getMontoRider(): Int {
+        return montoRider
+    }
+
+    fun setMontoDriver(monto: Int) {
+        montoDriver = monto
+    }
+
+    fun setMontoRider(monto: Int) {
+        montoRider = monto
     }
 
 }
