@@ -3,6 +3,7 @@ package com.gn41.appandroidkotlin.presentation.viewmodels
 import android.util.ArrayMap
 import android.util.Log
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
@@ -33,6 +34,12 @@ class PaymentsViewModel ( private val paymentsRepository: PaymentsRepository) : 
     var isLoadingData by mutableStateOf(false)
         private set
 
+    var monto by mutableIntStateOf(-1)
+        private set
+
+    var montoOtro by mutableIntStateOf(-1)
+        private set
+
     init {
         loadData()
     }
@@ -58,6 +65,7 @@ class PaymentsViewModel ( private val paymentsRepository: PaymentsRepository) : 
                             }.await()
                     }
                 }
+                monto = paymentsRepository.getMonto( payments)
                 if (selectedRole=="Conductor") {
 
                     ridesOtro.addAll(paymentsRepository.getRides("Pasajero"))
@@ -87,6 +95,7 @@ class PaymentsViewModel ( private val paymentsRepository: PaymentsRepository) : 
                         }
                     }
                 }
+                montoOtro = paymentsRepository.getMonto( paymentsOtro)
                 isLoadingData = false
                 paymentsRepository.clearLocalStorage()
                 if (selectedRole == "Conductor") {
@@ -94,12 +103,16 @@ class PaymentsViewModel ( private val paymentsRepository: PaymentsRepository) : 
                     CacheManager.setPaymentsDriver(payments)
                     CacheManager.setRidesRiderPayments(ridesOtro)
                     CacheManager.setPaymentsRider(paymentsOtro)
+                    CacheManager.setMontoDriver(monto)
+                    CacheManager.setMontoRider(montoOtro)
                     paymentsRepository.saveCache()
                 } else {
                     CacheManager.setRidesRiderPayments(rides)
                     CacheManager.setPaymentsRider(payments)
                     CacheManager.setRidesDriverPayments(ridesOtro)
                     CacheManager.setPaymentsDriver(paymentsOtro)
+                    CacheManager.setMontoRider(monto)
+                    CacheManager.setMontoDriver(montoOtro)
                     paymentsRepository.saveCache()
                 }
             }
@@ -110,6 +123,7 @@ class PaymentsViewModel ( private val paymentsRepository: PaymentsRepository) : 
                 if (selectedRole == "Conductor") {
                     val ridesCache = CacheManager.getRidesDriverPayments()
                     val paymentsCache = CacheManager.getPaymentsDriver()
+                    val montoCache = CacheManager.getMontoDriver()
                     if (ridesCache.isEmpty()) {
                         async { paymentsRepository.readLocalStorage() }.await()
                         rides.addAll(CacheManager.getRidesDriverPayments())
@@ -118,6 +132,7 @@ class PaymentsViewModel ( private val paymentsRepository: PaymentsRepository) : 
                     else{
                         rides.addAll(ridesCache)
                         payments.putAll(paymentsCache)
+                        monto = montoCache
                     }
                 } else {
                     val ridesCache = CacheManager.getRidesRiderPayments()

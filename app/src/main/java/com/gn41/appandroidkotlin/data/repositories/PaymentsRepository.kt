@@ -49,4 +49,8 @@ class PaymentsRepository (private val paymentsService: PaymentsService,
     suspend fun create(rideId:Int) {
         paymentsService.create(rideId)
     }
+
+    suspend fun getMonto( payments: MutableMap<Int, List<PaymentDto>>): Int {
+        return paymentsService.getMonto( payments)
+    }
 }

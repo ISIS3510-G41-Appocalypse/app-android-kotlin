@@ -173,4 +173,14 @@ class PaymentsService (
             Result.failure(e)
         }
     }
+
+    suspend fun getMonto(payments: MutableMap<Int, List<PaymentDto>>): Int = withContext(Dispatchers.Default) {
+        var monto = 0
+        payments.forEach { (_, payments) ->
+            payments.forEach { payment ->
+                monto += payment.amount
+            }
+        }
+        return@withContext monto
+    }
 }
