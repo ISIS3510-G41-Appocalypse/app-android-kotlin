@@ -16,7 +16,11 @@ import com.gn41.appandroidkotlin.data.repositories.TripRepository
 import com.gn41.appandroidkotlin.localStorage.LocalStorageManager
 import com.gn41.appandroidkotlin.localStorage.RatingDraftDto
 import com.gn41.appandroidkotlin.presentation.cache.RatingDraftCache
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class RatingViewModel(
     private val tripRepository: TripRepository,
@@ -45,29 +49,33 @@ class RatingViewModel(
         }
 
         viewModelScope.launch {
-            uiState = uiState.copy(
-                isLoading = true,
-                errorMessage = null,
-                successMessage = null,
-                rideId = rideId,
-                ratingType = normalizedRatingType,
-                selectedRiderId = null,
-                ridersToRate = emptyList(),
-                punctuality = 0,
-                behavior = 0,
-                communication = 0,
-                security = 0,
-                paymentPunctuality = 0
-            )
+            withContext(Dispatchers.Main) {
+                uiState = uiState.copy(
+                    isLoading = true,
+                    errorMessage = null,
+                    successMessage = null,
+                    rideId = rideId,
+                    ratingType = normalizedRatingType,
+                    selectedRiderId = null,
+                    ridersToRate = emptyList(),
+                    punctuality = 0,
+                    behavior = 0,
+                    communication = 0,
+                    security = 0,
+                    paymentPunctuality = 0
+                )
+            }
 
             try {
                 val authId = extractAuthIdFromToken(token)
                 if (authId.isNullOrEmpty()) {
                     currentAuthId = null
-                    uiState = uiState.copy(
+                    withContext(Dispatchers.Main) {
+                        uiState = uiState.copy(
                         isLoading = false,
                         errorMessage = "No se pudo obtener la información del usuario."
-                    )
+                        )
+                    }
                     return@launch
                 }
                 currentAuthId = authId
@@ -81,33 +89,53 @@ class RatingViewModel(
                     return@launch
                 }
 
-                val user = tripRepository.getUserByAuthId(authId, token)
+                val user = withContext(Dispatchers.IO) {
+                    tripRepository.getUserByAuthId(authId, token)
+                }
                 if (user == null) {
-                    uiState = uiState.copy(
+                    withContext(Dispatchers.Main) {
+                        uiState = uiState.copy(
                         isLoading = false,
                         errorMessage = "Usuario no encontrado."
-                    )
+                        )
+                    }
                     return@launch
                 }
 
-                val rider = tripRepository.getRiderByUserId(user.id, token)
-                val driver = tripRepository.getDriverByUserId(user.id, token)
+                val (rider, driver) = withContext(Dispatchers.IO) {
+                    coroutineScope {
+                        val riderJob = async { tripRepository.getRiderByUserId(user.id, token) }
+                        val driverJob = async { tripRepository.getDriverByUserId(user.id, token) }
+                        riderJob.await() to driverJob.await()
+                    }
+                }
 
                 if (normalizedRatingType == "rider") {
                     if (driver == null) {
-                        uiState = uiState.copy(
+                        withContext(Dispatchers.Main) {
+                            uiState = uiState.copy(
                             isLoading = false,
                             errorMessage = "No se pudo obtener la información del conductor."
-                        )
+                            )
+                        }
                         return@launch
                     }
 
-                    val reservations = tripRepository.getReservationsForRide(rideId, token)
-                    val ratedRiderIds = ratingRepository.getRatedRidersForRide(
-                        token = token,
-                        rideId = rideId,
-                        driverId = driver.id
-                    )
+                    val (reservations, ratedRiderIds) = withContext(Dispatchers.IO) {
+                        coroutineScope {
+                            val reservationsJob = async {
+                                tripRepository.getReservationsForRide(rideId, token)
+                            }
+                            val ratedJob = async {
+                                ratingRepository.getRatedRidersForRide(
+                                    token = token,
+                                    rideId = rideId,
+                                    driverId = driver.id
+                                )
+                            }
+                            reservationsJob.await() to ratedJob.await()
+                        }
+                    }
                     val riders = reservations
                         .mapNotNull { reservation ->
                             val nestedRider = reservation.riders ?: return@mapNotNull null
@@ -130,33 +158,46 @@ class RatingViewModel(
                             riderId != null && riderId !in ratedRiderIds
                         }
 
-                    uiState = uiState.copy(
+                    withContext(Dispatchers.Main) {
+                        uiState = uiState.copy(
                         isLoading = false,
                         riderId = rider?.id,
                         driverId = driver.id,
                         ridersToRate = riders,
                         selectedRiderId = riders.firstOrNull()?.riderId,
                         errorMessage = if (riders.isEmpty()) "No hay pasajeros pendientes por calificar." else null
-                    )
-                    uiState.selectedRiderId?.let { applyDraftIfExists(it) }
+                        )
+                        uiState.selectedRiderId?.let { applyDraftIfExists(it) }
+                    }
                 } else {
                     if (rider == null) {
-                        uiState = uiState.copy(
+                        withContext(Dispatchers.Main) {
+                            uiState = uiState.copy(
                             isLoading = false,
                             errorMessage = "No se pudo obtener la información del pasajero."
-                        )
+                            )
+                        }
                         return@launch
                     }
 
-                    val finishedReservation = tripRepository.getFinishedRiderReservationForRating(
-                        riderId = rider.id,
-                        token = token
-                    )
-                    val fallbackReservation = tripRepository.getReservationByRideAndRider(
-                        rideId = rideId,
-                        riderId = rider.id,
-                        token = token
-                    )
+                    val (finishedReservation, fallbackReservation) = withContext(Dispatchers.IO) {
+                        coroutineScope {
+                            val finishedReservationJob = async {
+                                tripRepository.getFinishedRiderReservationForRating(
+                                    riderId = rider.id,
+                                    token = token
+                                )
+                            }
+                            val fallbackReservationJob = async {
+                                tripRepository.getReservationByRideAndRider(
+                                    rideId = rideId,
+                                    riderId = rider.id,
+                                    token = token
+                                )
+                            }
+                            finishedReservationJob.await() to fallbackReservationJob.await()
+                        }
+                    }
                     val reservation = when {
                         normalizeState(finishedReservation?.rides?.state) == "FINALIZADO" -> finishedReservation
                         normalizeState(fallbackReservation?.rides?.state) == "FINALIZADO" -> fallbackReservation
@@ -170,14 +211,17 @@ class RatingViewModel(
                         .joinToString(" ")
                         .ifBlank { "Driver" }
 
-                    val ratedDriverIds = ratingRepository.getRatedDriversForRide(
-                        token = token,
-                        rideId = rideId,
-                        riderId = rider.id
-                    )
+                    val ratedDriverIds = withContext(Dispatchers.IO) {
+                        ratingRepository.getRatedDriversForRide(
+                            token = token,
+                            rideId = rideId,
+                            riderId = rider.id
+                        )
+                    }
                     val driverAlreadyRated = driverId != null && ratedDriverIds.contains(driverId)
 
-                    uiState = uiState.copy(
+                    withContext(Dispatchers.Main) {
+                        uiState = uiState.copy(
                         isLoading = false,
                         riderId = rider.id,
                         driverId = if (driverAlreadyRated) null else driverId,
@@ -196,14 +240,17 @@ class RatingViewModel(
                             driverAlreadyRated -> "Ya calificaste al conductor de este viaje."
                             else -> null
                         }
-                    )
-                    uiState.driverId?.let { applyDraftIfExists(it) }
+                        )
+                        uiState.driverId?.let { applyDraftIfExists(it) }
+                    }
                 }
             } catch (_: Exception) {
-                uiState = uiState.copy(
+                withContext(Dispatchers.Main) {
+                    uiState = uiState.copy(
                     isLoading = false,
                     errorMessage = "No se pudo cargar la información de calificación."
-                )
+                    )
+                }
             }
         }
     }
@@ -323,7 +370,9 @@ class RatingViewModel(
         }
 
         viewModelScope.launch {
-            uiState = uiState.copy(isSubmitting = true, errorMessage = null, successMessage = null)
+            withContext(Dispatchers.Main) {
+                uiState = uiState.copy(isSubmitting = true, errorMessage = null, successMessage = null)
+            }
 
             val success = if (uiState.ratingType == "rider") {
                 val selectedRiderId = uiState.selectedRiderId
@@ -331,11 +380,13 @@ class RatingViewModel(
                 val rideId = uiState.rideId
 
                 if (selectedRiderId == null || driverId == null || rideId <= 0) {
-                    uiState = uiState.copy(
-                        isSubmitting = false,
-                        errorMessage = "Selecciona un pasajero antes de enviar.",
-                        successMessage = null
-                    )
+                    withContext(Dispatchers.Main) {
+                        uiState = uiState.copy(
+                            isSubmitting = false,
+                            errorMessage = "Selecciona un pasajero antes de enviar.",
+                            successMessage = null
+                        )
+                    }
                     return@launch
                 }
 
@@ -348,18 +399,22 @@ class RatingViewModel(
                     payment_punctuality = uiState.paymentPunctuality,
                     ride_id = rideId
                 )
-                ratingRepository.rateRider(token, body)
+                withContext(Dispatchers.IO) {
+                    ratingRepository.rateRider(token, body)
+                }
             } else {
                 val riderId = uiState.riderId
                 val driverId = uiState.driverId
                 val rideId = uiState.rideId
 
                 if (riderId == null || driverId == null || rideId <= 0) {
-                    uiState = uiState.copy(
-                        isSubmitting = false,
-                        errorMessage = "No se pudieron identificar los usuarios a calificar.",
-                        successMessage = null
-                    )
+                    withContext(Dispatchers.Main) {
+                        uiState = uiState.copy(
+                            isSubmitting = false,
+                            errorMessage = "No se pudieron identificar los usuarios a calificar.",
+                            successMessage = null
+                        )
+                    }
                     return@launch
                 }
 
@@ -372,20 +427,25 @@ class RatingViewModel(
                     security = uiState.security,
                     ride_id = rideId
                 )
-                ratingRepository.rateDriver(token, body)
+                withContext(Dispatchers.IO) {
+                    ratingRepository.rateDriver(token, body)
+                }
             }
 
-            uiState = if (success) {
+            if (success) {
                 if (uiState.ratingType == "rider") {
                     val ratedRiderId = uiState.selectedRiderId
-                    ratedRiderId?.let { clearDraftForTarget(it) }
                     val remainingRiders = uiState.ridersToRate.filterNot { it.riderId == ratedRiderId }
                     val hasMoreRiders = remainingRiders.isNotEmpty()
                     val nextRiderId = remainingRiders.firstOrNull()?.riderId
 
                     val authId = resolveCurrentAuthId()
                     val currentRideId = uiState.rideId
+                    val ratingType = uiState.ratingType
                     val noRidersLeft = if (authId != null && ratedRiderId != null && currentRideId > 0) {
+                        withContext(Dispatchers.IO) {
+                        RatingDraftCache.clearDraft(authId, currentRideId, ratingType, ratedRiderId)
+                        localStorageManager.clearRatingDraft(authId, currentRideId, ratingType, ratedRiderId)
                         val noPendingRiders = localStorageManager.removeRiderFromPendingRating(
                             authId = authId,
                             rideId = currentRideId,
@@ -399,10 +459,25 @@ class RatingViewModel(
                             Log.d("TripRating", "clear completed driver pending after last rider rideId=$currentRideId")
                         }
                         noPendingRiders
+                        }
                     } else {
                         false
                     }
+                    val nextDraft = if (authId != null && nextRiderId != null && currentRideId > 0) {
+                        withContext(Dispatchers.IO) {
+                            val cachedDraft = RatingDraftCache.getDraft(authId, currentRideId, ratingType, nextRiderId)
+                            cachedDraft ?: localStorageManager.readRatingDraft(
+                                authId = authId,
+                                rideId = currentRideId,
+                                ratingType = ratingType,
+                                targetUserId = nextRiderId
+                            )?.also { RatingDraftCache.saveDraft(it) }
+                        }
+                    } else {
+                        null
+                    }
 
+                    withContext(Dispatchers.Main) {
                     val updatedState = uiState.copy(
                         isSubmitting = false,
                         errorMessage = null,
@@ -419,13 +494,29 @@ class RatingViewModel(
                         paymentPunctuality = 0
                     )
                     uiState = updatedState
-                    nextRiderId?.let { applyDraftIfExists(it) }
-                    uiState
+                    if (nextDraft != null) {
+                        uiState = uiState.copy(
+                            punctuality = nextDraft.punctuality,
+                            behavior = nextDraft.behavior,
+                            communication = nextDraft.communication,
+                            security = nextDraft.security,
+                            paymentPunctuality = nextDraft.paymentPunctuality,
+                            errorMessage = null,
+                            successMessage = null
+                        )
+                    }
+                    }
                 } else {
                     val authId = resolveCurrentAuthId()
                     val currentRideId = uiState.rideId
-                    uiState.driverId?.let { clearDraftForTarget(it) }
+                    val ratedDriverId = uiState.driverId
+                    val ratingType = uiState.ratingType
                     if (authId != null && currentRideId > 0) {
+                        withContext(Dispatchers.IO) {
+                        ratedDriverId?.let {
+                            RatingDraftCache.clearDraft(authId, currentRideId, ratingType, it)
+                            localStorageManager.clearRatingDraft(authId, currentRideId, ratingType, it)
+                        }
                         // Clear the current pending for this ride
                         localStorageManager.clearPendingRating(authId, currentRideId, "driver")
                         // Clear any other stale rider pending entries that might linger
@@ -434,21 +525,26 @@ class RatingViewModel(
                         val staleIds = sessionManager.getPendingRiderRatingRideIds(authId)
                         staleIds.forEach { sessionManager.removePendingRiderRatingRideId(authId, it) }
                         Log.d("TripRating", "clear old rider pending ratings keepRideId=null removed=${staleIds.size}")
+                        }
                     }
-                    uiState.copy(
+                    withContext(Dispatchers.Main) {
+                    uiState = uiState.copy(
                         isSubmitting = false,
                         errorMessage = null,
                         successMessage = "Calificación enviada correctamente."
                     )
+                    }
                 }
             } else {
-                uiState.copy(
+                withContext(Dispatchers.Main) {
+                uiState = uiState.copy(
                     isSubmitting = false,
                     errorMessage = "No se pudo enviar la calificación.",
                     successMessage = null
                 )
+                }
             }
-        }
+    }
     }
 
     fun clearMessages() {
