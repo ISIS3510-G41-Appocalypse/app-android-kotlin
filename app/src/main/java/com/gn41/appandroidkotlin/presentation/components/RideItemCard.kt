@@ -190,7 +190,7 @@ private fun DriverInfoSection(
     val ratingValue = if (ratingNumber != null) {
         String.format("%.1f⭐", ratingNumber)
     } else {
-        "Sin calificacion"
+        "Sin calificación"
     }
     val ratingColor = ratingSemaphoreColor(rating)
     val riskValue = cancellationRiskPercent?.let { "${it}%" } ?: "Sin viajes"
@@ -204,14 +204,14 @@ private fun DriverInfoSection(
         )
         Spacer(modifier = Modifier.height(2.dp))
         LabeledValueText(
-            label = "Calificacion",
+            label = "Calificación",
             value = ratingValue,
             color = PrussianBlue,
             valueColor = ratingColor
         )
         Spacer(modifier = Modifier.height(2.dp))
         LabeledValueText(
-            label = "Riesgo de cancelacion",
+            label = "Riesgo de cancelación",
             value = riskValue,
             color = PrussianBlue,
             valueColor = riskColor

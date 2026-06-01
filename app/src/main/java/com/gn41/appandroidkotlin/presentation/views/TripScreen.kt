@@ -47,7 +47,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import com.gn41.appandroidkotlin.domain.UserSharedLocation
@@ -1261,12 +1265,13 @@ private fun DriverReservationRow(
     onReject: () -> Unit,
     isOfflineMode: Boolean = false
 ) {
-    val riderRatingText = item.riderRating
-        ?.coerceIn(0.0, 5.0)
-        ?.let { rating ->
-            "Rating: ${String.format(Locale.getDefault(), "%.1f", rating)} ⭐"
-        }
-        ?: "Rating: No rating yet"
+    val riderRating = item.riderRating?.coerceIn(0.0, 5.0)
+    val riderRatingColor = when {
+        riderRating == null -> secondaryTextColor
+        riderRating < 3.0 -> Color(0xFFDC2626)
+        riderRating < 4.0 -> Color(0xFFEAB308)
+        else -> Color(0xFF16A34A)
+    }
 
     Column(
         modifier = Modifier
@@ -1283,9 +1288,25 @@ private fun DriverReservationRow(
                 color = negativeColor
             }
         }
-        Text(text = riderRatingText, style = MaterialTheme.typography.bodyMedium, color = secondaryTextColor)
+        Text(
+            text = buildAnnotatedString {
+                withStyle(SpanStyle(color = secondaryTextColor)) {
+                    append("Calificación: ")
+                }
+                withStyle(SpanStyle(color = riderRatingColor, fontWeight = FontWeight.SemiBold)) {
+                    if (riderRating != null) {
+                        append(String.format(Locale.getDefault(), "%.1f", riderRating))
+                        append(" ⭐")
+                    } else {
+                        append("Sin calificación")
+                    }
+                }
+            },
+            style = MaterialTheme.typography.bodyMedium,
+            color = secondaryTextColor
+        )
         Text(text = "Probabilidad de cancelación: ${item.cancellationOdds?.times(100)}%", color = color)
-        Text(text = "Metodo de pago: ${item.paymentMethod}", style = MaterialTheme.typography.bodyMedium, color = secondaryTextColor)
+        Text(text = "Método de pago: ${item.paymentMethod}", style = MaterialTheme.typography.bodyMedium, color = secondaryTextColor)
 
         if (normalizeState(item.status) == "PENDIENTE" && canManageReservation) {
             Spacer(modifier = Modifier.height(8.dp))
