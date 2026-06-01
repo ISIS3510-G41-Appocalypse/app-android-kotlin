@@ -74,6 +74,11 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
+private val whiteCardColor = Color(0xFFF8FAFC)
+private val darkTextColor = Color(0xFF0F172A)
+private val secondaryTextColor = Color(0xFF475569)
+private val fieldBorderColor = Color(0xFFCBD5E1)
+
 @RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -209,9 +214,9 @@ fun CreateRideScreen(
                                 detectTapGestures(onTap = {
                                     focusManager.clearFocus()
                                 })
-                            },
+                        },
                         shape = RoundedCornerShape(18.dp),
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                        colors = CardDefaults.cardColors(containerColor = whiteCardColor),
                         elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
                     ) {
                         Column(
@@ -229,7 +234,7 @@ fun CreateRideScreen(
                                         Icon(
                                             Icons.Default.DirectionsCar,
                                             null,
-                                            tint = MaterialTheme.colorScheme.onSurface
+                                            tint = darkTextColor
                                         )
                                     },
                                     onClick = { expandedVehicle = true }
@@ -263,7 +268,7 @@ fun CreateRideScreen(
                                         Icon(
                                             Icons.Default.Place,
                                             null,
-                                            tint = MaterialTheme.colorScheme.onSurface
+                                            tint = darkTextColor
                                         )
                                     },
                                     onClick = { expandedZone = true }
@@ -295,7 +300,7 @@ fun CreateRideScreen(
                                         Icon(
                                             Icons.Default.Sell,
                                             null,
-                                            tint = MaterialTheme.colorScheme.onSurface
+                                            tint = darkTextColor
                                         )
                                     },
                                     onClick = { expandedType = true }
@@ -366,7 +371,7 @@ fun CreateRideScreen(
                                     Icon(
                                         Icons.Default.AttachMoney,
                                         null,
-                                        tint = MaterialTheme.colorScheme.onSurface
+                                        tint = darkTextColor
                                     )
                                 }
                             )
@@ -549,7 +554,7 @@ fun CreateRideScreen(
 private fun SectionLabel(text: String) {
     Text(
         text = text,
-        color = MaterialTheme.colorScheme.onSurface,
+        color = darkTextColor,
         fontSize = 11.sp,
         fontWeight = FontWeight.Bold,
         letterSpacing = 0.8.sp,
@@ -570,7 +575,7 @@ private fun SelectionField(
         color = Color.Transparent,
         tonalElevation = 0.dp,
         shadowElevation = 0.dp,
-        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.tertiary)
+        border = androidx.compose.foundation.BorderStroke(1.dp, fieldBorderColor)
     ) {
         Row(
             modifier = Modifier
@@ -583,7 +588,7 @@ private fun SelectionField(
             if (text == "Selecciona tu zona" || text == "Selecciona tu vehículo" || text == "Selecciona tipo"){
                 Text(
                     text = text,
-                    color = MaterialTheme.colorScheme.onSurface,
+                    color = secondaryTextColor,
                     modifier = Modifier.weight(1f)
                 )
             }
@@ -591,14 +596,14 @@ private fun SelectionField(
             {
                 Text(
                     text = text,
-                    color = MaterialTheme.colorScheme.onSurface,
+                    color = darkTextColor,
                     modifier = Modifier.weight(1f)
                 )
             }
             Icon(
                 imageVector = Icons.Default.KeyboardArrowDown,
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurface
+                tint = darkTextColor
             )
         }
     }
@@ -617,7 +622,7 @@ private fun SmallSelectionField(
         shape = RoundedCornerShape(14.dp),
         color = Color.Transparent,
         enabled = enabled(),
-        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.tertiary)
+        border = androidx.compose.foundation.BorderStroke(1.dp, fieldBorderColor)
     ) {
         Row(
             modifier = Modifier
@@ -628,14 +633,14 @@ private fun SmallSelectionField(
             Icon(
                 imageVector = icon,
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurface,
+                tint = darkTextColor,
                 modifier = Modifier.size(18.dp)
             )
             Spacer(modifier = Modifier.width(8.dp))
             if (text == "Selecciona"){
                 Text(
                     text = text,
-                    color = MaterialTheme.colorScheme.onSurface,
+                    color = secondaryTextColor,
                     fontSize = 13.sp
                 )
             }
@@ -643,7 +648,7 @@ private fun SmallSelectionField(
             {
                 Text(
                     text = text,
-                    color = MaterialTheme.colorScheme.onSurface,
+                    color = darkTextColor,
                     fontSize = 13.sp
                 )
             }
@@ -665,7 +670,7 @@ private fun CustomOutlinedField(
         placeholder = {
             Text(
                 text = placeholder,
-                color = MaterialTheme.colorScheme.onSurface
+                color = secondaryTextColor
             )
         },
         maxLines = 1,
@@ -675,10 +680,10 @@ private fun CustomOutlinedField(
         colors = OutlinedTextFieldDefaults.colors(
             focusedContainerColor = Color.Transparent,
             unfocusedContainerColor = Color.Transparent,
-            focusedBorderColor = MaterialTheme.colorScheme.onSurface,
-            unfocusedBorderColor = MaterialTheme.colorScheme.onSurface,
-            focusedTextColor = MaterialTheme.colorScheme.onSurface,
-            unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
+            focusedBorderColor = darkTextColor,
+            unfocusedBorderColor = fieldBorderColor,
+            focusedTextColor = darkTextColor,
+            unfocusedTextColor = darkTextColor,
             cursorColor = MaterialTheme.colorScheme.primary
         )
     )
