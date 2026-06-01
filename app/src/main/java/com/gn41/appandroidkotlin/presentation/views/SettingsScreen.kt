@@ -1,6 +1,5 @@
 package com.gn41.appandroidkotlin.presentation.views
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -30,10 +29,10 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.gn41.appandroidkotlin.presentation.viewmodels.SettingsViewModel
+import com.gn41.appandroidkotlin.data.local.UserProfileCache
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -43,6 +42,8 @@ fun SettingsScreen(
     onLogoutClick: () -> Unit,
     onDarkModeChanged: (Boolean) -> Unit
 ) {
+
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -70,6 +71,34 @@ fun SettingsScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
+
+            val userProfile = viewModel.getCurrentUserProfile()
+
+            SettingsItemCard {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp)
+                ) {
+
+                    Text(
+                        text = "${userProfile?.first_name ?: ""} ${userProfile?.last_name ?: ""}",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+
+                    Spacer(modifier = Modifier.width(4.dp))
+
+                    Text(
+                        text = "Zona ID: ${userProfile?.zone_id ?: "-"}",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.tertiary
+                    )
+                }
+            }
+
+
             // Dark Mode Section
             SettingsItemCard {
                 Row(

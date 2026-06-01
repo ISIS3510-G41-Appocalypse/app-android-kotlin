@@ -9,6 +9,9 @@ import retrofit2.http.Body
 import retrofit2.http.Header
 import retrofit2.http.Headers
 import retrofit2.http.POST
+import retrofit2.http.GET
+import retrofit2.http.Query
+import com.gn41.appandroidkotlin.data.dto.auth.UserProfileDto
 
 interface AuthApi {
 
@@ -26,6 +29,17 @@ interface AuthApi {
         @Header("apikey") apiKey: String,
         @Body request: CreateCompleteUserRequestDto
     ): Response<CreateCompleteUserResponseDto>
+
+
+    @GET("rest/v1/users")
+    suspend fun getUserProfile(
+        @Header("Authorization") token: String,
+        @Header("apikey") apiKey: String,
+        @Query("auth_id") authId: String,
+        @Query("select")
+        select: String =
+            "id,first_name,last_name,zone_id,auth_id"
+    ): Response<List<UserProfileDto>>
 
 
 

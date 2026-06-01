@@ -824,7 +824,8 @@ private fun RiderSection(
     ) {
         item {
             Text(
-                text = "Mis reservas activas",
+                text = "" +
+                        "Mis reservas activas",
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onBackground
             )
@@ -917,6 +918,7 @@ private fun RiderReservationCard(
             Text(
                 text = "${trip.source} → ${trip.destination}",
                 style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier
                     .weight(1f)
                     .padding(end = 8.dp),

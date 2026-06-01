@@ -1,6 +1,7 @@
 package com.gn41.appandroidkotlin.data.local
 
 import android.content.Context
+import com.gn41.appandroidkotlin.data.dto.auth.UserProfileDto
 
 class SessionManager(context: Context) {
 
@@ -174,5 +175,58 @@ class SessionManager(context: Context) {
         val current = sharedPreferences.getStringSet(key, emptySet()).orEmpty().toMutableSet()
         current.remove(rideId.toString())
         sharedPreferences.edit().putStringSet(key, current).apply()
+    }
+
+
+
+    fun saveUserProfile(profile: UserProfileDto) {
+
+        sharedPreferences.edit()
+            .putInt("profile_id", profile.id)
+            .putString("profile_first_name", profile.first_name)
+            .putString("profile_last_name", profile.last_name)
+            .putInt("profile_zone_id", profile.zone_id)
+            .putString("profile_auth_id", profile.auth_id)
+            .apply()
+    }
+
+    fun getUserProfile(): UserProfileDto? {
+
+        val id = sharedPreferences.getInt("profile_id", -1)
+
+        if (id == -1) {
+            return null
+        }
+
+        return UserProfileDto(
+            id = id,
+            first_name = sharedPreferences.getString(
+                "profile_first_name",
+                ""
+            ) ?: "",
+            last_name = sharedPreferences.getString(
+                "profile_last_name",
+                ""
+            ) ?: "",
+            zone_id = sharedPreferences.getInt(
+                "profile_zone_id",
+                -1
+            ),
+            auth_id = sharedPreferences.getString(
+                "profile_auth_id",
+                ""
+            ) ?: ""
+        )
+    }
+
+    fun clearUserProfile() {
+
+        sharedPreferences.edit()
+            .remove("profile_id")
+            .remove("profile_first_name")
+            .remove("profile_last_name")
+            .remove("profile_zone_id")
+            .remove("profile_auth_id")
+            .apply()
     }
 }

@@ -15,6 +15,7 @@ import com.gn41.appandroidkotlin.core.connectivity.NetworkHelper
 import com.gn41.appandroidkotlin.data.services.performance.Supervisor
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlin.time.measureTimedValue
+import com.gn41.appandroidkotlin.data.local.UserProfileCache
 
 class WelcomeViewModel(
     private val authRepository: AuthRepository,
@@ -149,6 +150,7 @@ class WelcomeViewModel(
 
                 sessionUserId = loginResult.user.id
                 sessionManager.saveUserId(loginResult.user.id)
+                cacheUserProfile(loginResult.access_token)
 
                 obtenerDriverId(loginResult.access_token)
 
@@ -234,5 +236,49 @@ class WelcomeViewModel(
         passwordInputError = ""
         showLoginCard = false
         isLoading = false
+    }
+
+
+    private suspend fun cacheUserProfile(
+        token: String
+    ) {
+
+        try {
+
+            val authId = extraerAuthIdDelToken(token)
+
+            if (authId.isNullOrEmpty()) {
+                Log.e(
+                    "WelcomeVM",
+                    "No se pudo extraer authId para cachear perfil"
+                )
+                return
+            }
+
+            val profile =
+                authRepository.getUserProfile(
+                    authId,
+                    token
+                )
+
+            if (profile != null) {
+
+                UserProfileCache.put(profile)
+                sessionManager.saveUserProfile(profile)
+
+                Log.d(
+                    "WelcomeVM",
+                    "Perfil cacheado: ${profile.first_name} ${profile.last_name}"
+                )
+            }
+
+        } catch (e: Exception) {
+
+            Log.e(
+                "WelcomeVM",
+                "Error cacheando perfil",
+                e
+            )
+        }
     }
 }
