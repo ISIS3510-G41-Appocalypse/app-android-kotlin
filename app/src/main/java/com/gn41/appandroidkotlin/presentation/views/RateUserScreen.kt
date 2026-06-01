@@ -32,6 +32,11 @@ import com.gn41.appandroidkotlin.presentation.viewmodels.RateUserUiModel
 import com.gn41.appandroidkotlin.presentation.viewmodels.RatingViewModel
 import kotlinx.coroutines.delay
 
+private val warningBackgroundColor = Color(0xFFFEF3C7)
+private val warningTextColor = Color(0xFF92400E)
+private val errorBackgroundColor = Color(0xFFFEE2E2)
+private val errorTextColor = Color(0xFFB91C1C)
+
 @Composable
 fun RateUserScreen(
     viewModel: RatingViewModel,
@@ -107,13 +112,14 @@ fun RateUserScreen(
         }
 
         state.errorMessage?.let {
+            val isOfflineWarning = it.contains("Sin conexión", ignoreCase = true)
             Text(
                 text = it,
-                color = Color(0xFFB91C1C),
+                color = if (isOfflineWarning) warningTextColor else errorTextColor,
                 style = MaterialTheme.typography.bodyMedium,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(Color(0xFFFEE2E2), RoundedCornerShape(10.dp))
+                    .background(if (isOfflineWarning) warningBackgroundColor else errorBackgroundColor, RoundedCornerShape(10.dp))
                     .padding(10.dp)
             )
             Spacer(modifier = Modifier.height(12.dp))

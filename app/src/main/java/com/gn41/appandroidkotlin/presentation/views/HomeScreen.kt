@@ -55,12 +55,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.gn41.appandroidkotlin.presentation.components.RideItemCard
 import com.gn41.appandroidkotlin.presentation.viewmodels.HomeViewModel
 import kotlinx.coroutines.delay
@@ -69,6 +69,17 @@ import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 import java.util.TimeZone
+
+private val darkNavColor = Color(0xFF172033)
+private val darkFabColor = Color(0xFF1E293B)
+private val whiteCardColor = Color(0xFFF8FAFC)
+private val darkTextColor = Color(0xFF0F172A)
+private val secondaryTextColor = Color(0xFF475569)
+private val orangeColor = Color(0xFFB45309)
+private val successBackgroundColor = Color(0xFFD1FAE5)
+private val successTextColor = Color(0xFF065F46)
+private val errorBackgroundColor = Color(0xFFFEE2E2)
+private val errorTextColor = Color(0xFFB91C1C)
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Estados visuales para la zona de rides
@@ -88,7 +99,7 @@ private fun OfflineStateView() {
 private fun EmptyRidesStateView() {
     EmptyStateCard(
         icon = Icons.Default.DirectionsCar,
-        iconTint = MaterialTheme.colorScheme.tertiary,
+        iconTint = orangeColor,
         title = "Sin viajes disponibles",
         message = "No hay viajes disponibles en este momento."
     )
@@ -98,7 +109,7 @@ private fun EmptyRidesStateView() {
 private fun EmptyFilteredStateView() {
     EmptyStateCard(
         icon = Icons.Default.SearchOff,
-        iconTint = MaterialTheme.colorScheme.tertiary,
+        iconTint = orangeColor,
         title = "Sin resultados",
         message = "Intenta cambiar los filtros para encontrar más viajes."
     )
@@ -121,7 +132,7 @@ fun EmptyStateCard(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(8.dp),
             modifier = Modifier
-                .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(16.dp))
+                .background(darkNavColor, RoundedCornerShape(16.dp))
                 .padding(horizontal = 24.dp, vertical = 28.dp)
         ) {
             Icon(
@@ -357,8 +368,9 @@ fun HomeScreen(
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
                     .padding(end = 24.dp, bottom = 116.dp),
-                isBlocked = state.hasActiveDriverTrip || state.hasActiveRiderReservation,
+                isBlocked = state.isCheckingBlockingState || state.hasActiveDriverTrip || state.hasActiveRiderReservation,
                 blockedMessage = when{
+                    state.isCheckingBlockingState -> "Validando tus viajes..."
                     state.hasActiveDriverTrip && state.hasActiveRiderReservation -> "Ya tienes un viaje o reserva activa"
                     state.hasActiveDriverTrip -> "Ya tienes un viaje activo"
                     state.hasActiveRiderReservation -> "Ya tienes una reserva activa"
@@ -383,12 +395,12 @@ private fun ReservationMessageBanner(message: String, onDismiss: () -> Unit) {
     val isSuccess = message.contains("correctamente")
     Text(
         text = message,
-        color = if (isSuccess) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.error,
+        color = if (isSuccess) successTextColor else errorTextColor,
         style = MaterialTheme.typography.bodyMedium,
         modifier = Modifier
             .fillMaxWidth()
             .background(
-                if (isSuccess) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.errorContainer,
+                if (isSuccess) successBackgroundColor else errorBackgroundColor,
                 RoundedCornerShape(8.dp)
             )
             .padding(horizontal = 12.dp, vertical = 8.dp)
@@ -448,7 +460,7 @@ fun ExpandableCreateRideButton(
         if (expanded) {
             Box(
                 modifier = Modifier
-                    .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(12.dp))
+                    .background(darkFabColor, RoundedCornerShape(12.dp))
                     .clickable {
                         expanded = false
                         if (!isBlocked) onCreateRideClick()
@@ -457,7 +469,7 @@ fun ExpandableCreateRideButton(
             ) {
                 Text(
                     text = if (isBlocked) blockedMessage else "Crear Viaje",
-                    color = if (isBlocked) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.onSurface,
+                    color = whiteCardColor,
                     style = MaterialTheme.typography.bodyMedium
                 )
             }
@@ -467,7 +479,7 @@ fun ExpandableCreateRideButton(
         Box(
             modifier = Modifier
                 .background(
-                    color = if (isBlocked) MaterialTheme.colorScheme.tertiary.copy(alpha = 0.5f) else MaterialTheme.colorScheme.surface,
+                    color = if (isBlocked) darkFabColor.copy(alpha = 0.65f) else darkFabColor,
                     shape = RoundedCornerShape(10.dp)
                 )
                 .clickable { expanded = !expanded }
@@ -475,7 +487,7 @@ fun ExpandableCreateRideButton(
         ) {
             Text(
                 text = "+",
-                color = if (isBlocked) MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f) else MaterialTheme.colorScheme.onSurface,
+                color = if (isBlocked) MaterialTheme.colorScheme.onSurface.copy(alpha = 0.65f) else MaterialTheme.colorScheme.onSurface,
                 style = MaterialTheme.typography.titleMedium
             )
         }
@@ -491,7 +503,7 @@ fun HomeHeader(onSettingsClick: () -> Unit) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.surface, shape = RoundedCornerShape(16.dp))
+            .background(darkNavColor, shape = RoundedCornerShape(16.dp))
             .padding(horizontal = 16.dp, vertical = 12.dp)
     ) {
         Row(
@@ -582,7 +594,7 @@ fun FilterCard(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.surface, shape = RoundedCornerShape(16.dp))
+            .background(whiteCardColor, shape = RoundedCornerShape(16.dp))
             .padding(16.dp)
     ) {
         FilterDropdownField(
@@ -600,7 +612,7 @@ fun FilterCard(
                     selectedValue = formatDateForUi(selectedDate),
                     onClick = { showDatePicker = true },
                     isActive = selectedDate != todayDateString(),
-                    neutralLabelColor = MaterialTheme.colorScheme.onSurface
+                    neutralLabelColor = darkTextColor
                 )
             }
             Spacer(modifier = Modifier.width(8.dp))
@@ -637,7 +649,7 @@ fun FilterCard(
         ) {
             Text(
                 text = if (hasActiveFilters) "$activeFilterCount filtros aplicados" else "Sin filtros aplicados",
-                color = if (hasActiveFilters) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.tertiary,
+                color = if (hasActiveFilters) MaterialTheme.colorScheme.secondary else secondaryTextColor,
                 style = MaterialTheme.typography.bodyMedium
             )
             if (hasActiveFilters) {
@@ -762,12 +774,13 @@ fun FilterDropdownField(
 ) {
     var expanded by remember { mutableStateOf(false) }
     val isActive = useSelectionHighlight && selectedValue != defaultValue
-    val backgroundColor = if (isActive) MaterialTheme.colorScheme.secondary.copy(alpha = 0.1f) else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f)
+    val filterTextColor = darkTextColor
+    val backgroundColor = if (isActive) MaterialTheme.colorScheme.secondary.copy(alpha = 0.1f) else filterTextColor.copy(alpha = 0.05f)
     val borderColor = if (isActive) MaterialTheme.colorScheme.secondary.copy(alpha = 0.35f) else Color.Transparent
 
     Text(
         text = label,
-        color = MaterialTheme.colorScheme.onSurface,
+        color = filterTextColor,
         style = MaterialTheme.typography.titleSmall,
         fontWeight = FontWeight.SemiBold
     )
@@ -780,7 +793,7 @@ fun FilterDropdownField(
             .clickable { expanded = true }
             .padding(horizontal = 10.dp, vertical = 10.dp)
     ) {
-        Text(text = selectedValue, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface)
+        Text(text = selectedValue, style = MaterialTheme.typography.bodyMedium, color = filterTextColor)
         DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
             options.forEach { option ->
                 DropdownMenuItem(
@@ -809,7 +822,7 @@ fun BottomNavigationBar(
         modifier = Modifier
             .then(modifier)
             .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(16.dp))
+            .background(darkNavColor, RoundedCornerShape(16.dp))
             .padding(vertical = 12.dp, horizontal = 16.dp),
         horizontalArrangement = Arrangement.Center
     ) {
@@ -846,10 +859,11 @@ fun FilterPickerField(
 ) {
     val backgroundColor = if (isActive) MaterialTheme.colorScheme.secondary.copy(alpha = 0.1f) else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f)
     val borderColor = if (isActive) MaterialTheme.colorScheme.secondary.copy(alpha = 0.35f) else Color.Transparent
+    val filterTextColor = darkTextColor
 
     Text(
         text = label,
-        color = if (neutralLabelColor == Color.Unspecified) MaterialTheme.colorScheme.onSurface else neutralLabelColor,
+        color = if (neutralLabelColor == Color.Unspecified) filterTextColor else neutralLabelColor,
         style = MaterialTheme.typography.titleSmall,
         fontWeight = FontWeight.SemiBold
     )
@@ -858,14 +872,14 @@ fun FilterPickerField(
         modifier = Modifier
             .fillMaxWidth()
             .border(1.dp, borderColor, RoundedCornerShape(8.dp))
-            .background(backgroundColor, RoundedCornerShape(8.dp))
+            .background(if (isActive) backgroundColor else filterTextColor.copy(alpha = 0.05f), RoundedCornerShape(8.dp))
             .clickable { onClick() }
             .padding(horizontal = 10.dp, vertical = 10.dp)
     ) {
         Text(
             text = selectedValue,
             style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurface
+            color = filterTextColor
         )
     }
 }

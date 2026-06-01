@@ -46,6 +46,7 @@ data class HomeUiState(
     val activeFilterCount: Int = 0,
     val hasActiveRiderReservation: Boolean = false,
     val hasActiveDriverTrip: Boolean = false,
+    val isCheckingBlockingState: Boolean = true,
     val isDriver: Boolean = false,
     // Estado de conectividad — separado de errorMessage
     val isOffline: Boolean = false
@@ -639,7 +640,8 @@ class HomeViewModel(
             isLoading = false,
             rides = emptyList(),
             errorMessage = "",
-            isDriver = driverKnownLocally
+            isDriver = driverKnownLocally,
+            isCheckingBlockingState = false
         )
     }
 
@@ -654,12 +656,13 @@ class HomeViewModel(
         if (token.isEmpty()) {
             uiState = uiState.copy(
                 isLoading = false,
-                errorMessage = "No hay una sesion activa. Inicia sesion nuevamente."
+                errorMessage = "No hay una sesion activa. Inicia sesion nuevamente.",
+                isCheckingBlockingState = false
             )
             return
         }
 
-        uiState = uiState.copy(isLoading = true, errorMessage = "")
+        uiState = uiState.copy(isLoading = true, errorMessage = "", isCheckingBlockingState = true)
 
         viewModelScope.launch {
             try {
@@ -738,7 +741,8 @@ class HomeViewModel(
                     Log.e("HomeViewModel", "Rides result is null")
                     uiState = uiState.copy(
                         isLoading = false,
-                        errorMessage = "Para reservar o publicar un viaje necesitas conexión a internet, revisa tu conexión. Si ya tienes una reserva activa, puedes verla en la pestaña Viajes."
+                        errorMessage = "Para reservar o publicar un viaje necesitas conexión a internet, revisa tu conexión. Si ya tienes una reserva activa, puedes verla en la pestaña Viajes.",
+                        isCheckingBlockingState = false
                     )
                 }
             } catch (e: Exception) {
@@ -746,7 +750,8 @@ class HomeViewModel(
                 Log.e("HomeViewModel", "Exception loading rides", e)
                 uiState = uiState.copy(
                     isLoading = false,
-                    errorMessage = "Para reservar o publicar un viaje necesitas conexión a internet, revisa tu conexión. Si ya tienes una reserva activa, puedes verla en la pestaña Viajes."
+                    errorMessage = "Para reservar o publicar un viaje necesitas conexión a internet, revisa tu conexión. Si ya tienes una reserva activa, puedes verla en la pestaña Viajes.",
+                    isCheckingBlockingState = false
                 )
             }
         }
@@ -829,16 +834,33 @@ class HomeViewModel(
 
     // verifica si el usuario ya tiene reserva activa o viaje activo como conductor
     private fun checkBlockingStates() {
+        uiState = uiState.copy(isCheckingBlockingState = true)
+
         val token = sessionManager.getToken()
-        if (token.isEmpty()) return
+        if (token.isEmpty()) {
+            uiState = uiState.copy(isCheckingBlockingState = false)
+            return
+        }
 
-        val authId = extractAuthIdFromToken(token) ?: return
+        val authId = extractAuthIdFromToken(token)
+        if (authId == null) {
+            uiState = uiState.copy(isCheckingBlockingState = false)
+            return
+        }
 
-        val resRepo = reservationsRepository ?: return
+        val resRepo = reservationsRepository
+        if (resRepo == null) {
+            uiState = uiState.copy(isCheckingBlockingState = false)
+            return
+        }
 
         viewModelScope.launch {
             try {
-                val user = resRepo.getUserByAuthId(authId, token) ?: return@launch
+                val user = resRepo.getUserByAuthId(authId, token)
+                if (user == null) {
+                    uiState = uiState.copy(isCheckingBlockingState = false)
+                    return@launch
+                }
 
                 // se revisa reserva activa como pasajero
                 val rider = resRepo.getRiderByUserId(user.id, token)
@@ -868,10 +890,12 @@ class HomeViewModel(
 
                 uiState = uiState.copy(
                     hasActiveRiderReservation = hasActiveRider,
-                    hasActiveDriverTrip = hasActiveDriver
+                    hasActiveDriverTrip = hasActiveDriver,
+                    isCheckingBlockingState = false
                 )
             } catch (e: Exception) {
                 Log.e("HomeViewModel", "checkBlockingStates exception", e)
+                uiState = uiState.copy(isCheckingBlockingState = false)
             }
         }
     }
